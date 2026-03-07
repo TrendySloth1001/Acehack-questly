@@ -50,8 +50,7 @@ class QuestRepository {
     return QuestModel.fromJson(response['data'] as Map<String, dynamic>);
   }
 
-  Future<QuestModel> updateQuest(
-      String id, Map<String, dynamic> data) async {
+  Future<QuestModel> updateQuest(String id, Map<String, dynamic> data) async {
     final response = await _remote.updateQuest(id, data);
     return QuestModel.fromJson(response['data'] as Map<String, dynamic>);
   }

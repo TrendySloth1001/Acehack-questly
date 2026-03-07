@@ -68,19 +68,15 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: ':id',
                 name: 'questDetail',
-                builder: (context, state) => QuestDetailScreen(
-                  questId: state.pathParameters['id']!,
-                ),
+                builder: (context, state) =>
+                    QuestDetailScreen(questId: state.pathParameters['id']!),
               ),
             ],
           ),
         ],
       ),
     ],
-    errorBuilder: (context, state) => Scaffold(
-      body: Center(
-        child: Text('Page not found: ${state.error}'),
-      ),
-    ),
+    errorBuilder: (context, state) =>
+        Scaffold(body: Center(child: Text('Page not found: ${state.error}'))),
   );
 });

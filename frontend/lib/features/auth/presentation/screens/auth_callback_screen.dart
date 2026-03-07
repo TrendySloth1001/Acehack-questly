@@ -10,15 +10,10 @@ class AuthCallbackScreen extends ConsumerStatefulWidget {
   final String? accessToken;
   final String? refreshToken;
 
-  const AuthCallbackScreen({
-    super.key,
-    this.accessToken,
-    this.refreshToken,
-  });
+  const AuthCallbackScreen({super.key, this.accessToken, this.refreshToken});
 
   @override
-  ConsumerState<AuthCallbackScreen> createState() =>
-      _AuthCallbackScreenState();
+  ConsumerState<AuthCallbackScreen> createState() => _AuthCallbackScreenState();
 }
 
 class _AuthCallbackScreenState extends ConsumerState<AuthCallbackScreen> {
@@ -30,10 +25,9 @@ class _AuthCallbackScreenState extends ConsumerState<AuthCallbackScreen> {
 
   Future<void> _handleCallback() async {
     if (widget.accessToken != null && widget.refreshToken != null) {
-      await ref.read(authProvider.notifier).loginWithOAuthTokens(
-            widget.accessToken!,
-            widget.refreshToken!,
-          );
+      await ref
+          .read(authProvider.notifier)
+          .loginWithOAuthTokens(widget.accessToken!, widget.refreshToken!);
     }
   }
 
@@ -50,8 +44,6 @@ class _AuthCallbackScreenState extends ConsumerState<AuthCallbackScreen> {
       }
     });
 
-    return const Scaffold(
-      body: LoadingOverlay(),
-    );
+    return const Scaffold(body: LoadingOverlay());
   }
 }

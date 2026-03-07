@@ -30,8 +30,9 @@ class QuestDetailScreen extends ConsumerWidget {
                 context: context,
                 builder: (ctx) => AlertDialog(
                   title: const Text('Delete Quest'),
-                  content:
-                      const Text('Are you sure you want to delete this quest?'),
+                  content: const Text(
+                    'Are you sure you want to delete this quest?',
+                  ),
                   actions: [
                     TextButton(
                       onPressed: () => Navigator.of(ctx).pop(false),
@@ -39,17 +40,17 @@ class QuestDetailScreen extends ConsumerWidget {
                     ),
                     TextButton(
                       onPressed: () => Navigator.of(ctx).pop(true),
-                      child: const Text('Delete',
-                          style: TextStyle(color: AppColors.error)),
+                      child: const Text(
+                        'Delete',
+                        style: TextStyle(color: AppColors.error),
+                      ),
                     ),
                   ],
                 ),
               );
 
               if (confirmed == true) {
-                await ref
-                    .read(questRepositoryProvider)
-                    .deleteQuest(questId);
+                await ref.read(questRepositoryProvider).deleteQuest(questId);
                 ref.read(questListProvider.notifier).removeQuest(questId);
                 if (context.mounted) Navigator.of(context).pop();
               }
@@ -71,17 +72,16 @@ class QuestDetailScreen extends ConsumerWidget {
               Text(
                 quest.title,
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               if (quest.description != null) ...[
                 const SizedBox(height: 8),
                 Text(
                   quest.description!,
-                  style: Theme.of(context)
-                      .textTheme
-                      .bodyMedium
-                      ?.copyWith(color: AppColors.textSecondary),
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
                 ),
               ],
               const SizedBox(height: 8),
@@ -105,39 +105,38 @@ class QuestDetailScreen extends ConsumerWidget {
               const SizedBox(height: 24),
               Text(
                 'Tasks',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 8),
               if (quest.tasks == null || quest.tasks!.isEmpty)
-                const EmptyState(
-                  message: 'No tasks yet',
-                  icon: Icons.checklist,
-                )
+                const EmptyState(message: 'No tasks yet', icon: Icons.checklist)
               else
-                ...quest.tasks!.map((task) => CheckboxListTile(
-                      title: Text(
-                        task.title,
-                        style: TextStyle(
-                          decoration: task.isCompleted
-                              ? TextDecoration.lineThrough
-                              : null,
-                        ),
+                ...quest.tasks!.map(
+                  (task) => CheckboxListTile(
+                    title: Text(
+                      task.title,
+                      style: TextStyle(
+                        decoration: task.isCompleted
+                            ? TextDecoration.lineThrough
+                            : null,
                       ),
-                      subtitle: task.description != null
-                          ? Text(task.description!)
-                          : null,
-                      value: task.isCompleted,
-                      onChanged: (val) async {
-                        await ref.read(questRepositoryProvider).updateTask(
-                              questId,
-                              task.id,
-                              {'isCompleted': val},
-                            );
-                        ref.invalidate(questDetailProvider(questId));
-                      },
-                    )),
+                    ),
+                    subtitle: task.description != null
+                        ? Text(task.description!)
+                        : null,
+                    value: task.isCompleted,
+                    onChanged: (val) async {
+                      await ref.read(questRepositoryProvider).updateTask(
+                        questId,
+                        task.id,
+                        {'isCompleted': val},
+                      );
+                      ref.invalidate(questDetailProvider(questId));
+                    },
+                  ),
+                ),
             ],
           ),
         ),

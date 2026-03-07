@@ -12,10 +12,7 @@ class QuestRemoteDataSource {
     String? status,
     String? search,
   }) async {
-    final queryParams = <String, dynamic>{
-      'page': page,
-      'limit': limit,
-    };
+    final queryParams = <String, dynamic>{'page': page, 'limit': limit};
     if (status != null) queryParams['status'] = status;
     if (search != null) queryParams['search'] = search;
 

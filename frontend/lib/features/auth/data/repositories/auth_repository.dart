@@ -15,8 +15,11 @@ class AuthRepository {
     required String password,
     String? name,
   }) async {
-    final response =
-        await _remote.register(email: email, password: password, name: name);
+    final response = await _remote.register(
+      email: email,
+      password: password,
+      name: name,
+    );
     final tokens = AuthTokensModel.fromJson(response['data']);
     await _persistTokens(tokens);
     return me();
@@ -33,7 +36,9 @@ class AuthRepository {
   }
 
   Future<void> loginWithOAuthTokens(
-      String accessToken, String refreshToken) async {
+    String accessToken,
+    String refreshToken,
+  ) async {
     await _storage.write(AppConstants.accessTokenKey, accessToken);
     await _storage.write(AppConstants.refreshTokenKey, refreshToken);
   }

@@ -42,8 +42,7 @@ class HomeScreen extends ConsumerWidget {
             icon: authState.user?.avatarUrl != null
                 ? CircleAvatar(
                     radius: 14,
-                    backgroundImage:
-                        NetworkImage(authState.user!.avatarUrl!),
+                    backgroundImage: NetworkImage(authState.user!.avatarUrl!),
                   )
                 : const Icon(Icons.person_outline),
             selectedIcon: const Icon(Icons.person),

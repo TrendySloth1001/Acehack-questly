@@ -28,16 +28,15 @@ class AuthInterceptor extends Interceptor {
     if (err.response?.statusCode == 401 && !_isRefreshing) {
       _isRefreshing = true;
       try {
-        final refreshToken =
-            await _storage.read(AppConstants.refreshTokenKey);
+        final refreshToken = await _storage.read(AppConstants.refreshTokenKey);
         if (refreshToken == null) {
           _isRefreshing = false;
           return handler.next(err);
         }
 
-        final response = await Dio(BaseOptions(
-          baseUrl: AppConstants.baseUrl,
-        )).post('/auth/refresh', data: {'refreshToken': refreshToken});
+        final response = await Dio(
+          BaseOptions(baseUrl: AppConstants.baseUrl),
+        ).post('/auth/refresh', data: {'refreshToken': refreshToken});
 
         final newAccess = response.data['data']['accessToken'] as String;
         final newRefresh = response.data['data']['refreshToken'] as String;
@@ -79,11 +78,7 @@ final dioProvider = Provider<Dio>((ref) {
 
   dio.interceptors.addAll([
     AuthInterceptor(dio, storage),
-    LogInterceptor(
-      requestBody: true,
-      responseBody: true,
-      error: true,
-    ),
+    LogInterceptor(requestBody: true, responseBody: true, error: true),
   ]);
 
   return dio;

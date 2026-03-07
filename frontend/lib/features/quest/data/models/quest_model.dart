@@ -29,8 +29,7 @@ class QuestModel {
 
   Map<String, dynamic> toJson() => _$QuestModelToJson(this);
 
-  int get completedTaskCount =>
-      tasks?.where((t) => t.isCompleted).length ?? 0;
+  int get completedTaskCount => tasks?.where((t) => t.isCompleted).length ?? 0;
 
   int get totalTaskCount => tasks?.length ?? 0;
 

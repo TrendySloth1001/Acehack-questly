@@ -50,10 +50,13 @@ class _CreateQuestScreenState extends ConsumerState<CreateQuestScreen> {
           .map((c) => {'title': c.text.trim()})
           .toList();
 
-      await ref.read(questRepositoryProvider).createQuest(
+      await ref
+          .read(questRepositoryProvider)
+          .createQuest(
             title: _titleC.text.trim(),
-            description:
-                _descC.text.trim().isNotEmpty ? _descC.text.trim() : null,
+            description: _descC.text.trim().isNotEmpty
+                ? _descC.text.trim()
+                : null,
             tasks: tasks.isNotEmpty ? tasks : null,
           );
 
@@ -88,8 +91,9 @@ class _CreateQuestScreenState extends ConsumerState<CreateQuestScreen> {
                 controller: _titleC,
                 label: 'Quest Title',
                 hint: 'What\'s this quest about?',
-                validator: (v) =>
-                    v != null && v.trim().isNotEmpty ? null : 'Title is required',
+                validator: (v) => v != null && v.trim().isNotEmpty
+                    ? null
+                    : 'Title is required',
               ),
               const SizedBox(height: 16),
               AppTextField(
@@ -105,8 +109,8 @@ class _CreateQuestScreenState extends ConsumerState<CreateQuestScreen> {
                   Text(
                     'Tasks',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                   TextButton.icon(
                     onPressed: _addTask,

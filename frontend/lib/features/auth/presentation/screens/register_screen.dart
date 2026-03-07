@@ -30,7 +30,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
   void _register() {
     if (!_formKey.currentState!.validate()) return;
-    ref.read(authProvider.notifier).register(
+    ref
+        .read(authProvider.notifier)
+        .register(
           email: _emailC.text.trim(),
           password: _passwordC.text,
           name: _nameC.text.trim().isNotEmpty ? _nameC.text.trim() : null,
@@ -47,7 +49,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       }
       if (next.error != null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(next.error!), backgroundColor: AppColors.error),
+          SnackBar(
+            content: Text(next.error!),
+            backgroundColor: AppColors.error,
+          ),
         );
       }
     });
@@ -65,17 +70,16 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 Text(
                   'Create Account',
                   style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.primary,
-                      ),
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.primary,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   'Start your quest journey',
-                  style: Theme.of(context)
-                      .textTheme
-                      .bodyMedium
-                      ?.copyWith(color: AppColors.textSecondary),
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
                 ),
                 const SizedBox(height: 32),
                 AppTextField(
@@ -91,8 +95,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   hint: 'you@example.com',
                   keyboardType: TextInputType.emailAddress,
                   prefixIcon: const Icon(Icons.email_outlined),
-                  validator: (v) =>
-                      v != null && v.contains('@') ? null : 'Valid email required',
+                  validator: (v) => v != null && v.contains('@')
+                      ? null
+                      : 'Valid email required',
                 ),
                 const SizedBox(height: 16),
                 AppTextField(
@@ -102,12 +107,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   prefixIcon: const Icon(Icons.lock_outline),
                   suffixIcon: IconButton(
                     icon: Icon(
-                        _obscure ? Icons.visibility_off : Icons.visibility),
+                      _obscure ? Icons.visibility_off : Icons.visibility,
+                    ),
                     onPressed: () => setState(() => _obscure = !_obscure),
                   ),
-                  validator: (v) => v != null && v.length >= 8
-                      ? null
-                      : 'Min 8 characters',
+                  validator: (v) =>
+                      v != null && v.length >= 8 ? null : 'Min 8 characters',
                 ),
                 const SizedBox(height: 24),
                 AppButton(

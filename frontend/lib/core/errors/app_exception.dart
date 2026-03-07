@@ -15,10 +15,10 @@ class NetworkException extends AppException {
 
 class UnauthorizedException extends AppException {
   const UnauthorizedException([String message = 'Unauthorized'])
-      : super(message, 401);
+    : super(message, 401);
 }
 
 class ServerException extends AppException {
   const ServerException([String message = 'Server error'])
-      : super(message, 500);
+    : super(message, 500);
 }

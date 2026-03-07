@@ -59,10 +59,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     if (isAuth) {
       try {
         final user = await _repo.me();
-        state = AuthState(
-          status: AuthStatus.authenticated,
-          user: user,
-        );
+        state = AuthState(status: AuthStatus.authenticated, user: user);
       } catch (_) {
         state = const AuthState(status: AuthStatus.unauthenticated);
       }
@@ -78,18 +75,18 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }) async {
     state = state.copyWith(isLoading: true, error: null);
     try {
-      final user =
-          await _repo.register(email: email, password: password, name: name);
+      final user = await _repo.register(
+        email: email,
+        password: password,
+        name: name,
+      );
       state = AuthState(status: AuthStatus.authenticated, user: user);
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
 
-  Future<void> login({
-    required String email,
-    required String password,
-  }) async {
+  Future<void> login({required String email, required String password}) async {
     state = state.copyWith(isLoading: true, error: null);
     try {
       final user = await _repo.login(email: email, password: password);
@@ -100,7 +97,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }
 
   Future<void> loginWithOAuthTokens(
-      String accessToken, String refreshToken) async {
+    String accessToken,
+    String refreshToken,
+  ) async {
     state = state.copyWith(isLoading: true, error: null);
     try {
       await _repo.loginWithOAuthTokens(accessToken, refreshToken);

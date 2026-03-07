@@ -33,30 +33,29 @@ class QuestListScreen extends ConsumerWidget {
       body: questState.isLoading && questState.quests.isEmpty
           ? const LoadingOverlay()
           : questState.error != null && questState.quests.isEmpty
-              ? ErrorDisplay(
-                  message: questState.error!,
-                  onRetry: () => ref.read(questListProvider.notifier).refresh(),
-                )
-              : questState.quests.isEmpty
-                  ? EmptyState(
-                      message: 'No quests yet.\nTap + to create your first quest!',
-                      icon: Icons.explore_outlined,
-                    )
-                  : RefreshIndicator(
-                      onRefresh: () =>
-                          ref.read(questListProvider.notifier).refresh(),
-                      child: ListView.builder(
-                        padding: const EdgeInsets.all(16),
-                        itemCount: questState.quests.length,
-                        itemBuilder: (context, index) {
-                          final quest = questState.quests[index];
-                          return QuestCard(
-                            quest: quest,
-                            onTap: () => context.go('/quests/${quest.id}'),
-                          );
-                        },
-                      ),
-                    ),
+          ? ErrorDisplay(
+              message: questState.error!,
+              onRetry: () => ref.read(questListProvider.notifier).refresh(),
+            )
+          : questState.quests.isEmpty
+          ? EmptyState(
+              message: 'No quests yet.\nTap + to create your first quest!',
+              icon: Icons.explore_outlined,
+            )
+          : RefreshIndicator(
+              onRefresh: () => ref.read(questListProvider.notifier).refresh(),
+              child: ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: questState.quests.length,
+                itemBuilder: (context, index) {
+                  final quest = questState.quests[index];
+                  return QuestCard(
+                    quest: quest,
+                    onTap: () => context.go('/quests/${quest.id}'),
+                  );
+                },
+              ),
+            ),
     );
   }
 }

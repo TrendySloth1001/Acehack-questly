@@ -62,9 +62,7 @@ class QuestListNotifier extends StateNotifier<QuestListState> {
         search: search,
       );
       state = QuestListState(
-        quests: page == 1
-            ? result.quests
-            : [...state.quests, ...result.quests],
+        quests: page == 1 ? result.quests : [...state.quests, ...result.quests],
         meta: result.meta,
       );
     } catch (e) {
@@ -91,12 +89,14 @@ class QuestListNotifier extends StateNotifier<QuestListState> {
 
 final questListProvider =
     StateNotifierProvider<QuestListNotifier, QuestListState>((ref) {
-  return QuestListNotifier(ref.read(questRepositoryProvider));
-});
+      return QuestListNotifier(ref.read(questRepositoryProvider));
+    });
 
 // ── Single quest ────────────────────────────────────────────
 
-final questDetailProvider =
-    FutureProvider.family<QuestModel, String>((ref, id) async {
+final questDetailProvider = FutureProvider.family<QuestModel, String>((
+  ref,
+  id,
+) async {
   return ref.read(questRepositoryProvider).getQuestById(id);
 });
