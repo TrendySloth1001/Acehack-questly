@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "867248310005",
+    "project_id": "acehack-489507",
+    "storage_bucket": "acehack-489507.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:867248310005:android:0000000000000000",
+        "android_client_info": {
+          "package_name": "com.questly.questly"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "867248310005-967lcq56ji1h8jmkr4mmjne0h2tusu1s.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.questly.questly",
+            "certificate_hash": "a5ba52b1501c11820c31ccee3d499f179d43be4c"
+          }
+        },
+        {
+          "client_id": "867248310005-de067c6hffq9h12anrj6qsunef2madjr.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": ""
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "867248310005-de067c6hffq9h12anrj6qsunef2madjr.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

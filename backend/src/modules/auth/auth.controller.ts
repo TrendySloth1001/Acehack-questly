@@ -78,6 +78,27 @@ export class AuthController {
   }
 
   /**
+   * POST /auth/google
+   * Mobile clients (Flutter) send a Google idToken; we verify it and return JWTs.
+   */
+  async googleTokenLogin(req: Request, res: Response) {
+    const { idToken } = req.body as { idToken?: string };
+    if (!idToken) {
+      res.status(400).json({ success: false, message: "idToken is required" });
+      return;
+    }
+
+    const tokens = await authService.loginWithGoogleIdToken(idToken);
+    setTokenCookies(res, tokens.accessToken, tokens.refreshToken);
+
+    sendSuccess({
+      res,
+      data: tokens,
+      message: "Google login successful",
+    });
+  }
+
+  /**
    * Called after passport OAuth callback to issue JWT tokens.
    */
   async oauthCallback(req: Request, res: Response) {

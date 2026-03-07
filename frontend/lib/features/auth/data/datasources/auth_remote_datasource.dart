@@ -6,25 +6,11 @@ class AuthRemoteDataSource {
 
   AuthRemoteDataSource(this._dio);
 
-  Future<Map<String, dynamic>> register({
-    required String email,
-    required String password,
-    String? name,
-  }) async {
+  /// Send Google idToken to backend for verification + JWT exchange.
+  Future<Map<String, dynamic>> loginWithGoogleToken(String idToken) async {
     final response = await _dio.post(
-      ApiEndpoints.register,
-      data: {'email': email, 'password': password, 'name': name},
-    );
-    return response.data as Map<String, dynamic>;
-  }
-
-  Future<Map<String, dynamic>> login({
-    required String email,
-    required String password,
-  }) async {
-    final response = await _dio.post(
-      ApiEndpoints.login,
-      data: {'email': email, 'password': password},
+      ApiEndpoints.googleAuth,
+      data: {'idToken': idToken},
     );
     return response.data as Map<String, dynamic>;
   }
@@ -46,6 +32,14 @@ class AuthRemoteDataSource {
 
   Future<Map<String, dynamic>> me() async {
     final response = await _dio.get(ApiEndpoints.me);
+    return response.data as Map<String, dynamic>;
+  }
+
+  /// Save onboarding profile to backend.
+  Future<Map<String, dynamic>> saveOnboardingProfile(
+    Map<String, dynamic> data,
+  ) async {
+    final response = await _dio.patch(ApiEndpoints.me, data: data);
     return response.data as Map<String, dynamic>;
   }
 }

@@ -1,4 +1,7 @@
+import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import '../../../../core/constants/app_constants.dart';
 import '../../../../core/network/dio_client.dart';
 import '../../../../core/storage/secure_storage.dart';
 import '../../data/datasources/auth_remote_datasource.dart';
@@ -22,12 +25,14 @@ class AuthState {
   final UserModel? user;
   final String? error;
   final bool isLoading;
+  final bool needsOnboarding;
 
   const AuthState({
     this.status = AuthStatus.unknown,
     this.user,
     this.error,
     this.isLoading = false,
+    this.needsOnboarding = false,
   });
 
   AuthState copyWith({
@@ -35,12 +40,14 @@ class AuthState {
     UserModel? user,
     String? error,
     bool? isLoading,
+    bool? needsOnboarding,
   }) {
     return AuthState(
       status: status ?? this.status,
       user: user ?? this.user,
       error: error,
       isLoading: isLoading ?? this.isLoading,
+      needsOnboarding: needsOnboarding ?? this.needsOnboarding,
     );
   }
 }
@@ -49,53 +56,104 @@ class AuthState {
 
 class AuthNotifier extends StateNotifier<AuthState> {
   final AuthRepository _repo;
+  final SecureStorageService _storage;
 
-  AuthNotifier(this._repo) : super(const AuthState()) {
-    checkAuth();
+  AuthNotifier(this._repo, this._storage) : super(const AuthState()) {
+    _initSession();
   }
 
-  Future<void> checkAuth() async {
-    final isAuth = await _repo.isAuthenticated();
-    if (isAuth) {
+  /// On app launch: show cached user instantly, verify JWT in background.
+  Future<void> _initSession() async {
+    final hasToken = await _repo.isAuthenticated();
+    if (!hasToken) {
+      state = const AuthState(status: AuthStatus.unauthenticated);
+      return;
+    }
+
+    // Load cached user immediately
+    final cachedJson = await _storage.read(AppConstants.userKey);
+    UserModel? cachedUser;
+    if (cachedJson != null) {
       try {
-        final user = await _repo.me();
-        state = AuthState(status: AuthStatus.authenticated, user: user);
-      } catch (_) {
+        cachedUser = UserModel.fromJson(
+          json.decode(cachedJson) as Map<String, dynamic>,
+        );
+      } catch (_) {}
+    }
+
+    final onboarded = await _storage.read(AppConstants.onboardingKey);
+    final needsOnboarding = onboarded != 'true';
+
+    if (cachedUser != null) {
+      state = AuthState(
+        status: AuthStatus.authenticated,
+        user: cachedUser,
+        needsOnboarding: needsOnboarding,
+      );
+    }
+
+    // Background verify + refresh user object
+    try {
+      final freshUser = await _repo.me();
+      await _cacheUser(freshUser);
+      state = AuthState(
+        status: AuthStatus.authenticated,
+        user: freshUser,
+        needsOnboarding: needsOnboarding,
+      );
+    } catch (_) {
+      // Token invalid → if no cached user, force logout
+      if (cachedUser == null) {
+        await _repo.logout();
         state = const AuthState(status: AuthStatus.unauthenticated);
       }
-    } else {
-      state = const AuthState(status: AuthStatus.unauthenticated);
+      // else keep showing cached data (offline-friendly)
     }
   }
 
-  Future<void> register({
-    required String email,
-    required String password,
-    String? name,
-  }) async {
+  /// Native Google Sign-In → send idToken to backend
+  Future<void> signInWithGoogle() async {
     state = state.copyWith(isLoading: true, error: null);
     try {
-      final user = await _repo.register(
-        email: email,
-        password: password,
-        name: name,
+      final googleSignIn = GoogleSignIn(
+        // serverClientId = Web OAuth client ID — required on Android to get idToken
+        serverClientId: AppConstants.googleClientId,
+        scopes: ['email', 'profile'],
       );
-      state = AuthState(status: AuthStatus.authenticated, user: user);
+      final account = await googleSignIn.signIn();
+      if (account == null) {
+        state = state.copyWith(isLoading: false);
+        return; // user cancelled
+      }
+
+      final googleAuth = await account.authentication;
+      final idToken = googleAuth.idToken;
+      if (idToken == null) {
+        state = state.copyWith(
+          isLoading: false,
+          error: 'Failed to get Google token',
+        );
+        return;
+      }
+
+      // Send to backend
+      final user = await _repo.loginWithGoogle(idToken);
+      await _cacheUser(user);
+
+      final onboarded = await _storage.read(AppConstants.onboardingKey);
+
+      state = AuthState(
+        status: AuthStatus.authenticated,
+        user: user,
+        needsOnboarding: onboarded != 'true',
+      );
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
+      final msg = _friendlyError(e);
+      state = state.copyWith(isLoading: false, error: msg);
     }
   }
 
-  Future<void> login({required String email, required String password}) async {
-    state = state.copyWith(isLoading: true, error: null);
-    try {
-      final user = await _repo.login(email: email, password: password);
-      state = AuthState(status: AuthStatus.authenticated, user: user);
-    } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
-    }
-  }
-
+  /// Called after OAuth callback with tokens
   Future<void> loginWithOAuthTokens(
     String accessToken,
     String refreshToken,
@@ -104,18 +162,59 @@ class AuthNotifier extends StateNotifier<AuthState> {
     try {
       await _repo.loginWithOAuthTokens(accessToken, refreshToken);
       final user = await _repo.me();
-      state = AuthState(status: AuthStatus.authenticated, user: user);
+      await _cacheUser(user);
+      final onboarded = await _storage.read(AppConstants.onboardingKey);
+      state = AuthState(
+        status: AuthStatus.authenticated,
+        user: user,
+        needsOnboarding: onboarded != 'true',
+      );
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
+      state = state.copyWith(isLoading: false, error: _friendlyError(e));
     }
   }
 
+  Future<void> completeOnboarding() async {
+    await _storage.write(AppConstants.onboardingKey, 'true');
+    state = state.copyWith(needsOnboarding: false);
+  }
+
   Future<void> logout() async {
+    try {
+      final googleSignIn = GoogleSignIn();
+      await googleSignIn.signOut();
+    } catch (_) {}
     await _repo.logout();
     state = const AuthState(status: AuthStatus.unauthenticated);
+  }
+
+  Future<void> _cacheUser(UserModel user) async {
+    await _storage.write(AppConstants.userKey, json.encode(user.toJson()));
+  }
+
+  String _friendlyError(Object e) {
+    final s = e.toString();
+    if (s.contains('502') || s.contains('503') || s.contains('bad response')) {
+      return 'Server is offline — make sure the backend is running 🛠️';
+    }
+    if (s.contains('SocketException') ||
+        s.contains('network') ||
+        s.contains('connection')) {
+      return 'No internet connection 📡';
+    }
+    if (s.contains('sign_in_canceled') || s.contains('sign_in_failed')) {
+      return 'Google sign-in cancelled';
+    }
+    if (s.contains('401') || s.contains('Unauthorized')) {
+      return 'Session expired — please sign in again';
+    }
+    return 'Something went wrong, try again 🤷';
   }
 }
 
 final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
-  return AuthNotifier(ref.read(authRepositoryProvider));
+  return AuthNotifier(
+    ref.read(authRepositoryProvider),
+    ref.read(secureStorageProvider),
+  );
 });

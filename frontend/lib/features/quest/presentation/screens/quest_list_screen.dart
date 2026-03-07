@@ -27,8 +27,8 @@ class QuestListScreen extends ConsumerWidget {
       ),
       floatingActionButton: FloatingActionButton(
         backgroundColor: AppColors.primary,
-        onPressed: () => context.go('/quests/new'),
-        child: const Icon(Icons.add, color: Colors.white),
+        onPressed: () => context.go('/home/quests/new'),
+        child: const Icon(Icons.add, color: Colors.black),
       ),
       body: questState.isLoading && questState.quests.isEmpty
           ? const LoadingOverlay()
@@ -51,7 +51,7 @@ class QuestListScreen extends ConsumerWidget {
                   final quest = questState.quests[index];
                   return QuestCard(
                     quest: quest,
-                    onTap: () => context.go('/quests/${quest.id}'),
+                    onTap: () => context.go('/home/quests/${quest.id}'),
                   );
                 },
               ),

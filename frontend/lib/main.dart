@@ -18,9 +18,9 @@ class QuestlyApp extends ConsumerWidget {
     return MaterialApp.router(
       title: 'Questly',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.light,
+      theme: AppTheme.dark,
       darkTheme: AppTheme.dark,
-      themeMode: ThemeMode.system,
+      themeMode: ThemeMode.dark,
       routerConfig: router,
     );
   }

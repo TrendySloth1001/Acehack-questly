@@ -12,11 +12,15 @@ class AppConstants {
   static const String prodBaseUrl = 'https://api.questly.app/api/v1';
 
   // ── OAuth ─────────────────────────────────────────────────
-  static const String googleClientId = 'YOUR_GOOGLE_CLIENT_ID';
+  /// Web client ID — used as serverClientId so the backend can verify idTokens.
+  static const String googleClientId =
+      '867248310005-de067c6hffq9h12anrj6qsunef2madjr.apps.googleusercontent.com';
+
+  /// Android client ID — registered in google-services.json (native config).
+  static const String googleAndroidClientId =
+      '867248310005-967lcq56ji1h8jmkr4mmjne0h2tusu1s.apps.googleusercontent.com';
   static const String googleCallbackUrl =
-      'http://localhost:4000/api/v1/auth/google/callback';
-  static const String githubCallbackUrl =
-      'http://localhost:4000/api/v1/auth/github/callback';
+      'https://qjhcp0ph-3000.inc1.devtunnels.ms/api/v1/auth/google/callback';
 
   // ── Storage Keys ──────────────────────────────────────────
   static const String accessTokenKey = 'questly_access_token';

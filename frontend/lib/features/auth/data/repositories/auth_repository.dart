@@ -10,26 +10,9 @@ class AuthRepository {
 
   AuthRepository(this._remote, this._storage);
 
-  Future<UserModel> register({
-    required String email,
-    required String password,
-    String? name,
-  }) async {
-    final response = await _remote.register(
-      email: email,
-      password: password,
-      name: name,
-    );
-    final tokens = AuthTokensModel.fromJson(response['data']);
-    await _persistTokens(tokens);
-    return me();
-  }
-
-  Future<UserModel> login({
-    required String email,
-    required String password,
-  }) async {
-    final response = await _remote.login(email: email, password: password);
+  /// Native Google sign-in: send idToken to backend, get JWT pair back.
+  Future<UserModel> loginWithGoogle(String idToken) async {
+    final response = await _remote.loginWithGoogleToken(idToken);
     final tokens = AuthTokensModel.fromJson(response['data']);
     await _persistTokens(tokens);
     return me();
@@ -52,9 +35,7 @@ class AuthRepository {
     final refreshToken = await _storage.read(AppConstants.refreshTokenKey);
     try {
       await _remote.logout(refreshToken);
-    } catch (_) {
-      // Best-effort server logout
-    }
+    } catch (_) {}
     await _storage.deleteAll();
   }
 
@@ -62,8 +43,6 @@ class AuthRepository {
     final token = await _storage.read(AppConstants.accessTokenKey);
     return token != null;
   }
-
-  // ── Private ──────────────────────────────────────────────
 
   Future<void> _persistTokens(AuthTokensModel tokens) async {
     await _storage.write(AppConstants.accessTokenKey, tokens.accessToken);

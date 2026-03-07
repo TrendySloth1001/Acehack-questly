@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/router/app_router.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/widgets/common_widgets.dart';
 import '../providers/auth_provider.dart';
 
@@ -37,13 +38,20 @@ class _AuthCallbackScreenState extends ConsumerState<AuthCallbackScreen> {
 
     ref.listen<AuthState>(authProvider, (prev, next) {
       if (next.status == AuthStatus.authenticated) {
-        context.go(AppRoutes.home);
+        if (next.needsOnboarding) {
+          context.go(AppRoutes.onboardingName);
+        } else {
+          context.go(AppRoutes.home);
+        }
       }
       if (next.error != null) {
         context.go(AppRoutes.login);
       }
     });
 
-    return const Scaffold(body: LoadingOverlay());
+    return const Scaffold(
+      backgroundColor: AppColors.background,
+      body: LoadingOverlay(),
+    );
   }
 }

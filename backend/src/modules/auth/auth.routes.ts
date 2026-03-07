@@ -38,6 +38,9 @@ router.post("/logout", asyncHandler(authController.logout));
 router.get("/me", authenticate, asyncHandler(authController.me));
 
 // ── Google OAuth ────────────────────────────────────────────
+// Mobile clients (Flutter) POST an idToken here; web uses the redirect flow below
+router.post("/google", asyncHandler(authController.googleTokenLogin));
+
 router.get(
   "/google",
   passport.authenticate("google", { scope: ["profile", "email"], session: false })

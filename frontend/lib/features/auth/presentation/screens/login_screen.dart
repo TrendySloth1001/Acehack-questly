@@ -3,43 +3,22 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../../shared/widgets/widgets.dart';
 import '../providers/auth_provider.dart';
 
-class LoginScreen extends ConsumerStatefulWidget {
+class LoginScreen extends ConsumerWidget {
   const LoginScreen({super.key});
 
   @override
-  ConsumerState<LoginScreen> createState() => _LoginScreenState();
-}
-
-class _LoginScreenState extends ConsumerState<LoginScreen> {
-  final _formKey = GlobalKey<FormState>();
-  final _emailC = TextEditingController();
-  final _passwordC = TextEditingController();
-  bool _obscure = true;
-
-  @override
-  void dispose() {
-    _emailC.dispose();
-    _passwordC.dispose();
-    super.dispose();
-  }
-
-  void _login() {
-    if (!_formKey.currentState!.validate()) return;
-    ref
-        .read(authProvider.notifier)
-        .login(email: _emailC.text.trim(), password: _passwordC.text);
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final auth = ref.watch(authProvider);
 
     ref.listen<AuthState>(authProvider, (prev, next) {
       if (next.status == AuthStatus.authenticated) {
-        context.go(AppRoutes.home);
+        if (next.needsOnboarding) {
+          context.go(AppRoutes.onboardingName);
+        } else {
+          context.go(AppRoutes.home);
+        }
       }
       if (next.error != null) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -52,112 +31,108 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     });
 
     return Scaffold(
+      backgroundColor: AppColors.background,
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const SizedBox(height: 60),
-                Text(
-                  'Welcome to\nQuestly',
-                  style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.primary,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 32),
+          child: Column(
+            children: [
+              const Spacer(flex: 3),
+              // Logo / Branding
+              Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  color: AppColors.primaryDim,
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(color: AppColors.primary, width: 1.5),
+                ),
+                child: const Center(
+                  child: Text(
+                    'Q',
+                    style: TextStyle(
+                      color: AppColors.primary,
+                      fontSize: 42,
+                      fontWeight: FontWeight.w900,
+                    ),
                   ),
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  'Sign in to continue your quests',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
+              ),
+              const SizedBox(height: 32),
+              const Text(
+                'questly',
+                style: TextStyle(
+                  color: AppColors.textPrimary,
+                  fontSize: 36,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: -1,
                 ),
-                const SizedBox(height: 40),
-                AppTextField(
-                  controller: _emailC,
-                  label: 'Email',
-                  hint: 'you@example.com',
-                  keyboardType: TextInputType.emailAddress,
-                  prefixIcon: const Icon(Icons.email_outlined),
-                  validator: (v) => v != null && v.contains('@')
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'find your tribe. build cool stuff.',
+                style: TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w400,
+                ),
+              ),
+              const Spacer(flex: 3),
+              // Google Sign In
+              SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: ElevatedButton(
+                  onPressed: auth.isLoading
                       ? null
-                      : 'Valid email required',
-                ),
-                const SizedBox(height: 16),
-                AppTextField(
-                  controller: _passwordC,
-                  label: 'Password',
-                  obscureText: _obscure,
-                  prefixIcon: const Icon(Icons.lock_outline),
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _obscure ? Icons.visibility_off : Icons.visibility,
+                      : () =>
+                            ref.read(authProvider.notifier).signInWithGoogle(),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.textPrimary,
+                    foregroundColor: Colors.black,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
                     ),
-                    onPressed: () => setState(() => _obscure = !_obscure),
                   ),
-                  validator: (v) =>
-                      v != null && v.length >= 8 ? null : 'Min 8 characters',
-                ),
-                const SizedBox(height: 24),
-                AppButton(
-                  label: 'Sign In',
-                  onPressed: _login,
-                  isLoading: auth.isLoading,
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    const Expanded(child: Divider()),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Text(
-                        'or',
-                        style: TextStyle(color: AppColors.textHint),
-                      ),
-                    ),
-                    const Expanded(child: Divider()),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                AppButton(
-                  label: 'Continue with Google',
-                  icon: Icons.g_mobiledata,
-                  isOutlined: true,
-                  onPressed: () {
-                    // TODO: Trigger Google OAuth flow
-                  },
-                ),
-                const SizedBox(height: 12),
-                AppButton(
-                  label: 'Continue with GitHub',
-                  icon: Icons.code,
-                  isOutlined: true,
-                  onPressed: () {
-                    // TODO: Trigger GitHub OAuth flow
-                  },
-                ),
-                const SizedBox(height: 24),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Text("Don't have an account? "),
-                    GestureDetector(
-                      onTap: () => context.go(AppRoutes.register),
-                      child: Text(
-                        'Sign Up',
-                        style: TextStyle(
-                          color: AppColors.primary,
-                          fontWeight: FontWeight.w600,
+                  child: auth.isLoading
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.black,
+                          ),
+                        )
+                      : Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Image.network(
+                              'https://www.google.com/favicon.ico',
+                              width: 20,
+                              height: 20,
+                              errorBuilder: (c, e, s) =>
+                                  const Icon(Icons.g_mobiledata, size: 24),
+                            ),
+                            const SizedBox(width: 12),
+                            const Text(
+                              'Continue with Google',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
-                    ),
-                  ],
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                'by continuing you agree to our terms & vibe check',
+                style: TextStyle(color: AppColors.textHint, fontSize: 12),
+                textAlign: TextAlign.center,
+              ),
+              const Spacer(),
+            ],
           ),
         ),
       ),

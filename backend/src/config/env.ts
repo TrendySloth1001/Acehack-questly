@@ -34,7 +34,7 @@ export const env = {
   GOOGLE_CLIENT_SECRET: optional("GOOGLE_CLIENT_SECRET", ""),
   GOOGLE_CALLBACK_URL: optional(
     "GOOGLE_CALLBACK_URL",
-    "http://localhost:4000/api/v1/auth/google/callback"
+    "http://localhost:3000/api/v1/auth/google/callback"
   ),
 
   // OAuth – GitHub

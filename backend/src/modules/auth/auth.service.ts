@@ -1,4 +1,5 @@
 import bcrypt from "bcryptjs";
+import { OAuth2Client } from "google-auth-library";
 import { prisma } from "../../config/database";
 import {
   signAccessToken,
@@ -14,6 +15,7 @@ import {
   AUTH,
   ERROR_MESSAGES,
 } from "../../shared/constants";
+import { env } from "../../config/env";
 
 // ── DTOs ────────────────────────────────────────────────────
 
@@ -93,6 +95,60 @@ export class AuthService {
     const tokens = this.generateTokens(user.id, user.email, user.role);
     await this.persistRefreshToken(user.id, tokens.refreshToken);
 
+    return { ...tokens, userId: user.id };
+  }
+
+  /**
+   * Verify a Google idToken from a mobile/web client and log in or register the user.
+   * Used by the Flutter app which sends the idToken directly (no redirect flow).
+   */
+  async loginWithGoogleIdToken(
+    idToken: string
+  ): Promise<AuthTokens & { userId: string }> {
+    const client = new OAuth2Client(env.GOOGLE_CLIENT_ID);
+
+    let payload;
+    try {
+      const ticket = await client.verifyIdToken({
+        idToken,
+        audience: env.GOOGLE_CLIENT_ID,
+      });
+      payload = ticket.getPayload();
+    } catch {
+      throw new UnauthorizedError("Invalid Google ID token");
+    }
+
+    if (!payload || !payload.email) {
+      throw new UnauthorizedError("Google token missing required fields");
+    }
+
+    const { email, name, picture, sub: googleId } = payload;
+
+    // Upsert the user (create on first login, find on subsequent logins)
+    const user = await prisma.user.upsert({
+      where: { email },
+      create: {
+        email,
+        name: name ?? null,
+        avatarUrl: picture ?? null,
+        emailVerified: true,
+        accounts: {
+          create: {
+            provider: "GOOGLE",
+            providerAccountId: googleId!,
+          },
+        },
+      },
+      update: {
+        name: name ?? undefined,
+        avatarUrl: picture ?? undefined,
+        emailVerified: true,
+      },
+      select: { id: true, email: true, role: true },
+    });
+
+    const tokens = this.generateTokens(user.id, user.email, user.role);
+    await this.persistRefreshToken(user.id, tokens.refreshToken);
     return { ...tokens, userId: user.id };
   }
 
