@@ -79,4 +79,10 @@ class AlgorandRemoteDataSource {
     );
     return response.data as Map<String, dynamic>;
   }
+
+  /// Get the current user's wallet transaction history.
+  Future<Map<String, dynamic>> getTransactions() async {
+    final response = await _dio.get(ApiEndpoints.transactions);
+    return response.data as Map<String, dynamic>;
+  }
 }

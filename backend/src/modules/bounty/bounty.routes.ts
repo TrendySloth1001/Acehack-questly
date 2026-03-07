@@ -44,6 +44,7 @@ router.get("/claims/mine", asyncHandler(bountyController.myClaims));
 router.get("/:id", asyncHandler(bountyController.getById));
 router.patch("/:id", asyncHandler(bountyController.update));
 router.delete("/:id", asyncHandler(bountyController.delete));
+router.post("/:id/cancel", asyncHandler(bountyController.cancel));
 
 // ── Claims ──────────────────────────────────────────────────
 router.post("/:id/claim", asyncHandler(bountyController.claim));

@@ -70,6 +70,21 @@ export class AlgorandController {
       throw new BadRequestError("Only the bounty creator can fund it");
     }
 
+    // ── Balance pre-check (avoid algod rejection with opaque error) ────────
+    if (!user.walletAddress) {
+      throw new BadRequestError("Wallet address missing — cannot verify balance");
+    }
+    const currentBalance = await algorandService.getBalance(user.walletAddress);
+    // Spendable = total − min_balance − fee headroom
+    // Algorand enforces a minimum balance (0.1 ALGO for a basic account);
+    // sending the full balance would drop below that and algod rejects.
+    const spendableAlgo = currentBalance.balanceAlgo - currentBalance.minBalance - 0.001;
+    if (spendableAlgo < bounty.algoAmount) {
+      throw new BadRequestError(
+        `Insufficient spendable balance: you have ${spendableAlgo.toFixed(4)} ALGO available (total ${currentBalance.balanceAlgo.toFixed(4)} minus ${currentBalance.minBalance.toFixed(4)} min-balance reserve) but this bounty requires ${bounty.algoAmount} ALGO. Dispense more ALGO first.`
+      );
+    }
+
     // Sign with custodial key + submit to algod (real on-chain deduction)
     const result = await algorandService.signAndSubmitTransaction(
       unsignedTxnB64,
@@ -227,6 +242,18 @@ export class AlgorandController {
       message: "Wallet generated successfully",
       statusCode: HTTP_STATUS.CREATED,
     });
+  }
+
+  // ── GET /algorand/transactions ────────────────────────────
+  // Returns the calling user's wallet transaction history (debits + credits).
+  async getTransactions(req: Request, res: Response) {
+    const userId = req.currentUser!.userId;
+    const txns = await prisma.walletTransaction.findMany({
+      where: { userId },
+      orderBy: { createdAt: "desc" },
+      take: 50,
+    });
+    sendSuccess({ res, data: txns });
   }
 
   // ── POST /algorand/dispense ───────────────────────────────

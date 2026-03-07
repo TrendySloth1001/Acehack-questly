@@ -72,4 +72,10 @@ router.post(
   asyncHandler(algorandController.dispense)
 );
 
+// ── Transaction history ─────────────────────────────────────
+router.get(
+  "/transactions",
+  asyncHandler(algorandController.getTransactions)
+);
+
 export default router;

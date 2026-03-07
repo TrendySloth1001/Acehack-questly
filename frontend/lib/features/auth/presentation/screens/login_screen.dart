@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -47,20 +48,19 @@ class LoginScreen extends ConsumerWidget {
                   borderRadius: BorderRadius.circular(24),
                   border: Border.all(color: AppColors.primary, width: 1.5),
                 ),
-                child: const Center(
-                  child: Text(
-                    'Q',
-                    style: TextStyle(
-                      color: AppColors.primary,
-                      fontSize: 42,
-                      fontWeight: FontWeight.w900,
-                    ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(22),
+                  child: SvgPicture.asset(
+                    'assets/svg/questly_logo.svg',
+                    width: 80,
+                    height: 80,
+                    fit: BoxFit.cover,
                   ),
                 ),
               ),
               const SizedBox(height: 32),
               const Text(
-                'questly',
+                'Questly',
                 style: TextStyle(
                   color: AppColors.textPrimary,
                   fontSize: 36,
@@ -75,6 +75,52 @@ class LoginScreen extends ConsumerWidget {
                   color: AppColors.textSecondary,
                   fontSize: 15,
                   fontWeight: FontWeight.w400,
+                ),
+              ),
+              const SizedBox(height: 24),
+              // ── Team credits ──
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: AppColors.border.withValues(alpha: 0.3),
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    Text(
+                      'Crafted with \u2764\uFE0F by',
+                      style: TextStyle(
+                        color: AppColors.textHint,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    const Text(
+                      'Abhinand Ajaya  ·  Nikhil Kumawat',
+                      style: TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.3,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '— Team Diamonds \u{1F48E} —',
+                      style: TextStyle(
+                        color: AppColors.neonCyan,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
                 ),
               ),
               const Spacer(flex: 3),

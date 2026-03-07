@@ -235,23 +235,25 @@ export class BountyService {
           bounty.algoAmount,
           id
         );
-        await prisma.bounty.update({
-          where: { id },
-          data: { refundTxId: refund.txId, escrowStatus: "REFUNDED" },
-        });
-        // Record CREDIT for creator (escrow refund)
-        await prisma.walletTransaction.create({
-          data: {
-            userId,
-            type: "CREDIT",
-            amountAlgo: bounty.algoAmount,
-            txId: refund.txId,
-            bountyId: id,
-            bountyTitle: bounty.title,
-            counterpartyAddress: bounty.creator.walletAddress,
-            description: `Escrow refunded — "${bounty.title}" deleted`,
-          },
-        });
+        // Atomic: update escrow status + record CREDIT together
+        await prisma.$transaction([
+          prisma.bounty.update({
+            where: { id },
+            data: { refundTxId: refund.txId, escrowStatus: "REFUNDED" },
+          }),
+          prisma.walletTransaction.create({
+            data: {
+              userId,
+              type: "CREDIT",
+              amountAlgo: bounty.algoAmount,
+              txId: refund.txId,
+              bountyId: id,
+              bountyTitle: bounty.title,
+              counterpartyAddress: bounty.creator.walletAddress,
+              description: `Escrow refunded — "${bounty.title}" deleted`,
+            },
+          }),
+        ]);
       } catch (err: any) {
         console.error("[Escrow] Refund failed:", err.message);
         throw new BadRequestError(
@@ -261,6 +263,104 @@ export class BountyService {
     }
 
     await prisma.bounty.delete({ where: { id } });
+  }
+
+  /**
+   * Cancel a bounty and refund escrowed ALGO if applicable.
+   * Unlike delete(), this keeps the bounty record (status → CANCELLED).
+   * Works for OPEN bounties (with or without claims).
+   */
+  async cancel(id: string, userId: string) {
+    const bounty = await prisma.bounty.findUnique({
+      where: { id },
+      select: {
+        creatorId: true,
+        status: true,
+        algoAmount: true,
+        escrowStatus: true,
+        title: true,
+        creator: { select: { walletAddress: true } },
+        claims: { select: { id: true, status: true } },
+      },
+    });
+
+    if (!bounty) throw new NotFoundError("Bounty not found");
+    if (bounty.creatorId !== userId) {
+      throw new UnauthorizedError("You can only cancel your own bounties");
+    }
+    if (bounty.status !== "OPEN") {
+      throw new BadRequestError("Can only cancel OPEN bounties");
+    }
+
+    // Refund escrowed ALGO if funded
+    let refundTxId: string | null = null;
+    if (bounty.escrowStatus === "FUNDED" && bounty.algoAmount > 0) {
+      if (!bounty.creator.walletAddress) {
+        throw new BadRequestError(
+          "Creator has no wallet address set — cannot refund"
+        );
+      }
+      try {
+        const refund = await algorandService.refundCreator(
+          bounty.creator.walletAddress,
+          bounty.algoAmount,
+          id
+        );
+        refundTxId = refund.txId;
+      } catch (err: any) {
+        console.error("[Escrow] Refund on cancel failed:", err.message);
+        throw new BadRequestError(
+          `Escrow refund failed: ${err.message}. Bounty not cancelled.`
+        );
+      }
+    }
+
+    // Reject all pending claims
+    const pendingClaims = bounty.claims.filter(
+      (c) => c.status === "ACTIVE" || c.status === "SUBMITTED"
+    );
+
+    const operations: any[] = [
+      // Mark bounty cancelled
+      prisma.bounty.update({
+        where: { id },
+        data: {
+          status: "CANCELLED",
+          ...(refundTxId
+            ? { refundTxId, escrowStatus: "REFUNDED" }
+            : {}),
+        },
+      }),
+      // Reject all pending claims
+      ...pendingClaims.map((c) =>
+        prisma.bountyClaim.update({
+          where: { id: c.id },
+          data: { status: "REJECTED" },
+        })
+      ),
+    ];
+
+    // Record refund transaction if applicable
+    if (refundTxId) {
+      operations.push(
+        prisma.walletTransaction.create({
+          data: {
+            userId,
+            type: "CREDIT",
+            amountAlgo: bounty.algoAmount,
+            txId: refundTxId,
+            bountyId: id,
+            bountyTitle: bounty.title,
+            counterpartyAddress: bounty.creator.walletAddress!,
+            description: `Escrow refunded — "${bounty.title}" cancelled`,
+          },
+        })
+      );
+    }
+
+    await prisma.$transaction(operations);
+
+    return { refundTxId, refunded: !!refundTxId };
   }
 
   /**
@@ -407,43 +507,55 @@ export class BountyService {
     let paymentTxId: string | null = null;
 
     // If approving & there's funded escrow → release payment
-    if (
-      action === "APPROVED" &&
-      claim.bounty.escrowStatus === "FUNDED" &&
-      claim.bounty.algoAmount > 0
-    ) {
+    // Guard: if escrow isn't funded, block approval so money is never silently lost
+    if (action === "APPROVED" && claim.bounty.algoAmount > 0) {
+      if (claim.bounty.escrowStatus !== "FUNDED") {
+        throw new BadRequestError(
+          `Cannot approve: the bounty escrow is "${claim.bounty.escrowStatus}". ` +
+          `You must fund the escrow first from the bounty page before approving a claim.`
+        );
+      }
       if (!claim.claimer.walletAddress) {
         throw new BadRequestError(
           "Claimer has no wallet address set — cannot release payment"
         );
       }
+    }
+
+    if (
+      action === "APPROVED" &&
+      claim.bounty.escrowStatus === "FUNDED" &&
+      claim.bounty.algoAmount > 0
+    ) {
+      // Note: walletAddress + escrow FUNDED already verified by guard above
       try {
         const payment = await algorandService.releasePayment(
-          claim.claimer.walletAddress,
+          claim.claimer.walletAddress!, // guarded above: null check already threw
           claim.bounty.algoAmount,
           claim.bounty.id
         );
         paymentTxId = payment.txId;
 
-        // Mark escrow as released
-        await prisma.bounty.update({
-          where: { id: claim.bountyId },
-          data: { escrowStatus: "RELEASED" },
-        });
-
-        // Record CREDIT for the claimer
-        await prisma.walletTransaction.create({
-          data: {
-            userId: claim.claimerId,
-            type: "CREDIT",
-            amountAlgo: claim.bounty.algoAmount,
-            txId: paymentTxId,
-            bountyId: claim.bountyId,
-            bountyTitle: claim.bounty.title,
-            counterpartyAddress: claim.claimer.walletAddress,
-            description: `Bounty reward — "${claim.bounty.title}" approved`,
-          },
-        });
+        // Atomic: mark escrow released + record CREDIT in one transaction
+        // so a partial DB failure never leaves the history in an inconsistent state
+        await prisma.$transaction([
+          prisma.bounty.update({
+            where: { id: claim.bountyId },
+            data: { escrowStatus: "RELEASED" },
+          }),
+          prisma.walletTransaction.create({
+            data: {
+              userId: claim.claimerId,
+              type: "CREDIT",
+              amountAlgo: claim.bounty.algoAmount,
+              txId: paymentTxId,
+              bountyId: claim.bountyId,
+              bountyTitle: claim.bounty.title,
+              counterpartyAddress: claim.claimer.walletAddress,
+              description: `Bounty reward — "${claim.bounty.title}" approved`,
+            },
+          }),
+        ]);
       } catch (err: any) {
         console.error("[Escrow] Payment release failed:", err.message);
         throw new BadRequestError(

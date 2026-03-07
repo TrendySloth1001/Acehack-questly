@@ -26,6 +26,7 @@ class ApiEndpoints {
   static const String bounties = '/bounties';
   static const String bountyUploadImages = '/bounties/upload-images';
   static String bountyById(String id) => '/bounties/$id';
+  static String cancelBounty(String id) => '/bounties/$id/cancel';
   static String claimBounty(String id) => '/bounties/$id/claim';
   static const String myClaims = '/bounties/claims/mine';
   static String submitProof(String claimId) =>
@@ -45,4 +46,5 @@ class ApiEndpoints {
   static const String wallet = '/algorand/wallet';
   static const String generateWallet = '/algorand/generate-wallet';
   static const String dispense = '/algorand/dispense';
+  static const String transactions = '/algorand/transactions';
 }

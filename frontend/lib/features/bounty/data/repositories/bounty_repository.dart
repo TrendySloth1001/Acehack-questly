@@ -53,6 +53,11 @@ class BountyRepository {
     await _remote.deleteBounty(id);
   }
 
+  Future<Map<String, dynamic>> cancelBounty(String id) async {
+    final response = await _remote.cancelBounty(id);
+    return response['data'] as Map<String, dynamic>;
+  }
+
   Future<void> claimBounty(String id) async {
     await _remote.claimBounty(id);
   }

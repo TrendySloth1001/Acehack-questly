@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -305,6 +306,26 @@ class _Header extends StatelessWidget {
             ),
           ),
         ),
+        // Questly logo
+        Container(
+          width: 38,
+          height: 38,
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppColors.border, width: 0.5),
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(11),
+            child: SvgPicture.asset(
+              'assets/svg/questly_logo.svg',
+              width: 38,
+              height: 38,
+              fit: BoxFit.cover,
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
         // Bell
         Container(
           width: 38,
@@ -336,9 +357,15 @@ class _BalanceBanner extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final hasWallet = wallet.address != null && wallet.address!.isNotEmpty;
     final balance = wallet.balance?.balanceAlgo ?? 0.0;
-    final escrow = wallet.escrowInfo?.balanceAlgo ?? 0.0;
     final rateAsync = ref.watch(algoInrRateProvider);
     final inrRate = rateAsync.valueOrNull ?? 15.0;
+
+    // User's own locked escrow from their bounties
+    final myBounties = ref.watch(myBountiesProvider);
+    double lockedEscrow = 0;
+    for (final b in myBounties.bounties) {
+      if (b.escrowStatus == 'FUNDED') lockedEscrow += b.algoAmount;
+    }
 
     return GestureDetector(
       onTap: onTap,
@@ -384,16 +411,13 @@ class _BalanceBanner extends ConsumerWidget {
                               height: 1,
                             ),
                           ),
-                          const SizedBox(width: 4),
-                          const Padding(
-                            padding: EdgeInsets.only(bottom: 1),
-                            child: Text(
-                              'ALGO',
-                              style: TextStyle(
-                                color: AppColors.neonCyan,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
-                              ),
+                          const SizedBox(width: 6),
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 2),
+                            child: SvgPicture.asset(
+                              'assets/svg/questly_logo.svg',
+                              width: 14,
+                              height: 14,
                             ),
                           ),
                         ],
@@ -409,33 +433,37 @@ class _BalanceBanner extends ConsumerWidget {
                     ],
                   ),
                   const Spacer(),
-                  // Escrow mini
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      const Text(
-                        'ESCROW',
-                        style: TextStyle(
-                          color: AppColors.textHint,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 1.2,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '${escrow.toStringAsFixed(1)} A',
-                        style: const TextStyle(
+                  // Locked escrow (user's own)
+                  if (lockedEscrow > 0) ...[
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.lock_outline,
                           color: AppColors.neonOrange,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                          fontFamily: 'monospace',
-                          height: 1,
+                          size: 13,
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(width: 12),
+                        const SizedBox(width: 4),
+                        SvgPicture.asset(
+                          'assets/svg/questly_logo.svg',
+                          width: 12,
+                          height: 12,
+                        ),
+                        const SizedBox(width: 3),
+                        Text(
+                          lockedEscrow.toStringAsFixed(1),
+                          style: const TextStyle(
+                            color: AppColors.neonOrange,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            fontFamily: 'monospace',
+                            height: 1,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(width: 10),
+                  ],
                   const Icon(
                     Icons.chevron_right_rounded,
                     color: AppColors.textHint,

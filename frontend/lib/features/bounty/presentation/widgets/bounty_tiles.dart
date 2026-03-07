@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../data/models/bounty_model.dart';
 
@@ -149,14 +150,25 @@ class BountyTile extends StatelessWidget {
                     width: 0.5,
                   ),
                 ),
-                child: Text(
-                  '${bounty.algoAmount.toStringAsFixed(bounty.algoAmount == bounty.algoAmount.roundToDouble() ? 0 : 1)} A',
-                  style: const TextStyle(
-                    color: AppColors.neonGreen,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    fontFamily: 'monospace',
-                  ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SvgPicture.asset(
+                      'assets/svg/questly_logo.svg',
+                      width: 12,
+                      height: 12,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      '${bounty.algoAmount.toStringAsFixed(bounty.algoAmount == bounty.algoAmount.roundToDouble() ? 0 : 1)} A',
+                      style: const TextStyle(
+                        color: AppColors.neonGreen,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        fontFamily: 'monospace',
+                      ),
+                    ),
+                  ],
                 ),
               ),
           ],
@@ -256,14 +268,25 @@ class ClaimTile extends StatelessWidget {
               ),
             ),
             if (bounty != null && bounty.algoAmount > 0)
-              Text(
-                '${bounty.algoAmount.toStringAsFixed(0)} A',
-                style: const TextStyle(
-                  color: AppColors.neonGreen,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  fontFamily: 'monospace',
-                ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SvgPicture.asset(
+                    'assets/svg/questly_logo.svg',
+                    width: 11,
+                    height: 11,
+                  ),
+                  const SizedBox(width: 3),
+                  Text(
+                    '${bounty.algoAmount.toStringAsFixed(0)} A',
+                    style: const TextStyle(
+                      color: AppColors.neonGreen,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      fontFamily: 'monospace',
+                    ),
+                  ),
+                ],
               ),
           ],
         ),

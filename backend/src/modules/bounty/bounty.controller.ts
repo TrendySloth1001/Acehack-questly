@@ -73,6 +73,20 @@ export class BountyController {
     sendSuccess({ res, message: "Bounty deleted" });
   }
 
+  async cancel(req: Request, res: Response) {
+    const result = await bountyService.cancel(
+      req.params.id as string,
+      req.currentUser!.userId
+    );
+    sendSuccess({
+      res,
+      data: result,
+      message: result.refunded
+        ? "Bounty cancelled & escrow refunded"
+        : "Bounty cancelled",
+    });
+  }
+
   async claim(req: Request, res: Response) {
     const claim = await bountyService.claim(
       req.params.id as string,

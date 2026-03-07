@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../theme/app_colors.dart';
 
 // ── ALGO → INR rate provider ────────────────────────────────
@@ -83,14 +84,25 @@ class AlgoAmount extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.end,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                '$display ALGO',
-                style: TextStyle(
-                  color: c,
-                  fontSize: fontSize,
-                  fontWeight: FontWeight.w700,
-                  fontFamily: 'monospace',
-                ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SvgPicture.asset(
+                    'assets/svg/questly_logo.svg',
+                    width: fontSize * 0.85,
+                    height: fontSize * 0.85,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    '$display ALGO',
+                    style: TextStyle(
+                      color: c,
+                      fontSize: fontSize,
+                      fontWeight: FontWeight.w700,
+                      fontFamily: 'monospace',
+                    ),
+                  ),
+                ],
               ),
               Text(
                 '~$inr',
@@ -102,33 +114,66 @@ class AlgoAmount extends ConsumerWidget {
             ],
           );
         }
-        return Text(
-          '$display ALGO (~$inr)',
-          style: TextStyle(
-            color: c,
-            fontSize: fontSize,
-            fontWeight: FontWeight.w700,
-            fontFamily: 'monospace',
-          ),
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SvgPicture.asset(
+              'assets/svg/questly_logo.svg',
+              width: fontSize * 0.85,
+              height: fontSize * 0.85,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              '$display ALGO (~$inr)',
+              style: TextStyle(
+                color: c,
+                fontSize: fontSize,
+                fontWeight: FontWeight.w700,
+                fontFamily: 'monospace',
+              ),
+            ),
+          ],
         );
       },
-      loading: () => Text(
-        '$display ALGO',
-        style: TextStyle(
-          color: c,
-          fontSize: fontSize,
-          fontWeight: FontWeight.w700,
-          fontFamily: 'monospace',
-        ),
+      loading: () => Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SvgPicture.asset(
+            'assets/svg/questly_logo.svg',
+            width: fontSize * 0.85,
+            height: fontSize * 0.85,
+          ),
+          const SizedBox(width: 4),
+          Text(
+            '$display ALGO',
+            style: TextStyle(
+              color: c,
+              fontSize: fontSize,
+              fontWeight: FontWeight.w700,
+              fontFamily: 'monospace',
+            ),
+          ),
+        ],
       ),
-      error: (_, __) => Text(
-        '$display ALGO',
-        style: TextStyle(
-          color: c,
-          fontSize: fontSize,
-          fontWeight: FontWeight.w700,
-          fontFamily: 'monospace',
-        ),
+      error: (_, __) => Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SvgPicture.asset(
+            'assets/svg/questly_logo.svg',
+            width: fontSize * 0.85,
+            height: fontSize * 0.85,
+          ),
+          const SizedBox(width: 4),
+          Text(
+            '$display ALGO',
+            style: TextStyle(
+              color: c,
+              fontSize: fontSize,
+              fontWeight: FontWeight.w700,
+              fontFamily: 'monospace',
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -156,14 +201,25 @@ class AlgoRewardChip extends ConsumerWidget {
         color: AppColors.neonGreen.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(8),
       ),
-      child: Text(
-        '$display A · $inr',
-        style: const TextStyle(
-          color: AppColors.neonGreen,
-          fontSize: 12,
-          fontWeight: FontWeight.w700,
-          fontFamily: 'monospace',
-        ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SvgPicture.asset(
+            'assets/svg/questly_logo.svg',
+            width: 14,
+            height: 14,
+          ),
+          const SizedBox(width: 4),
+          Text(
+            '$display A · $inr',
+            style: const TextStyle(
+              color: AppColors.neonGreen,
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              fontFamily: 'monospace',
+            ),
+          ),
+        ],
       ),
     );
   }

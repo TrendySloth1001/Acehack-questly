@@ -75,6 +75,11 @@ class BountyRemoteDataSource {
     await _dio.delete(ApiEndpoints.bountyById(id));
   }
 
+  Future<Map<String, dynamic>> cancelBounty(String id) async {
+    final response = await _dio.post(ApiEndpoints.cancelBounty(id));
+    return response.data as Map<String, dynamic>;
+  }
+
   Future<Map<String, dynamic>> claimBounty(String id) async {
     final response = await _dio.post(ApiEndpoints.claimBounty(id));
     return response.data as Map<String, dynamic>;

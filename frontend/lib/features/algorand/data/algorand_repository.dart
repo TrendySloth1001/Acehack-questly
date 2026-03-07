@@ -78,6 +78,15 @@ class AlgorandRepository {
     final data = res['data'] as Map<String, dynamic>;
     return DispenseResult.fromJson(data);
   }
+
+  /// Get the current user's wallet transaction history.
+  Future<List<WalletTxn>> getTransactions() async {
+    final res = await _ds.getTransactions();
+    final list = res['data'] as List<dynamic>;
+    return list
+        .map((e) => WalletTxn.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
 }
 
 // ── Models ──────────────────────────────────────────────────
@@ -206,4 +215,42 @@ class DispenseResult {
       balance: balance,
     );
   }
+}
+
+class WalletTxn {
+  final String id;
+  final String type; // 'DEBIT' | 'CREDIT'
+  final double amountAlgo;
+  final String? txId;
+  final String? bountyId;
+  final String? bountyTitle;
+  final String? counterpartyAddress;
+  final String description;
+  final DateTime createdAt;
+
+  const WalletTxn({
+    required this.id,
+    required this.type,
+    required this.amountAlgo,
+    this.txId,
+    this.bountyId,
+    this.bountyTitle,
+    this.counterpartyAddress,
+    required this.description,
+    required this.createdAt,
+  });
+
+  bool get isDebit => type == 'DEBIT';
+
+  factory WalletTxn.fromJson(Map<String, dynamic> json) => WalletTxn(
+    id: json['id'] as String,
+    type: json['type'] as String,
+    amountAlgo: (json['amountAlgo'] as num).toDouble(),
+    txId: json['txId'] as String?,
+    bountyId: json['bountyId'] as String?,
+    bountyTitle: json['bountyTitle'] as String?,
+    counterpartyAddress: json['counterpartyAddress'] as String?,
+    description: json['description'] as String,
+    createdAt: DateTime.parse(json['createdAt'] as String),
+  );
 }

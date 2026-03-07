@@ -1,7 +1,9 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -26,6 +28,7 @@ class _BountyDetailScreenState extends ConsumerState<BountyDetailScreen> {
   bool _claiming = false;
   bool _deleting = false;
   bool _declaiming = false;
+  bool _cancelling = false;
 
   @override
   void initState() {
@@ -307,7 +310,151 @@ class _BountyDetailScreenState extends ConsumerState<BountyDetailScreen> {
     }
   }
 
+  Future<void> _cancelBounty() async {
+    final isFunded = _bounty?.escrowStatus == 'FUNDED';
+    final confirmed = await showModalBottomSheet<bool>(
+      context: context,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (_) => Padding(
+        padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              margin: const EdgeInsets.only(bottom: 20),
+              decoration: BoxDecoration(
+                color: AppColors.border,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Icon(
+              isFunded ? Icons.account_balance_wallet : Icons.cancel_outlined,
+              color: AppColors.neonOrange,
+              size: 36,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              isFunded ? 'Cancel & Withdraw Escrow?' : 'Cancel this bounty?',
+              style: const TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              isFunded
+                  ? 'The escrowed ALGO will be refunded to your wallet. '
+                        'All pending claims will be rejected.'
+                  : 'This bounty will be marked as cancelled and removed from the public pool.',
+              style: const TextStyle(color: AppColors.textHint, fontSize: 13),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.textSecondary,
+                      side: const BorderSide(color: AppColors.border),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                    child: const Text('Keep'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.pop(context, true),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.neonOrange,
+                      foregroundColor: Colors.black,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      elevation: 0,
+                    ),
+                    child: Text(
+                      isFunded ? 'Cancel & Refund' : 'Cancel Bounty',
+                      style: const TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    setState(() => _cancelling = true);
+    try {
+      final repo = ref.read(bountyRepositoryProvider);
+      await repo.cancelBounty(widget.bountyId);
+      ref.read(bountyListProvider.notifier).refresh();
+      ref.read(myClaimsProvider.notifier).load();
+      // Refresh wallet to show updated balance after refund
+      ref.read(walletProvider.notifier).load();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              isFunded
+                  ? 'Bounty cancelled — escrow refunded to your wallet!'
+                  : 'Bounty cancelled',
+            ),
+            backgroundColor: AppColors.neonGreen,
+          ),
+        );
+        _load();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(_friendlyError(e)),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _cancelling = false);
+    }
+  }
+
   Future<void> _resolveClaim(String claimId, String action) async {
+    // Guard: block approval if escrow hasn't been funded yet
+    if (action == 'APPROVED' &&
+        (_bounty?.algoAmount ?? 0) > 0 &&
+        _bounty?.escrowStatus != 'FUNDED') {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Cannot approve yet — the escrow is not funded. '
+              'Scroll up and tap "Fund Escrow" first so the payment '
+              'can be released to the claimer.',
+            ),
+            backgroundColor: Colors.orange.shade700,
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      }
+      return;
+    }
     try {
       final repo = ref.read(bountyRepositoryProvider);
       await repo.resolveClaim(claimId, action: action);
@@ -422,6 +569,60 @@ class _BountyDetailScreenState extends ConsumerState<BountyDetailScreen> {
             onPressed: () => context.pop(),
           ),
           actions: [
+            // ── Wallet balance chip ──────────────────────────
+            Consumer(
+              builder: (context, cRef, _) {
+                final wallet = cRef.watch(walletProvider);
+                final bal = wallet.balance?.balanceAlgo ?? 0.0;
+                final minReserve = wallet.balance?.minBalance ?? 0.1;
+                final spendable = (bal - minReserve).clamp(
+                  0.0,
+                  double.infinity,
+                );
+                return GestureDetector(
+                  onTap: () {
+                    if (wallet.address != null) {
+                      Clipboard.setData(ClipboardData(text: wallet.address!));
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Address copied')),
+                      );
+                    }
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: AppColors.border, width: 0.5),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        SvgPicture.asset(
+                          'assets/svg/questly_logo.svg',
+                          width: 18,
+                          height: 18,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          '${spendable.toStringAsFixed(2)} A',
+                          style: const TextStyle(
+                            color: AppColors.neonGreen,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            fontFamily: 'monospace',
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(width: 4),
             IconButton(
               icon: Container(
                 padding: const EdgeInsets.all(6),
@@ -478,14 +679,25 @@ class _BountyDetailScreenState extends ConsumerState<BountyDetailScreen> {
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Text(
-                                  formatAlgo(b.algoAmount),
-                                  style: const TextStyle(
-                                    color: AppColors.neonGreen,
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w800,
-                                    fontFamily: 'monospace',
-                                  ),
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    SvgPicture.asset(
+                                      'assets/svg/questly_logo.svg',
+                                      width: 16,
+                                      height: 16,
+                                    ),
+                                    const SizedBox(width: 5),
+                                    Text(
+                                      formatAlgo(b.algoAmount),
+                                      style: const TextStyle(
+                                        color: AppColors.neonGreen,
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w800,
+                                        fontFamily: 'monospace',
+                                      ),
+                                    ),
+                                  ],
                                 ),
                                 if (inrRate != null)
                                   Text(
@@ -829,11 +1041,88 @@ class _BountyDetailScreenState extends ConsumerState<BountyDetailScreen> {
                 ],
 
                 // ── Fund Escrow (owner, unfunded) ─────────────
+                // Show whenever escrow is UNFUNDED — regardless of bounty status
+                // (creator may need to fund after someone has already claimed)
                 if (isOwner &&
                     b.algoAmount > 0 &&
                     b.escrowStatus == 'UNFUNDED' &&
-                    b.status == 'OPEN')
+                    b.status != 'COMPLETED' &&
+                    b.status != 'CANCELLED')
                   _FundEscrowButton(bounty: b, onFunded: _load),
+
+                // ── Cancel & Withdraw Escrow (owner, funded, non-terminal) ──
+                if (isOwner &&
+                    isOpen &&
+                    b.algoAmount > 0 &&
+                    b.escrowStatus == 'FUNDED')
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: OutlinedButton.icon(
+                        onPressed: _cancelling ? null : _cancelBounty,
+                        icon: _cancelling
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                  color: AppColors.neonOrange,
+                                  strokeWidth: 1.5,
+                                ),
+                              )
+                            : const Icon(
+                                Icons.account_balance_wallet_outlined,
+                                size: 18,
+                              ),
+                        label: const Text('Cancel & Withdraw Escrow'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.neonOrange,
+                          side: BorderSide(
+                            color: AppColors.neonOrange.withValues(alpha: 0.4),
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+
+                // ── Cancel unfunded bounty (owner, no escrow needed) ──
+                if (isOwner &&
+                    isOpen &&
+                    (b.algoAmount == 0 || b.escrowStatus == 'UNFUNDED'))
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: SizedBox(
+                      width: double.infinity,
+                      height: 44,
+                      child: OutlinedButton.icon(
+                        onPressed: _cancelling ? null : _cancelBounty,
+                        icon: _cancelling
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                  color: AppColors.neonOrange,
+                                  strokeWidth: 1.5,
+                                ),
+                              )
+                            : const Icon(Icons.cancel_outlined, size: 18),
+                        label: const Text('Cancel Bounty'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.neonOrange,
+                          side: BorderSide(
+                            color: AppColors.neonOrange.withValues(alpha: 0.3),
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
 
                 // ── Claim button ──────────────────────────────
                 if (!isOwner && isOpen && !isExpired && myClaim == null) ...[
@@ -2001,6 +2290,28 @@ class _FundEscrowButtonState extends ConsumerState<_FundEscrowButton> {
     if (walletState.address == null || walletState.address!.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Connect your wallet in Profile first!')),
+      );
+      return;
+    }
+
+    // Balance guard — check spendable balance before even creating the unsigned txn
+    // Algorand reserves a minimum balance (0.1 ALGO by default) that cannot be spent;
+    // spending total balance causes algod to reject the transaction.
+    final totalBalance = walletState.balance?.balanceAlgo ?? 0.0;
+    final minReserve = walletState.balance?.minBalance ?? 0.1;
+    final spendable = totalBalance - minReserve - 0.001; // 0.001 fee headroom
+    if (spendable < widget.bounty.algoAmount) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Insufficient balance: you have ${spendable.toStringAsFixed(4)} ALGO spendable '
+            '(total ${totalBalance.toStringAsFixed(4)} minus ${minReserve.toStringAsFixed(4)} min-balance reserve) '
+            'but this bounty requires ${widget.bounty.algoAmount} ALGO. '
+            'Dispense more ALGO from the Wallet tab.',
+          ),
+          backgroundColor: Colors.red.shade700,
+          duration: const Duration(seconds: 6),
+        ),
       );
       return;
     }

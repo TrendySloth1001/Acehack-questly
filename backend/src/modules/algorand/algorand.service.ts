@@ -172,9 +172,23 @@ export class AlgorandService {
       throw new BadRequestError("Claimer wallet address is invalid");
     }
 
+    // Verify escrow has enough to cover payment + fee
+    const escrowBalance = await this.getBalance(getEscrowAddress());
+    // Spendable = total - minBalance (escrow must retain min-balance)
+    const spendable = escrowBalance.balanceAlgo - escrowBalance.minBalance;
+    if (spendable < amountAlgo) {
+      throw new BadRequestError(
+        `Escrow has insufficient funds: ${spendable.toFixed(4)} ALGO spendable (${escrowBalance.balanceAlgo.toFixed(4)} total minus ${escrowBalance.minBalance.toFixed(4)} reserve), ${amountAlgo} ALGO needed`
+      );
+    }
+
     const escrow = getEscrowAccount();
     const params = await algodClient.getTransactionParams().do();
-    const amountMicroAlgo = Math.floor(amountAlgo * MICROALGOS_PER_ALGO);
+    // Subtract min txn fee so escrow stays above min-balance
+    const amountMicroAlgo = Math.floor(amountAlgo * MICROALGOS_PER_ALGO) - MIN_TXN_FEE;
+    if (amountMicroAlgo <= 0) {
+      throw new BadRequestError("Amount too small to release after fees");
+    }
     const note = new TextEncoder().encode(
       JSON.stringify({ app: "questly", action: "release", bountyId })
     );
@@ -206,6 +220,15 @@ export class AlgorandService {
   ): Promise<{ txId: string; confirmedRound: number }> {
     if (!algosdk.isValidAddress(creatorAddress)) {
       throw new BadRequestError("Creator wallet address is invalid");
+    }
+
+    // Verify escrow can cover refund
+    const escrowBalance = await this.getBalance(getEscrowAddress());
+    const spendable = escrowBalance.balanceAlgo - escrowBalance.minBalance;
+    if (spendable < amountAlgo) {
+      throw new BadRequestError(
+        `Escrow has insufficient funds for refund: ${spendable.toFixed(4)} ALGO spendable, ${amountAlgo} ALGO needed`
+      );
     }
 
     const escrow = getEscrowAccount();

@@ -17,14 +17,18 @@ class WalletState {
   final String? address;
   final WalletBalance? balance;
   final EscrowInfo? escrowInfo;
+  final List<WalletTxn> transactions;
   final bool isLoading;
+  final bool txnsLoading;
   final String? error;
 
   const WalletState({
     this.address,
     this.balance,
     this.escrowInfo,
+    this.transactions = const [],
     this.isLoading = false,
+    this.txnsLoading = false,
     this.error,
   });
 
@@ -32,14 +36,18 @@ class WalletState {
     String? address,
     WalletBalance? balance,
     EscrowInfo? escrowInfo,
+    List<WalletTxn>? transactions,
     bool? isLoading,
+    bool? txnsLoading,
     String? error,
   }) {
     return WalletState(
       address: address ?? this.address,
       balance: balance ?? this.balance,
       escrowInfo: escrowInfo ?? this.escrowInfo,
+      transactions: transactions ?? this.transactions,
       isLoading: isLoading ?? this.isLoading,
+      txnsLoading: txnsLoading ?? this.txnsLoading,
       error: error,
     );
   }
@@ -83,6 +91,9 @@ class WalletNotifier extends StateNotifier<WalletState> {
         balance: balance,
         escrowInfo: escrow,
       );
+
+      // Load transaction history in background
+      await loadTransactions();
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
     }
@@ -111,6 +122,7 @@ class WalletNotifier extends StateNotifier<WalletState> {
         balance: balance,
         escrowInfo: escrow,
       );
+      await loadTransactions();
       return true;
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
@@ -155,16 +167,31 @@ class WalletNotifier extends StateNotifier<WalletState> {
     }
   }
 
-  /// Submit a signed transaction.
+  /// Load transaction history.
+  Future<void> loadTransactions() async {
+    state = state.copyWith(txnsLoading: true);
+    try {
+      final txns = await _repo.getTransactions();
+      state = state.copyWith(transactions: txns, txnsLoading: false);
+    } catch (_) {
+      state = state.copyWith(txnsLoading: false);
+    }
+  }
+
+  /// Submit a signed transaction (backend signs with custodial mnemonic).
   Future<TxnResult?> submitTransaction({
     required String signedTxn,
     required String bountyId,
   }) async {
     try {
-      return await _repo.submitTransaction(
+      final result = await _repo.submitTransaction(
         signedTxn: signedTxn,
         bountyId: bountyId,
       );
+      // Refresh balance + history after successful funding
+      await refreshBalance();
+      await loadTransactions();
+      return result;
     } catch (e) {
       state = state.copyWith(error: e.toString());
       return null;

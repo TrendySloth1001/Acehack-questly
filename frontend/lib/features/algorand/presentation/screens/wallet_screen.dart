@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:questly/features/algorand/data/algorand_repository.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/algo_inr.dart';
 import '../../../bounty/presentation/providers/bounty_provider.dart';
 import '../providers/wallet_provider.dart';
 
-/// Full wallet / banking dashboard — balance, escrow, earnings, faucet.
 class WalletScreen extends ConsumerStatefulWidget {
   const WalletScreen({super.key});
 
@@ -48,16 +49,14 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
     final rateAsync = ref.watch(algoInrRateProvider);
     final inrRate = rateAsync.valueOrNull ?? 15.0;
 
-    // Load wallet on first build
     if (!wallet.isLoading && wallet.address == null && wallet.error == null) {
       Future.microtask(() => ref.read(walletProvider.notifier).load());
     }
 
     final hasWallet = wallet.address != null && wallet.address!.isNotEmpty;
     final balance = wallet.balance?.balanceAlgo ?? 0.0;
-    final escrowBalance = wallet.escrowInfo?.balanceAlgo ?? 0.0;
 
-    // Calculate total escrowed in user's bounties
+    // User's own escrowed & earnings from their bounties
     double totalEscrowed = 0;
     double totalEarnings = 0;
     for (final b in myBounties.bounties) {
@@ -77,6 +76,7 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
           backgroundColor: AppColors.surface,
           onRefresh: () async {
             await ref.read(walletProvider.notifier).refreshBalance();
+            await ref.read(walletProvider.notifier).loadTransactions();
           },
           child: wallet.isLoading || _generating
               ? const Center(
@@ -90,7 +90,6 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
               : _buildDashboard(
                   wallet: wallet,
                   balance: balance,
-                  escrowBalance: escrowBalance,
                   totalEscrowed: totalEscrowed,
                   totalEarnings: totalEarnings,
                   inrRate: inrRate,
@@ -99,6 +98,8 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
       ),
     );
   }
+
+  // ── No wallet placeholder ──────────────────────────────────
 
   Widget _buildNoWallet() {
     return Center(
@@ -109,15 +110,15 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
           children: [
             Icon(
               Icons.account_balance_wallet_outlined,
-              color: AppColors.neonCyan.withValues(alpha: 0.3),
-              size: 64,
+              color: AppColors.textHint.withValues(alpha: 0.3),
+              size: 56,
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
             const Text(
               'No Wallet Yet',
               style: TextStyle(
                 color: AppColors.textPrimary,
-                fontSize: 22,
+                fontSize: 20,
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -127,11 +128,11 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: AppColors.textHint,
-                fontSize: 15,
+                fontSize: 14,
                 height: 1.5,
               ),
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: 28),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
@@ -139,13 +140,13 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.neonCyan,
                   foregroundColor: Colors.black,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(12),
                   ),
                   textStyle: const TextStyle(
                     fontWeight: FontWeight.w700,
-                    fontSize: 16,
+                    fontSize: 15,
                   ),
                 ),
                 child: const Text('Generate Wallet'),
@@ -157,358 +158,504 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
     );
   }
 
+  // ── Main dashboard ─────────────────────────────────────────
+
   Widget _buildDashboard({
     required WalletState wallet,
     required double balance,
-    required double escrowBalance,
     required double totalEscrowed,
     required double totalEarnings,
     required double inrRate,
   }) {
+    final minReserve = wallet.balance?.minBalance ?? 0.1;
+    final spendable = (balance - minReserve).clamp(0.0, double.infinity);
+    final address = wallet.address!;
+
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       children: [
-        // ── Title row ─────────────────────────────────
-        Row(
-          children: [
-            const Text(
-              'Wallet',
-              style: TextStyle(
-                color: AppColors.textPrimary,
-                fontSize: 28,
-                fontWeight: FontWeight.w800,
-                letterSpacing: -0.5,
-              ),
-            ),
-            const Spacer(),
-            GestureDetector(
-              onTap: () => ref.read(walletProvider.notifier).refreshBalance(),
-              child: Container(
-                width: 38,
-                height: 38,
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.border, width: 0.5),
-                ),
-                child: const Icon(
-                  Icons.refresh_rounded,
-                  color: AppColors.textSecondary,
-                  size: 18,
-                ),
-              ),
-            ),
-          ],
+        // ── Header ──────────────────────────────────
+        const Text(
+          'Wallet',
+          style: TextStyle(
+            color: AppColors.textPrimary,
+            fontSize: 26,
+            fontWeight: FontWeight.w800,
+            letterSpacing: -0.5,
+          ),
         ),
-        const SizedBox(height: 28),
+        const SizedBox(height: 24),
 
-        // ── Main balance card ─────────────────────────
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(28),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                AppColors.neonCyan.withValues(alpha: 0.08),
-                AppColors.card,
-              ],
-            ),
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(
-              color: AppColors.neonCyan.withValues(alpha: 0.15),
-              width: 0.5,
-            ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'AVAILABLE BALANCE',
-                style: TextStyle(
-                  color: AppColors.textHint,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 1.5,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    balance.toStringAsFixed(2),
-                    style: const TextStyle(
-                      color: AppColors.textPrimary,
-                      fontSize: 42,
-                      fontWeight: FontWeight.w800,
-                      fontFamily: 'monospace',
-                      letterSpacing: -1,
-                      height: 1,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  const Padding(
-                    padding: EdgeInsets.only(bottom: 6),
-                    child: Text(
-                      'ALGO',
-                      style: TextStyle(
-                        color: AppColors.neonCyan,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 6),
-              Text(
-                '~${algoToInrString(balance, inrRate)}',
-                style: const TextStyle(color: AppColors.textHint, fontSize: 14),
-              ),
-              const SizedBox(height: 16),
-              // Address
-              GestureDetector(
-                onTap: () {
-                  Clipboard.setData(ClipboardData(text: wallet.address!));
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Address copied'),
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
-                },
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        '${wallet.address!.substring(0, 6)}...${wallet.address!.substring(wallet.address!.length - 4)}',
-                        style: TextStyle(
-                          color: AppColors.textSecondary,
-                          fontFamily: 'monospace',
-                          fontSize: 13,
-                        ),
-                      ),
-                    ),
-                    const Icon(
-                      Icons.copy_rounded,
-                      color: AppColors.textHint,
-                      size: 14,
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
+        // ── Balance section ─────────────────────────
+        _BalanceSection(
+          balance: balance,
+          spendable: spendable,
+          minReserve: minReserve,
+          inrRate: inrRate,
+          address: address,
         ),
+
+        const SizedBox(height: 24),
+        _divider(),
+        const SizedBox(height: 16),
+
+        // ── Stats ───────────────────────────────────
+        _StatRow(
+          icon: Icons.lock_outline_rounded,
+          label: 'Locked in escrow',
+          amount: totalEscrowed,
+          inrRate: inrRate,
+          color: AppColors.neonOrange,
+        ),
+        const SizedBox(height: 12),
+        _StatRow(
+          icon: Icons.trending_up_rounded,
+          label: 'Total earned',
+          amount: totalEarnings,
+          inrRate: inrRate,
+          color: AppColors.neonGreen,
+        ),
+
+        const SizedBox(height: 16),
+        _divider(),
+        const SizedBox(height: 16),
+
+        // ── Faucet ──────────────────────────────────
+        _FaucetRow(dispensing: _dispensing, onTap: _dispense),
+
+        const SizedBox(height: 16),
+        _divider(),
         const SizedBox(height: 20),
 
-        // ── Quick stats row ───────────────────────────
+        // ── Transactions ────────────────────────────
+        _TransactionList(
+          txns: wallet.transactions,
+          isLoading: wallet.txnsLoading,
+          inrRate: inrRate,
+        ),
+        const SizedBox(height: 32),
+      ],
+    );
+  }
+
+  static Widget _divider() {
+    return Divider(
+      color: AppColors.border.withValues(alpha: 0.4),
+      height: 1,
+      thickness: 0.5,
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Balance Section
+// ═══════════════════════════════════════════════════════════════
+
+class _BalanceSection extends StatelessWidget {
+  final double balance;
+  final double spendable;
+  final double minReserve;
+  final double inrRate;
+  final String address;
+
+  const _BalanceSection({
+    required this.balance,
+    required this.spendable,
+    required this.minReserve,
+    required this.inrRate,
+    required this.address,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Main balance row
         Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Expanded(
-              child: _StatTile(
-                label: 'Escrowed',
-                value: totalEscrowed.toStringAsFixed(1),
-                unit: 'ALGO',
-                inrHint: '~${algoToInrString(totalEscrowed, inrRate)}',
-                color: AppColors.neonOrange,
-              ),
+            SvgPicture.asset(
+              'assets/svg/questly_logo.svg',
+              width: 36,
+              height: 36,
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _StatTile(
-                label: 'Earnings',
-                value: totalEarnings.toStringAsFixed(1),
-                unit: 'ALGO',
-                inrHint: '~${algoToInrString(totalEarnings, inrRate)}',
-                color: AppColors.neonGreen,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-
-        // ── Escrow pool ───────────────────────────────
-        _StatTile(
-          label: 'Escrow Pool Balance',
-          value: escrowBalance.toStringAsFixed(2),
-          unit: 'ALGO',
-          inrHint: '~${algoToInrString(escrowBalance, inrRate)}',
-          color: AppColors.neonCyan,
-        ),
-        const SizedBox(height: 12),
-
-        // ── Network badge ─────────────────────────────
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-          decoration: BoxDecoration(
-            color: AppColors.card,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.border, width: 0.5),
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 8,
-                height: 8,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: AppColors.neonGreen,
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.neonGreen.withValues(alpha: 0.4),
-                      blurRadius: 6,
+            const SizedBox(width: 14),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                  textBaseline: TextBaseline.alphabetic,
+                  children: [
+                    Text(
+                      balance.toStringAsFixed(2),
+                      style: const TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 36,
+                        fontWeight: FontWeight.w800,
+                        fontFamily: 'monospace',
+                        letterSpacing: -1,
+                        height: 1,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    const Text(
+                      'ALGO',
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ],
                 ),
-              ),
-              const SizedBox(width: 12),
-              const Text(
-                'Devnet',
-                style: TextStyle(
-                  color: AppColors.textPrimary,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const Spacer(),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: AppColors.neonGreen.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  wallet.escrowInfo?.network.toUpperCase() ?? 'DEVNET',
+                const SizedBox(height: 4),
+                Text(
+                  '~${algoToInrString(balance, inrRate)}',
                   style: const TextStyle(
-                    color: AppColors.neonGreen,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 1,
+                    color: AppColors.textHint,
+                    fontSize: 13,
                   ),
                 ),
+              ],
+            ),
+          ],
+        ),
+        const SizedBox(height: 14),
+
+        // Spendable info
+        Row(
+          children: [
+            Text(
+              'Spendable  ${spendable.toStringAsFixed(4)} ALGO',
+              style: const TextStyle(
+                color: AppColors.neonGreen,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              '(${minReserve.toStringAsFixed(4)} reserved)',
+              style: const TextStyle(color: AppColors.textHint, fontSize: 11),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+
+        // Copyable address
+        GestureDetector(
+          onTap: () {
+            Clipboard.setData(ClipboardData(text: address));
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Address copied'),
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          },
+          child: Row(
+            children: [
+              Text(
+                '${address.substring(0, 6)}...${address.substring(address.length - 4)}',
+                style: const TextStyle(
+                  color: AppColors.textSecondary,
+                  fontFamily: 'monospace',
+                  fontSize: 13,
+                ),
+              ),
+              const SizedBox(width: 6),
+              const Icon(
+                Icons.copy_rounded,
+                color: AppColors.textHint,
+                size: 13,
               ),
             ],
           ),
         ),
-        const SizedBox(height: 28),
-
-        // ── Faucet button ─────────────────────────────
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton.icon(
-            onPressed: _dispensing ? null : _dispense,
-            icon: _dispensing
-                ? const SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Colors.black,
-                    ),
-                  )
-                : const Icon(Icons.water_drop_rounded, size: 18),
-            label: Text(_dispensing ? 'Dispensing...' : 'Get 10 Test ALGO'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.neonGreen,
-              foregroundColor: Colors.black,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
-              ),
-              textStyle: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(height: 40),
       ],
     );
   }
 }
 
-// ── Stat tile ───────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
+// Stat Row (escrowed / earned)
+// ═══════════════════════════════════════════════════════════════
 
-class _StatTile extends StatelessWidget {
+class _StatRow extends StatelessWidget {
+  final IconData icon;
   final String label;
-  final String value;
-  final String unit;
-  final String? inrHint;
+  final double amount;
+  final double inrRate;
   final Color color;
 
-  const _StatTile({
+  const _StatRow({
+    required this.icon,
     required this.label,
-    required this.value,
-    required this.unit,
-    this.inrHint,
+    required this.amount,
+    required this.inrRate,
     required this.color,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppColors.card,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withValues(alpha: 0.1), width: 0.5),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    return Row(
+      children: [
+        Icon(icon, color: color, size: 18),
+        const SizedBox(width: 10),
+        Text(
+          label,
+          style: const TextStyle(color: AppColors.textSecondary, fontSize: 14),
+        ),
+        const Spacer(),
+        SvgPicture.asset('assets/svg/questly_logo.svg', width: 14, height: 14),
+        const SizedBox(width: 5),
+        Text(
+          amount.toStringAsFixed(1),
+          style: TextStyle(
+            color: color,
+            fontSize: 15,
+            fontWeight: FontWeight.w700,
+            fontFamily: 'monospace',
+          ),
+        ),
+        const SizedBox(width: 6),
+        Text(
+          '~${algoToInrString(amount, inrRate)}',
+          style: const TextStyle(color: AppColors.textHint, fontSize: 11),
+        ),
+      ],
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Faucet Row
+// ═══════════════════════════════════════════════════════════════
+
+class _FaucetRow extends StatelessWidget {
+  final bool dispensing;
+  final VoidCallback onTap;
+
+  const _FaucetRow({required this.dispensing, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: dispensing ? null : onTap,
+      child: Row(
         children: [
+          Icon(
+            Icons.water_drop_outlined,
+            color: AppColors.neonCyan.withValues(alpha: 0.7),
+            size: 18,
+          ),
+          const SizedBox(width: 10),
           Text(
-            label.toUpperCase(),
+            dispensing ? 'Dispensing...' : 'Get 10 test ALGO',
             style: TextStyle(
-              color: AppColors.textHint,
-              fontSize: 10,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 1.2,
+              color: dispensing ? AppColors.textHint : AppColors.neonCyan,
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
             ),
           ),
-          const SizedBox(height: 8),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                value,
-                style: TextStyle(
-                  color: color,
-                  fontSize: 22,
-                  fontWeight: FontWeight.w800,
-                  fontFamily: 'monospace',
-                  height: 1,
-                ),
+          if (dispensing) ...[
+            const SizedBox(width: 8),
+            const SizedBox(
+              width: 12,
+              height: 12,
+              child: CircularProgressIndicator(
+                strokeWidth: 1.5,
+                color: AppColors.neonCyan,
               ),
-              const SizedBox(width: 4),
-              Padding(
-                padding: const EdgeInsets.only(bottom: 2),
-                child: Text(
-                  unit,
-                  style: TextStyle(
-                    color: color.withValues(alpha: 0.6),
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          if (inrHint != null) ...[
-            const SizedBox(height: 4),
-            Text(
-              inrHint!,
-              style: const TextStyle(color: AppColors.textHint, fontSize: 11),
             ),
           ],
         ],
       ),
     );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Transaction List
+// ═══════════════════════════════════════════════════════════════
+
+class _TransactionList extends StatelessWidget {
+  final List<WalletTxn> txns;
+  final bool isLoading;
+  final double inrRate;
+
+  const _TransactionList({
+    required this.txns,
+    required this.isLoading,
+    required this.inrRate,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Text(
+              'Transactions',
+              style: TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const Spacer(),
+            if (isLoading)
+              const SizedBox(
+                width: 12,
+                height: 12,
+                child: CircularProgressIndicator(
+                  strokeWidth: 1.5,
+                  color: AppColors.textHint,
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(height: 14),
+        if (!isLoading && txns.isEmpty)
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 32),
+              child: Text(
+                'No transactions yet',
+                style: TextStyle(
+                  color: AppColors.textHint.withValues(alpha: 0.5),
+                  fontSize: 13,
+                ),
+              ),
+            ),
+          )
+        else
+          ...List.generate(txns.length, (i) {
+            return Column(
+              children: [
+                if (i > 0)
+                  Divider(
+                    color: AppColors.border.withValues(alpha: 0.3),
+                    height: 1,
+                    thickness: 0.5,
+                  ),
+                _TxnRow(txn: txns[i], inrRate: inrRate),
+              ],
+            );
+          }),
+      ],
+    );
+  }
+}
+
+class _TxnRow extends StatelessWidget {
+  final WalletTxn txn;
+  final double inrRate;
+  const _TxnRow({required this.txn, required this.inrRate});
+
+  @override
+  Widget build(BuildContext context) {
+    final isDebit = txn.isDebit;
+    final color = isDebit ? AppColors.error : AppColors.neonGreen;
+    final sign = isDebit ? '-' : '+';
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: Row(
+        children: [
+          // Direction icon
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(
+              isDebit
+                  ? Icons.arrow_upward_rounded
+                  : Icons.arrow_downward_rounded,
+              color: color,
+              size: 16,
+            ),
+          ),
+          const SizedBox(width: 12),
+
+          // Description + time
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  txn.description,
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  _timeAgo(txn.createdAt),
+                  style: const TextStyle(
+                    color: AppColors.textHint,
+                    fontSize: 11,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+
+          // Amount column
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SvgPicture.asset(
+                    'assets/svg/questly_logo.svg',
+                    width: 12,
+                    height: 12,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    '$sign${txn.amountAlgo.toStringAsFixed(txn.amountAlgo == txn.amountAlgo.roundToDouble() ? 0 : 2)}',
+                    style: TextStyle(
+                      color: color,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      fontFamily: 'monospace',
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 2),
+              Text(
+                '~${algoToInrString(txn.amountAlgo, inrRate)}',
+                style: const TextStyle(color: AppColors.textHint, fontSize: 10),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _timeAgo(DateTime d) {
+    final diff = DateTime.now().difference(d);
+    if (diff.inMinutes < 1) return 'Just now';
+    if (diff.inHours < 1) return '${diff.inMinutes}m ago';
+    if (diff.inDays < 1) return '${diff.inHours}h ago';
+    if (diff.inDays < 7) return '${diff.inDays}d ago';
+    return '${d.day}/${d.month}/${d.year}';
   }
 }
