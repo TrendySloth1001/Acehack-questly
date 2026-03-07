@@ -12,6 +12,9 @@ class BountyModel {
   final String? location;
   final List<String> imageUrls;
   final Map<String, dynamic>? extraFields;
+  final String? escrowTxId;
+  final String escrowStatus;
+  final String? refundTxId;
   final DateTime createdAt;
   final DateTime updatedAt;
   final BountyCreator creator;
@@ -33,6 +36,9 @@ class BountyModel {
     this.location,
     this.imageUrls = const [],
     this.extraFields,
+    this.escrowTxId,
+    this.escrowStatus = 'UNFUNDED',
+    this.refundTxId,
     required this.createdAt,
     required this.updatedAt,
     required this.creator,
@@ -55,6 +61,9 @@ class BountyModel {
       location: json['location'] as String?,
       imageUrls: (json['imageUrls'] as List<dynamic>?)?.cast<String>() ?? [],
       extraFields: json['extraFields'] as Map<String, dynamic>?,
+      escrowTxId: json['escrowTxId'] as String?,
+      escrowStatus: json['escrowStatus'] as String? ?? 'UNFUNDED',
+      refundTxId: json['refundTxId'] as String?,
       createdAt: DateTime.parse(json['createdAt'] as String),
       updatedAt: DateTime.parse(json['updatedAt'] as String),
       creator: BountyCreator.fromJson(json['creator'] as Map<String, dynamic>),
@@ -72,14 +81,21 @@ class BountyCreator {
   final String id;
   final String? name;
   final String? avatarUrl;
+  final String? walletAddress;
 
-  const BountyCreator({required this.id, this.name, this.avatarUrl});
+  const BountyCreator({
+    required this.id,
+    this.name,
+    this.avatarUrl,
+    this.walletAddress,
+  });
 
   factory BountyCreator.fromJson(Map<String, dynamic> json) {
     return BountyCreator(
       id: json['id'] as String,
       name: json['name'] as String?,
       avatarUrl: json['avatarUrl'] as String?,
+      walletAddress: json['walletAddress'] as String?,
     );
   }
 }
@@ -94,6 +110,7 @@ class BountyClaimModel {
   final DateTime createdAt;
   final BountyCreator claimer;
   final ClaimBountyInfo? bounty;
+  final String? paymentTxId;
 
   const BountyClaimModel({
     required this.id,
@@ -105,6 +122,7 @@ class BountyClaimModel {
     required this.createdAt,
     required this.claimer,
     this.bounty,
+    this.paymentTxId,
   });
 
   /// Multiple proof URLs stored comma-separated in [proofUrl].
@@ -129,6 +147,7 @@ class BountyClaimModel {
       bounty: json['bounty'] != null
           ? ClaimBountyInfo.fromJson(json['bounty'] as Map<String, dynamic>)
           : null,
+      paymentTxId: json['paymentTxId'] as String?,
     );
   }
 }

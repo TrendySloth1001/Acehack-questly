@@ -9,6 +9,7 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:latlong2/latlong.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/utils/algo_inr.dart';
 import '../providers/bounty_provider.dart';
 
 const _categories = [
@@ -374,10 +375,13 @@ class _CreateBountyScreenState extends ConsumerState<CreateBountyScreen> {
                 children: [
                   _previewChip(Icons.category_outlined, _category),
                   if (amount > 0)
-                    _previewChip(
-                      Icons.currency_exchange,
-                      '${amount.toStringAsFixed(amount == amount.roundToDouble() ? 0 : 1)} ALGO',
-                    ),
+                    Consumer(builder: (context, cRef, _) {
+                      final inrRate = cRef.watch(algoInrRateProvider).valueOrNull;
+                      final label = inrRate != null
+                          ? formatAlgoWithInr(amount, inrRate)
+                          : formatAlgo(amount);
+                      return _previewChip(Icons.currency_exchange, label);
+                    }),
                   _previewChip(Icons.schedule_outlined, _timeLeft(_deadline)),
                   if (data['location'] != null)
                     _previewChip(
@@ -700,6 +704,26 @@ class _CreateBountyScreenState extends ConsumerState<CreateBountyScreen> {
                             decimal: true,
                           ),
                         ),
+                        Consumer(builder: (context, cRef, _) {
+                          final inrRate = cRef.watch(algoInrRateProvider).valueOrNull;
+                          return ValueListenableBuilder(
+                            valueListenable: _amountC,
+                            builder: (context, value, _) {
+                              final amt = double.tryParse(value.text) ?? 0;
+                              if (inrRate == null || amt <= 0) return const SizedBox.shrink();
+                              return Padding(
+                                padding: const EdgeInsets.only(top: 4, left: 4),
+                                child: Text(
+                                  '≈ ${algoToInrString(amt, inrRate)}',
+                                  style: TextStyle(
+                                    color: AppColors.textHint,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              );
+                            },
+                          );
+                        }),
                         const SizedBox(height: 16),
 
                         // Deadline

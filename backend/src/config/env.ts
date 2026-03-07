@@ -62,4 +62,25 @@ export const env = {
   // Rate limit
   RATE_LIMIT_WINDOW_MS: parseInt(optional("RATE_LIMIT_WINDOW_MS", "900000"), 10),
   RATE_LIMIT_MAX: parseInt(optional("RATE_LIMIT_MAX", "100"), 10),
+
+  // Algorand
+  ALGORAND_NETWORK: optional("ALGORAND_NETWORK", "devmode"),
+  ALGORAND_API_URL: optional(
+    "ALGORAND_API_URL",
+    "http://localhost:4001"
+  ),
+  ALGORAND_API_TOKEN: optional(
+    "ALGORAND_API_TOKEN",
+    "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  ),
+  ALGORAND_KMD_URL: optional("ALGORAND_KMD_URL", "http://localhost:4002"),
+  ALGORAND_KMD_TOKEN: optional(
+    "ALGORAND_KMD_TOKEN",
+    "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  ),
+  ALGORAND_INDEXER_URL: optional(
+    "ALGORAND_INDEXER_URL",
+    "https://testnet-idx.algonode.cloud"
+  ),
+  ALGORAND_ESCROW_MNEMONIC: optional("ALGORAND_ESCROW_MNEMONIC", ""),
 } as const;

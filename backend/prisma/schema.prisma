@@ -37,6 +37,8 @@ model User {
   latitude      Float?
   longitude     Float?
   role          Role         @default(USER)
+  walletAddress String?
+  walletMnemonic String?      // custodial-wallet recovery phrase (encrypted at rest)
   isActive      Boolean      @default(true)
   emailVerified Boolean      @default(false)
   onboarded     Boolean      @default(false)
@@ -50,6 +52,7 @@ model User {
   uploads        Upload[]
   bounties       Bounty[]
   bountyClaims   BountyClaim[]
+  walletTxns     WalletTransaction[]
 
   @@index([email])
   @@map("users")
@@ -170,6 +173,13 @@ enum ClaimStatus {
   REJECTED
 }
 
+enum EscrowStatus {
+  UNFUNDED
+  FUNDED
+  RELEASED
+  REFUNDED
+}
+
 model Bounty {
   id          String       @id @default(cuid())
   creatorId   String
@@ -188,6 +198,11 @@ model Bounty {
 
   // Dynamic extra fields the creator added (stored as JSON)
   extraFields Json?
+
+  // Algorand escrow
+  escrowTxId    String?
+  escrowStatus  EscrowStatus @default(UNFUNDED)
+  refundTxId    String?
 
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
@@ -208,6 +223,7 @@ model BountyClaim {
   status      ClaimStatus @default(ACTIVE)
   proofUrl    String?
   note        String?
+  paymentTxId String?
   submittedAt DateTime?
   resolvedAt  DateTime?
   createdAt   DateTime    @default(now())
@@ -219,4 +235,32 @@ model BountyClaim {
   @@index([bountyId])
   @@index([claimerId])
   @@map("bounty_claims")
+}
+
+// ──────────────────────────────
+// Wallet Transaction History
+// ──────────────────────────────
+
+enum TxType {
+  DEBIT   // ALGO sent out (e.g. fund escrow)
+  CREDIT  // ALGO received (e.g. escrow release)
+}
+
+model WalletTransaction {
+  id                 String   @id @default(cuid())
+  userId             String
+  type               TxType
+  amountAlgo         Float
+  txId               String?              // on-chain txn id
+  bountyId           String?
+  bountyTitle        String?
+  counterpartyAddress String?             // who sent / who received
+  description        String
+  createdAt          DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([createdAt])
+  @@map("wallet_transactions")
 }

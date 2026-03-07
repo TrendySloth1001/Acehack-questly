@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/utils/algo_inr.dart';
 import '../../../bounty/data/models/bounty_model.dart';
 import '../../../bounty/presentation/providers/bounty_provider.dart';
 
@@ -315,25 +316,7 @@ class _BountyCard extends StatelessWidget {
                       Positioned(
                         bottom: 8,
                         left: 8,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 5,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppColors.neonGreen.withValues(alpha: 0.9),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            '${bounty.algoAmount.toStringAsFixed(bounty.algoAmount == bounty.algoAmount.roundToDouble() ? 0 : 1)} ALGO',
-                            style: const TextStyle(
-                              color: Colors.black,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w800,
-                              fontFamily: 'monospace',
-                            ),
-                          ),
-                        ),
+                        child: AlgoRewardChip(amount: bounty.algoAmount),
                       ),
                   ],
                 ),
@@ -347,29 +330,7 @@ class _BountyCard extends StatelessWidget {
                 children: [
                   // No-image reward badge
                   if (!hasImage && bounty.algoAmount > 0) ...[
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.neonGreen.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(6),
-                        border: Border.all(
-                          color: AppColors.neonGreen.withValues(alpha: 0.3),
-                          width: 0.5,
-                        ),
-                      ),
-                      child: Text(
-                        '${bounty.algoAmount.toStringAsFixed(bounty.algoAmount == bounty.algoAmount.roundToDouble() ? 0 : 1)} ALGO',
-                        style: const TextStyle(
-                          color: AppColors.neonGreen,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          fontFamily: 'monospace',
-                        ),
-                      ),
-                    ),
+                    AlgoRewardChip(amount: bounty.algoAmount),
                     const SizedBox(height: 8),
                   ],
 

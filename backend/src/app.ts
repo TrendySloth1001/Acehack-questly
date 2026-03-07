@@ -11,6 +11,9 @@ import { apiRouter } from "./routes";
 
 const app = express();
 
+// ── Trust proxy (dev tunnels / reverse proxies set X-Forwarded-For) ──
+app.set("trust proxy", 1);
+
 // ── Security ────────────────────────────────────────────────
 app.use(helmet());
 app.use(

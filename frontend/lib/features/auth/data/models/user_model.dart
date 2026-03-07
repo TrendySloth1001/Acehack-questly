@@ -16,6 +16,7 @@ class UserModel {
   final double? latitude;
   final double? longitude;
   final bool onboarded;
+  final String? walletAddress;
   final DateTime createdAt;
 
   const UserModel({
@@ -31,6 +32,7 @@ class UserModel {
     this.latitude,
     this.longitude,
     this.onboarded = false,
+    this.walletAddress,
     required this.createdAt,
   });
 

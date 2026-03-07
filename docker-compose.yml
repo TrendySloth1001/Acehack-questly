@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   postgres:
     image: postgres:16-alpine
@@ -38,8 +36,21 @@ services:
       timeout: 5s
       retries: 5
 
+  algod:
+    image: makerxau/algorand-sandbox-dev:latest
+    container_name: questly_algod
+    restart: unless-stopped
+    ports:
+      - "4001:4001"    # algod REST API
+      - "4002:4002"    # KMD API
+      - "8980:8980"    # Indexer API
+    volumes:
+      - algod_data:/opt/data
+
 volumes:
   pg_data:
     driver: local
   minio_data:
+    driver: local
+  algod_data:
     driver: local

@@ -6,6 +6,8 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../bounty/data/models/bounty_model.dart';
 import '../../../bounty/presentation/providers/bounty_provider.dart';
+import '../../../algorand/presentation/providers/wallet_provider.dart';
+import '../../../../core/utils/algo_inr.dart';
 
 // ─────────────────────────────────────────────────────────────
 // Gen-Z minimalist home — informative, clean, zero clutter.
@@ -20,6 +22,12 @@ class HomeDashboardScreen extends ConsumerWidget {
     final user = ref.watch(authProvider).user;
     final allBounties = ref.watch(bountyListProvider);
     final myClaims = ref.watch(myClaimsProvider);
+    final wallet = ref.watch(walletProvider);
+
+    // Load wallet on first build
+    if (!wallet.isLoading && wallet.address == null && wallet.error == null) {
+      Future.microtask(() => ref.read(walletProvider.notifier).load());
+    }
 
     final firstName = user?.name?.split(' ').first ?? 'explorer';
     final greeting = _genZGreeting(firstName);
@@ -53,6 +61,17 @@ class HomeDashboardScreen extends ConsumerWidget {
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
                   child: _Header(greeting: greeting, user: user),
+                ),
+              ),
+
+              // ── BALANCE BANNER ─────────────────────────────
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+                  child: _BalanceBanner(
+                    wallet: wallet,
+                    onTap: () => context.go('/wallet'),
+                  ),
                 ),
               ),
 
@@ -306,6 +325,154 @@ class _Header extends StatelessWidget {
   }
 }
 
+/// Compact balance banner for the home screen.
+class _BalanceBanner extends ConsumerWidget {
+  final WalletState wallet;
+  final VoidCallback onTap;
+
+  const _BalanceBanner({required this.wallet, required this.onTap});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final hasWallet = wallet.address != null && wallet.address!.isNotEmpty;
+    final balance = wallet.balance?.balanceAlgo ?? 0.0;
+    final escrow = wallet.escrowInfo?.balanceAlgo ?? 0.0;
+    final rateAsync = ref.watch(algoInrRateProvider);
+    final inrRate = rateAsync.valueOrNull ?? 15.0;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+        decoration: BoxDecoration(
+          color: AppColors.card,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: hasWallet
+                ? AppColors.neonCyan.withValues(alpha: 0.12)
+                : AppColors.border,
+            width: 0.5,
+          ),
+        ),
+        child: hasWallet
+            ? Row(
+                children: [
+                  // Balance
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'BALANCE',
+                        style: TextStyle(
+                          color: AppColors.textHint,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            balance.toStringAsFixed(2),
+                            style: const TextStyle(
+                              color: AppColors.textPrimary,
+                              fontSize: 22,
+                              fontWeight: FontWeight.w800,
+                              fontFamily: 'monospace',
+                              height: 1,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          const Padding(
+                            padding: EdgeInsets.only(bottom: 1),
+                            child: Text(
+                              'ALGO',
+                              style: TextStyle(
+                                color: AppColors.neonCyan,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '~${algoToInrString(balance, inrRate)}',
+                        style: const TextStyle(
+                          color: AppColors.textHint,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const Spacer(),
+                  // Escrow mini
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      const Text(
+                        'ESCROW',
+                        style: TextStyle(
+                          color: AppColors.textHint,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${escrow.toStringAsFixed(1)} A',
+                        style: const TextStyle(
+                          color: AppColors.neonOrange,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          fontFamily: 'monospace',
+                          height: 1,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(width: 12),
+                  const Icon(
+                    Icons.chevron_right_rounded,
+                    color: AppColors.textHint,
+                    size: 20,
+                  ),
+                ],
+              )
+            : Row(
+                children: [
+                  Icon(
+                    Icons.account_balance_wallet_outlined,
+                    color: AppColors.textHint,
+                    size: 18,
+                  ),
+                  const SizedBox(width: 10),
+                  const Expanded(
+                    child: Text(
+                      'Set up your wallet',
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                  const Icon(
+                    Icons.chevron_right_rounded,
+                    color: AppColors.textHint,
+                    size: 20,
+                  ),
+                ],
+              ),
+      ),
+    );
+  }
+}
+
 /// Minimal "Post a Bounty" CTA
 class _PostCTA extends StatelessWidget {
   final VoidCallback onTap;
@@ -537,7 +704,7 @@ class _ClaimCard extends StatelessWidget {
                 ),
                 const Spacer(),
                 if (bounty != null && bounty.algoAmount > 0)
-                  _RewardBadge(amount: bounty.algoAmount),
+                  AlgoRewardChip(amount: bounty.algoAmount),
               ],
             ),
           ],
@@ -721,7 +888,7 @@ class _BountyCard extends StatelessWidget {
                 const Spacer(),
                 // Reward
                 if (bounty.algoAmount > 0)
-                  _RewardBadge(amount: bounty.algoAmount),
+                  AlgoRewardChip(amount: bounty.algoAmount),
               ],
             ),
           ],
@@ -734,35 +901,6 @@ class _BountyCard extends StatelessWidget {
 // ═════════════════════════════════════════════════════════════
 //  SHARED WIDGETS
 // ═════════════════════════════════════════════════════════════
-
-class _RewardBadge extends StatelessWidget {
-  final double amount;
-
-  const _RewardBadge({required this.amount});
-
-  @override
-  Widget build(BuildContext context) {
-    final display = amount == amount.roundToDouble()
-        ? amount.toStringAsFixed(0)
-        : amount.toStringAsFixed(1);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: AppColors.neonGreen.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Text(
-        '$display A',
-        style: const TextStyle(
-          color: AppColors.neonGreen,
-          fontSize: 13,
-          fontWeight: FontWeight.w700,
-          fontFamily: 'monospace',
-        ),
-      ),
-    );
-  }
-}
 
 class _LoadingIndicator extends StatelessWidget {
   const _LoadingIndicator();

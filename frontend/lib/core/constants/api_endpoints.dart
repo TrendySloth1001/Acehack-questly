@@ -33,4 +33,16 @@ class ApiEndpoints {
   static String resolveClaim(String claimId) =>
       '/bounties/claims/$claimId/resolve';
   static String declaim(String claimId) => '/bounties/claims/$claimId';
+
+  // ── Algorand / Escrow ─────────────────────────────────────
+  static String fundBounty(String bountyId) =>
+      '/algorand/fund-bounty/$bountyId';
+  static const String submitTxn = '/algorand/submit-txn';
+  static String verifyFunding(String bountyId) =>
+      '/algorand/verify-funding/$bountyId';
+  static String algoBalance(String address) => '/algorand/balance/$address';
+  static const String escrowInfo = '/algorand/escrow-info';
+  static const String wallet = '/algorand/wallet';
+  static const String generateWallet = '/algorand/generate-wallet';
+  static const String dispense = '/algorand/dispense';
 }

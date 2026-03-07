@@ -5,7 +5,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/utils/algo_inr.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../algorand/presentation/providers/wallet_provider.dart';
 import '../../data/models/bounty_model.dart';
 import '../providers/bounty_provider.dart';
 
@@ -315,12 +317,11 @@ class _BountyDetailScreenState extends ConsumerState<BountyDetailScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              action == 'APPROVED'
-                  ? 'Claim approved!'
-                  : 'Claim rejected',
+              action == 'APPROVED' ? 'Claim approved!' : 'Claim rejected',
             ),
-            backgroundColor:
-                action == 'APPROVED' ? AppColors.neonGreen : AppColors.error,
+            backgroundColor: action == 'APPROVED'
+                ? AppColors.neonGreen
+                : AppColors.error,
           ),
         );
         _load();
@@ -349,10 +350,10 @@ class _BountyDetailScreenState extends ConsumerState<BountyDetailScreen> {
               ),
             )
           : _error != null
-              ? _buildError()
-              : _bounty != null
-                  ? _buildContent()
-                  : const SizedBox.shrink(),
+          ? _buildError()
+          : _bounty != null
+          ? _buildContent()
+          : const SizedBox.shrink(),
     );
   }
 
@@ -454,31 +455,54 @@ class _BountyDetailScreenState extends ConsumerState<BountyDetailScreen> {
                     _chip(Icons.category_outlined, b.category),
                     const Spacer(),
                     if (b.algoAmount > 0)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.neonGreen.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(
-                            color: AppColors.neonGreen.withValues(alpha: 0.3),
-                            width: 0.5,
+                      Consumer(builder: (context, cRef, _) {
+                        final inrRate = cRef.watch(algoInrRateProvider).valueOrNull;
+                        return Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
                           ),
-                        ),
-                        child: Text(
-                          '${b.algoAmount.toStringAsFixed(b.algoAmount == b.algoAmount.roundToDouble() ? 0 : 1)} ALGO',
-                          style: const TextStyle(
-                            color: AppColors.neonGreen,
-                            fontSize: 18,
-                            fontWeight: FontWeight.w800,
-                            fontFamily: 'monospace',
+                          decoration: BoxDecoration(
+                            color: AppColors.neonGreen.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: AppColors.neonGreen.withValues(alpha: 0.3),
+                              width: 0.5,
+                            ),
                           ),
-                        ),
-                      ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                formatAlgo(b.algoAmount),
+                                style: const TextStyle(
+                                  color: AppColors.neonGreen,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w800,
+                                  fontFamily: 'monospace',
+                                ),
+                              ),
+                              if (inrRate != null)
+                                Text(
+                                  algoToInrString(b.algoAmount, inrRate),
+                                  style: TextStyle(
+                                    color: AppColors.neonGreen.withValues(alpha: 0.6),
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                            ],
+                          ),
+                        );
+                      }),
                   ],
                 ),
+                // ── Escrow Status Badge ────────────────────────
+                if (b.algoAmount > 0)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 10),
+                    child: _EscrowStatusBadge(bounty: b, isOwner: isOwner),
+                  ),
                 const SizedBox(height: 16),
 
                 // ── Title ──────────────────────────────────────
@@ -640,7 +664,9 @@ class _BountyDetailScreenState extends ConsumerState<BountyDetailScreen> {
                                       shape: BoxShape.circle,
                                       boxShadow: [
                                         BoxShadow(
-                                          color: AppColors.primary.withValues(alpha: 0.4),
+                                          color: AppColors.primary.withValues(
+                                            alpha: 0.4,
+                                          ),
                                           blurRadius: 10,
                                         ),
                                       ],
@@ -718,9 +744,17 @@ class _BountyDetailScreenState extends ConsumerState<BountyDetailScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
                       _metaItem('Deadline', _formatDate(b.deadline)),
-                      Container(width: 0.5, height: 30, color: AppColors.border),
+                      Container(
+                        width: 0.5,
+                        height: 30,
+                        color: AppColors.border,
+                      ),
                       _metaItem('Claims', '${b.claimCount}'),
-                      Container(width: 0.5, height: 30, color: AppColors.border),
+                      Container(
+                        width: 0.5,
+                        height: 30,
+                        color: AppColors.border,
+                      ),
                       _metaItem('Status', b.status.toLowerCase()),
                     ],
                   ),
@@ -766,7 +800,11 @@ class _BountyDetailScreenState extends ConsumerState<BountyDetailScreen> {
                     child: const Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.verified_rounded, color: AppColors.primary, size: 18),
+                        Icon(
+                          Icons.verified_rounded,
+                          color: AppColors.primary,
+                          size: 18,
+                        ),
                         SizedBox(width: 8),
                         Text(
                           'This is your bounty',
@@ -782,6 +820,13 @@ class _BountyDetailScreenState extends ConsumerState<BountyDetailScreen> {
                   const SizedBox(height: 10),
                 ],
 
+                // ── Fund Escrow (owner, unfunded) ─────────────
+                if (isOwner &&
+                    b.algoAmount > 0 &&
+                    b.escrowStatus == 'UNFUNDED' &&
+                    b.status == 'OPEN')
+                  _FundEscrowButton(bounty: b, onFunded: _load),
+
                 // ── Claim button ──────────────────────────────
                 if (!isOwner && isOpen && !isExpired && myClaim == null) ...[
                   SizedBox(
@@ -792,7 +837,9 @@ class _BountyDetailScreenState extends ConsumerState<BountyDetailScreen> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.neonGreen,
                         foregroundColor: Colors.black,
-                        disabledBackgroundColor: AppColors.neonGreen.withValues(alpha: 0.3),
+                        disabledBackgroundColor: AppColors.neonGreen.withValues(
+                          alpha: 0.3,
+                        ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -809,7 +856,10 @@ class _BountyDetailScreenState extends ConsumerState<BountyDetailScreen> {
                             )
                           : const Text(
                               'Claim this bounty',
-                              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w700,
+                              ),
                             ),
                     ),
                   ),
@@ -836,7 +886,9 @@ class _BountyDetailScreenState extends ConsumerState<BountyDetailScreen> {
                       label: const Text('Delete bounty'),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: AppColors.error,
-                        side: BorderSide(color: AppColors.error.withValues(alpha: 0.3)),
+                        side: BorderSide(
+                          color: AppColors.error.withValues(alpha: 0.3),
+                        ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -880,7 +932,11 @@ class _BountyDetailScreenState extends ConsumerState<BountyDetailScreen> {
       ),
       child: Text(
         status.toLowerCase().replaceAll('_', ' '),
-        style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w700),
+        style: TextStyle(
+          color: color,
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+        ),
       ),
     );
   }
@@ -914,7 +970,10 @@ class _BountyDetailScreenState extends ConsumerState<BountyDetailScreen> {
   Widget _metaItem(String label, String value) {
     return Column(
       children: [
-        Text(label, style: const TextStyle(color: AppColors.textHint, fontSize: 11)),
+        Text(
+          label,
+          style: const TextStyle(color: AppColors.textHint, fontSize: 11),
+        ),
         const SizedBox(height: 4),
         Text(
           value,
@@ -965,8 +1024,18 @@ class _BountyDetailScreenState extends ConsumerState<BountyDetailScreen> {
 
   String _formatDate(DateTime d) {
     const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     return '${months[d.month - 1]} ${d.day}, ${d.year}';
   }
@@ -1129,7 +1198,9 @@ class _ReferenceImagesGalleryState extends State<_ReferenceImagesGallery> {
                 width: _currentPage == i ? 18 : 6,
                 height: 6,
                 decoration: BoxDecoration(
-                  color: _currentPage == i ? AppColors.primary : AppColors.border,
+                  color: _currentPage == i
+                      ? AppColors.primary
+                      : AppColors.border,
                   borderRadius: BorderRadius.circular(3),
                 ),
               ),
@@ -1273,10 +1344,10 @@ class _MyClaimSection extends ConsumerWidget {
                 isActive
                     ? Icons.assignment_outlined
                     : isSubmitted
-                        ? Icons.hourglass_top_rounded
-                        : isApproved
-                            ? Icons.check_circle_outlined
-                            : Icons.cancel_outlined,
+                    ? Icons.hourglass_top_rounded
+                    : isApproved
+                    ? Icons.check_circle_outlined
+                    : Icons.cancel_outlined,
                 color: statusColor,
                 size: 20,
               ),
@@ -1286,10 +1357,10 @@ class _MyClaimSection extends ConsumerWidget {
                   isActive
                       ? 'You claimed this bounty'
                       : isSubmitted
-                          ? 'Work submitted \u2014 under review'
-                          : isApproved
-                              ? 'Your work was approved!'
-                              : 'Your submission was rejected',
+                      ? 'Work submitted \u2014 under review'
+                      : isApproved
+                      ? 'Your work was approved!'
+                      : 'Your submission was rejected',
                   style: TextStyle(
                     color: statusColor,
                     fontSize: 14,
@@ -1440,7 +1511,9 @@ class _MyClaimSection extends ConsumerWidget {
                 label: const Text('Leave bounty'),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppColors.warning,
-                  side: BorderSide(color: AppColors.warning.withValues(alpha: 0.3)),
+                  side: BorderSide(
+                    color: AppColors.warning.withValues(alpha: 0.3),
+                  ),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -1506,10 +1579,7 @@ class _OwnerClaimsSection extends StatefulWidget {
   final List<BountyClaimModel> claims;
   final Future<void> Function(String claimId, String action) onResolve;
 
-  const _OwnerClaimsSection({
-    required this.claims,
-    required this.onResolve,
-  });
+  const _OwnerClaimsSection({required this.claims, required this.onResolve});
 
   @override
   State<_OwnerClaimsSection> createState() => _OwnerClaimsSectionState();
@@ -1526,7 +1596,11 @@ class _OwnerClaimsSectionState extends State<_OwnerClaimsSection> {
         // Section header
         Row(
           children: [
-            const Icon(Icons.group_outlined, color: AppColors.primary, size: 18),
+            const Icon(
+              Icons.group_outlined,
+              color: AppColors.primary,
+              size: 18,
+            ),
             const SizedBox(width: 8),
             const Text(
               'Claims & Submissions',
@@ -1591,7 +1665,11 @@ class _OwnerClaimsSectionState extends State<_OwnerClaimsSection> {
                     ? NetworkImage(claim.claimer.avatarUrl!)
                     : null,
                 child: claim.claimer.avatarUrl == null
-                    ? const Icon(Icons.person, color: AppColors.primary, size: 16)
+                    ? const Icon(
+                        Icons.person,
+                        color: AppColors.primary,
+                        size: 16,
+                      )
                     : null,
               ),
               const SizedBox(width: 10),
@@ -1620,7 +1698,10 @@ class _OwnerClaimsSectionState extends State<_OwnerClaimsSection> {
               ),
               // Status badge
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: statusColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
@@ -1636,10 +1717,10 @@ class _OwnerClaimsSectionState extends State<_OwnerClaimsSection> {
                       isApproved
                           ? Icons.check_circle_outline_rounded
                           : isSubmitted
-                              ? Icons.hourglass_top_rounded
-                              : isRejected
-                                  ? Icons.cancel_outlined
-                                  : Icons.assignment_outlined,
+                          ? Icons.hourglass_top_rounded
+                          : isRejected
+                          ? Icons.cancel_outlined
+                          : Icons.assignment_outlined,
                       color: statusColor,
                       size: 12,
                     ),
@@ -1680,7 +1761,8 @@ class _OwnerClaimsSectionState extends State<_OwnerClaimsSection> {
                   final url = claim.proofUrls[i];
                   final isPdf = url.toLowerCase().endsWith('.pdf');
                   return GestureDetector(
-                    onTap: () => _showFullScreenProof(context, claim.proofUrls, i),
+                    onTap: () =>
+                        _showFullScreenProof(context, claim.proofUrls, i),
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(10),
                       child: isPdf
@@ -1691,13 +1773,19 @@ class _OwnerClaimsSectionState extends State<_OwnerClaimsSection> {
                               child: const Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Icon(Icons.picture_as_pdf_outlined,
-                                      color: AppColors.error, size: 28),
+                                  Icon(
+                                    Icons.picture_as_pdf_outlined,
+                                    color: AppColors.error,
+                                    size: 28,
+                                  ),
                                   SizedBox(height: 4),
-                                  Text('PDF',
-                                      style: TextStyle(
-                                          color: AppColors.textHint,
-                                          fontSize: 10)),
+                                  Text(
+                                    'PDF',
+                                    style: TextStyle(
+                                      color: AppColors.textHint,
+                                      fontSize: 10,
+                                    ),
+                                  ),
                                 ],
                               ),
                             )
@@ -1710,8 +1798,11 @@ class _OwnerClaimsSectionState extends State<_OwnerClaimsSection> {
                                 width: 80,
                                 height: 80,
                                 color: AppColors.card,
-                                child: const Icon(Icons.broken_image_outlined,
-                                    color: AppColors.textHint, size: 24),
+                                child: const Icon(
+                                  Icons.broken_image_outlined,
+                                  color: AppColors.textHint,
+                                  size: 24,
+                                ),
                               ),
                             ),
                     ),
@@ -1747,10 +1838,7 @@ class _OwnerClaimsSectionState extends State<_OwnerClaimsSection> {
             const SizedBox(height: 8),
             Text(
               'submitted ${_timeAgo(claim.submittedAt!)}',
-              style: const TextStyle(
-                color: AppColors.textHint,
-                fontSize: 11,
-              ),
+              style: const TextStyle(color: AppColors.textHint, fontSize: 11),
             ),
           ],
 
@@ -1780,9 +1868,11 @@ class _OwnerClaimsSectionState extends State<_OwnerClaimsSection> {
                       style: OutlinedButton.styleFrom(
                         foregroundColor: AppColors.error,
                         side: BorderSide(
-                            color: AppColors.error.withValues(alpha: 0.3)),
+                          color: AppColors.error.withValues(alpha: 0.3),
+                        ),
                         shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10)),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
                       ),
                     ),
                   ),
@@ -1805,15 +1895,19 @@ class _OwnerClaimsSectionState extends State<_OwnerClaimsSection> {
                               ),
                             )
                           : const Icon(Icons.check_rounded, size: 18),
-                      label: const Text('Approve',
-                          style: TextStyle(fontWeight: FontWeight.w700)),
+                      label: const Text(
+                        'Approve',
+                        style: TextStyle(fontWeight: FontWeight.w700),
+                      ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.neonGreen,
                         foregroundColor: Colors.black,
-                        disabledBackgroundColor:
-                            AppColors.neonGreen.withValues(alpha: 0.3),
+                        disabledBackgroundColor: AppColors.neonGreen.withValues(
+                          alpha: 0.3,
+                        ),
                         shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10)),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
                         elevation: 0,
                       ),
                     ),
@@ -1837,13 +1931,14 @@ class _OwnerClaimsSectionState extends State<_OwnerClaimsSection> {
   }
 
   void _showFullScreenProof(
-      BuildContext context, List<String> urls, int initialIndex) {
+    BuildContext context,
+    List<String> urls,
+    int initialIndex,
+  ) {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => _FullScreenGallery(
-          imageUrls: urls,
-          initialIndex: initialIndex,
-        ),
+        builder: (_) =>
+            _FullScreenGallery(imageUrls: urls, initialIndex: initialIndex),
       ),
     );
   }
@@ -1870,5 +1965,353 @@ class _OwnerClaimsSectionState extends State<_OwnerClaimsSection> {
     if (diff.inHours > 0) return '${diff.inHours}h ago';
     if (diff.inMinutes > 0) return '${diff.inMinutes}m ago';
     return 'just now';
+  }
+}
+
+// ═════════════════════════════════════════════════════════════
+//  FUND ESCROW BUTTON
+// ═════════════════════════════════════════════════════════════
+
+class _FundEscrowButton extends ConsumerStatefulWidget {
+  final BountyModel bounty;
+  final VoidCallback onFunded;
+
+  const _FundEscrowButton({required this.bounty, required this.onFunded});
+
+  @override
+  ConsumerState<_FundEscrowButton> createState() => _FundEscrowButtonState();
+}
+
+class _FundEscrowButtonState extends ConsumerState<_FundEscrowButton> {
+  bool _loading = false;
+  String? _step; // tracks current step for UX
+
+  Future<void> _startFunding() async {
+    final walletNotifier = ref.read(walletProvider.notifier);
+    final walletState = ref.read(walletProvider);
+
+    if (walletState.address == null || walletState.address!.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Connect your wallet in Profile first!')),
+      );
+      return;
+    }
+
+    setState(() {
+      _loading = true;
+      _step = 'Creating transaction...';
+    });
+
+    try {
+      // Step 1: Create unsigned funding txn
+      final fundTxn = await walletNotifier.fundBounty(
+        bountyId: widget.bounty.id,
+        senderAddress: walletState.address!,
+      );
+
+      if (fundTxn == null) {
+        if (mounted) {
+          setState(() {
+            _loading = false;
+            _step = null;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Failed to create transaction')),
+          );
+        }
+        return;
+      }
+
+      if (!mounted) return;
+
+      // Step 2: Show confirmation dialog with escrow details
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: AppColors.card,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: const Text(
+            'Fund Escrow',
+            style: TextStyle(
+              color: AppColors.textPrimary,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Send ${fundTxn.amountAlgo} ALGO to the escrow account?',
+                style: const TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 14,
+                ),
+              ),
+              Consumer(builder: (context, cRef, _) {
+                final inrRate = cRef.watch(algoInrRateProvider).valueOrNull;
+                if (inrRate == null) return const SizedBox.shrink();
+                return Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text(
+                    '~${algoToInrString(fundTxn.amountAlgo, inrRate)}',
+                    style: TextStyle(
+                      color: AppColors.textHint,
+                      fontSize: 12,
+                    ),
+                  ),
+                );
+              }),
+              const SizedBox(height: 14),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Escrow Address:',
+                      style: TextStyle(color: AppColors.textHint, fontSize: 11),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${fundTxn.escrowAddress.substring(0, 12)}...${fundTxn.escrowAddress.substring(fundTxn.escrowAddress.length - 8)}',
+                      style: const TextStyle(
+                        color: AppColors.neonCyan,
+                        fontFamily: 'monospace',
+                        fontSize: 12,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Transaction ID:',
+                      style: TextStyle(color: AppColors.textHint, fontSize: 11),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${fundTxn.txnId.substring(0, 12)}...',
+                      style: const TextStyle(
+                        color: AppColors.textSecondary,
+                        fontFamily: 'monospace',
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'Note: In a production app, this would open Pera Wallet for signing. For the hackathon demo, we simulate the funding.',
+                style: TextStyle(color: AppColors.textHint, fontSize: 11),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.neonGreen,
+                foregroundColor: Colors.black,
+              ),
+              child: const Text(
+                'Confirm & Fund',
+                style: TextStyle(fontWeight: FontWeight.w700),
+              ),
+            ),
+          ],
+        ),
+      );
+
+      if (confirmed != true) {
+        if (mounted)
+          setState(() {
+            _loading = false;
+            _step = null;
+          });
+        return;
+      }
+
+      // Step 3: For demo — submit the transaction
+      // In production, this would use Pera Wallet WalletConnect
+      if (mounted) setState(() => _step = 'Submitting to blockchain...');
+
+      final result = await walletNotifier.submitTransaction(
+        signedTxn: fundTxn.unsignedTxn, // In demo, server handles it
+        bountyId: widget.bounty.id,
+      );
+
+      if (mounted) {
+        setState(() {
+          _loading = false;
+          _step = null;
+        });
+        if (result != null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Escrow funded! TX: ${result.txId.substring(0, 12)}...',
+              ),
+              backgroundColor: AppColors.neonGreen.withValues(alpha: 0.9),
+            ),
+          );
+          widget.onFunded();
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Transaction failed. Check wallet balance.'),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _loading = false;
+          _step = null;
+        });
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: SizedBox(
+        width: double.infinity,
+        height: 50,
+        child: ElevatedButton.icon(
+          onPressed: _loading ? null : _startFunding,
+          icon: _loading
+              ? const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                    color: Colors.black,
+                    strokeWidth: 2,
+                  ),
+                )
+              : const Icon(Icons.account_balance_wallet, size: 18),
+          label: Consumer(builder: (context, cRef, _) {
+            final inrRate = cRef.watch(algoInrRateProvider).valueOrNull;
+            final algoStr = formatAlgo(widget.bounty.algoAmount);
+            final label = _step ?? (inrRate != null
+                ? 'Fund Escrow ($algoStr · ${algoToInrString(widget.bounty.algoAmount, inrRate)})'
+                : 'Fund Escrow ($algoStr)');
+            return Text(
+              label,
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+            );
+          }),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.neonOrange,
+            foregroundColor: Colors.black,
+            disabledBackgroundColor: AppColors.neonOrange.withValues(
+              alpha: 0.4,
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            elevation: 0,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ═════════════════════════════════════════════════════════════
+//  ESCROW STATUS BADGE
+// ═════════════════════════════════════════════════════════════
+
+class _EscrowStatusBadge extends StatelessWidget {
+  final BountyModel bounty;
+  final bool isOwner;
+
+  const _EscrowStatusBadge({required this.bounty, required this.isOwner});
+
+  @override
+  Widget build(BuildContext context) {
+    final status = bounty.escrowStatus;
+    final Color color;
+    final IconData icon;
+    final String label;
+
+    switch (status) {
+      case 'FUNDED':
+        color = AppColors.neonGreen;
+        icon = Icons.lock;
+        label = 'Escrow Funded';
+        break;
+      case 'RELEASED':
+        color = AppColors.neonCyan;
+        icon = Icons.check_circle;
+        label = 'Payment Released';
+        break;
+      case 'REFUNDED':
+        color = AppColors.neonOrange;
+        icon = Icons.replay;
+        label = 'Escrow Refunded';
+        break;
+      default: // UNFUNDED
+        color = AppColors.textHint;
+        icon = Icons.lock_open;
+        label = isOwner ? 'Not Funded — Fund This Bounty' : 'Not Funded Yet';
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: color.withValues(alpha: 0.25)),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: color, size: 16),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(
+                color: color,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          if (bounty.escrowTxId != null)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                'TX: ${bounty.escrowTxId!.substring(0, 8)}...',
+                style: TextStyle(
+                  color: color.withValues(alpha: 0.8),
+                  fontSize: 10,
+                  fontFamily: 'monospace',
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
   }
 }

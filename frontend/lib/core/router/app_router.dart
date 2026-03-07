@@ -13,12 +13,14 @@ import '../../features/home/presentation/screens/home_dashboard_screen.dart';
 import '../../features/explore/presentation/screens/explore_screen.dart';
 import '../../features/settings/presentation/screens/settings_screen.dart';
 import '../../features/profile/presentation/screens/profile_screen.dart';
+import '../../features/algorand/presentation/screens/wallet_screen.dart';
 import '../../features/quest/presentation/screens/quest_list_screen.dart';
 import '../../features/quest/presentation/screens/quest_detail_screen.dart';
 import '../../features/quest/presentation/screens/create_quest_screen.dart';
 import '../../features/bounty/presentation/screens/create_bounty_screen.dart';
 import '../../features/bounty/presentation/screens/bounty_detail_screen.dart';
 import '../../features/bounty/presentation/screens/submit_proof_screen.dart';
+import '../../features/profile/presentation/screens/my_bounties_screen.dart';
 
 /// Route name constants.
 class AppRoutes {
@@ -36,8 +38,10 @@ class AppRoutes {
   // Main tabs
   static const String home = '/home';
   static const String explore = '/explore';
+  static const String wallet = '/wallet';
   static const String settings = '/settings';
   static const String profile = '/profile';
+  static const String myBounties = '/profile/bounties';
 
   // Quests
   static const String quests = '/home/quests';
@@ -194,6 +198,11 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => const ExploreScreen(),
           ),
           GoRoute(
+            path: AppRoutes.wallet,
+            name: 'wallet',
+            builder: (context, state) => const WalletScreen(),
+          ),
+          GoRoute(
             path: AppRoutes.settings,
             name: 'settings',
             builder: (context, state) => const SettingsScreen(),
@@ -202,6 +211,13 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: AppRoutes.profile,
             name: 'profile',
             builder: (context, state) => const ProfileScreen(),
+            routes: [
+              GoRoute(
+                path: 'bounties',
+                name: 'myBounties',
+                builder: (context, state) => const MyBountiesScreen(),
+              ),
+            ],
           ),
         ],
       ),

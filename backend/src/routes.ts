@@ -3,6 +3,7 @@ import { authRoutes } from "./modules/auth";
 import { questRoutes } from "./modules/quest";
 import { uploadRoutes } from "./modules/upload";
 import { bountyRoutes } from "./modules/bounty";
+import { algorandRoutes } from "./modules/algorand";
 
 export const apiRouter = Router();
 
@@ -10,3 +11,4 @@ apiRouter.use("/auth", authRoutes);
 apiRouter.use("/quests", questRoutes);
 apiRouter.use("/uploads", uploadRoutes);
 apiRouter.use("/bounties", bountyRoutes);
+apiRouter.use("/algorand", algorandRoutes);

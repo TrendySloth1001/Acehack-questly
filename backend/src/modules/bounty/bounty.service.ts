@@ -1,6 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "../../config/database";
-import { NotFoundError, UnauthorizedError } from "../../shared/errors";
+import { NotFoundError, UnauthorizedError, BadRequestError } from "../../shared/errors";
+import { algorandService } from "../algorand/algorand.service";
 
 // ── DTOs ────────────────────────────────────────────────────
 
@@ -45,6 +46,9 @@ const bountySelect = {
   location: true,
   imageUrls: true,
   extraFields: true,
+  escrowTxId: true,
+  escrowStatus: true,
+  refundTxId: true,
   createdAt: true,
   updatedAt: true,
   creator: {
@@ -52,6 +56,7 @@ const bountySelect = {
       id: true,
       name: true,
       avatarUrl: true,
+      walletAddress: true,
     },
   },
   _count: {
@@ -143,11 +148,12 @@ export class BountyService {
             status: true,
             proofUrl: true,
             note: true,
+            paymentTxId: true,
             submittedAt: true,
             resolvedAt: true,
             createdAt: true,
             claimer: {
-              select: { id: true, name: true, avatarUrl: true },
+              select: { id: true, name: true, avatarUrl: true, walletAddress: true },
             },
           },
           orderBy: { createdAt: "desc" },
@@ -193,11 +199,19 @@ export class BountyService {
 
   /**
    * Delete a bounty (only creator can delete, only OPEN).
+   * If funded → refund ALGO to creator's wallet first.
    */
   async delete(id: string, userId: string) {
     const bounty = await prisma.bounty.findUnique({
       where: { id },
-      select: { creatorId: true, status: true },
+      select: {
+        creatorId: true,
+        status: true,
+        algoAmount: true,
+        escrowStatus: true,
+        title: true,
+        creator: { select: { walletAddress: true } },
+      },
     });
 
     if (!bounty) throw new NotFoundError("Bounty not found");
@@ -206,6 +220,44 @@ export class BountyService {
     }
     if (bounty.status !== "OPEN") {
       throw new UnauthorizedError("Can only delete OPEN bounties");
+    }
+
+    // Refund escrowed ALGO if bounty was funded
+    if (bounty.escrowStatus === "FUNDED" && bounty.algoAmount > 0) {
+      if (!bounty.creator.walletAddress) {
+        throw new BadRequestError(
+          "Creator has no wallet address set — cannot refund"
+        );
+      }
+      try {
+        const refund = await algorandService.refundCreator(
+          bounty.creator.walletAddress,
+          bounty.algoAmount,
+          id
+        );
+        await prisma.bounty.update({
+          where: { id },
+          data: { refundTxId: refund.txId, escrowStatus: "REFUNDED" },
+        });
+        // Record CREDIT for creator (escrow refund)
+        await prisma.walletTransaction.create({
+          data: {
+            userId,
+            type: "CREDIT",
+            amountAlgo: bounty.algoAmount,
+            txId: refund.txId,
+            bountyId: id,
+            bountyTitle: bounty.title,
+            counterpartyAddress: bounty.creator.walletAddress,
+            description: `Escrow refunded — "${bounty.title}" deleted`,
+          },
+        });
+      } catch (err: any) {
+        console.error("[Escrow] Refund failed:", err.message);
+        throw new BadRequestError(
+          `Escrow refund failed: ${err.message}. Bounty not deleted.`
+        );
+      }
     }
 
     await prisma.bounty.delete({ where: { id } });
@@ -324,6 +376,7 @@ export class BountyService {
 
   /**
    * Approve or reject a claim (only bounty creator).
+   * If approved & bounty is funded → release ALGO payment to claimer.
    */
   async resolveClaim(
     claimId: string,
@@ -332,7 +385,18 @@ export class BountyService {
   ) {
     const claim = await prisma.bountyClaim.findUnique({
       where: { id: claimId },
-      include: { bounty: { select: { creatorId: true } } },
+      include: {
+        bounty: {
+          select: {
+            creatorId: true,
+            algoAmount: true,
+            escrowStatus: true,
+            id: true,
+            title: true,
+          },
+        },
+        claimer: { select: { walletAddress: true } },
+      },
     });
 
     if (!claim) throw new NotFoundError("Claim not found");
@@ -340,11 +404,60 @@ export class BountyService {
       throw new UnauthorizedError("Only the bounty creator can resolve claims");
     }
 
+    let paymentTxId: string | null = null;
+
+    // If approving & there's funded escrow → release payment
+    if (
+      action === "APPROVED" &&
+      claim.bounty.escrowStatus === "FUNDED" &&
+      claim.bounty.algoAmount > 0
+    ) {
+      if (!claim.claimer.walletAddress) {
+        throw new BadRequestError(
+          "Claimer has no wallet address set — cannot release payment"
+        );
+      }
+      try {
+        const payment = await algorandService.releasePayment(
+          claim.claimer.walletAddress,
+          claim.bounty.algoAmount,
+          claim.bounty.id
+        );
+        paymentTxId = payment.txId;
+
+        // Mark escrow as released
+        await prisma.bounty.update({
+          where: { id: claim.bountyId },
+          data: { escrowStatus: "RELEASED" },
+        });
+
+        // Record CREDIT for the claimer
+        await prisma.walletTransaction.create({
+          data: {
+            userId: claim.claimerId,
+            type: "CREDIT",
+            amountAlgo: claim.bounty.algoAmount,
+            txId: paymentTxId,
+            bountyId: claim.bountyId,
+            bountyTitle: claim.bounty.title,
+            counterpartyAddress: claim.claimer.walletAddress,
+            description: `Bounty reward — "${claim.bounty.title}" approved`,
+          },
+        });
+      } catch (err: any) {
+        console.error("[Escrow] Payment release failed:", err.message);
+        throw new BadRequestError(
+          `Escrow payment release failed: ${err.message}`
+        );
+      }
+    }
+
     const updated = await prisma.bountyClaim.update({
       where: { id: claimId },
       data: {
         status: action,
         resolvedAt: new Date(),
+        ...(paymentTxId && { paymentTxId }),
       },
     });
 
