@@ -1,0 +1,143 @@
+// ─── Questly Prisma Schema ───
+// Scalable domain-specific schema with optimised relations
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ──────────────────────────────
+// Auth Domain
+// ──────────────────────────────
+
+enum AuthProvider {
+  LOCAL
+  GOOGLE
+  GITHUB
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+model User {
+  id            String       @id @default(cuid())
+  email         String       @unique
+  name          String?
+  avatarUrl     String?
+  password      String?      // null for OAuth-only users
+  role          Role         @default(USER)
+  isActive      Boolean      @default(true)
+  emailVerified Boolean      @default(false)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  // Relations
+  accounts      Account[]
+  refreshTokens RefreshToken[]
+  quests        Quest[]
+  uploads       Upload[]
+
+  @@index([email])
+  @@map("users")
+}
+
+model Account {
+  id                String       @id @default(cuid())
+  userId            String
+  provider          AuthProvider
+  providerAccountId String
+  accessToken       String?
+  refreshToken      String?
+  expiresAt         Int?
+  createdAt         DateTime     @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+  @@map("accounts")
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
+  @@map("refresh_tokens")
+}
+
+// ──────────────────────────────
+// Quest Domain (core feature)
+// ──────────────────────────────
+
+enum QuestStatus {
+  DRAFT
+  ACTIVE
+  COMPLETED
+  ARCHIVED
+}
+
+model Quest {
+  id          String      @id @default(cuid())
+  title       String
+  description String?
+  status      QuestStatus @default(DRAFT)
+  userId      String
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tasks Task[]
+
+  @@index([userId])
+  @@index([status])
+  @@map("quests")
+}
+
+model Task {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  isCompleted Boolean  @default(false)
+  order       Int      @default(0)
+  questId     String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  quest Quest @relation(fields: [questId], references: [id], onDelete: Cascade)
+
+  @@index([questId])
+  @@map("tasks")
+}
+
+// ──────────────────────────────
+// Upload Domain (MinIO / S3)
+// ──────────────────────────────
+
+model Upload {
+  id         String   @id @default(cuid())
+  fileName   String
+  mimeType   String
+  size       Int
+  bucket     String
+  objectKey  String   @unique
+  url        String
+  userId     String
+  createdAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("uploads")
+}
