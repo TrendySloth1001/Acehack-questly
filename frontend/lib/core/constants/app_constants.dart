@@ -7,7 +7,7 @@ class AppConstants {
   static const String packageName = 'com.questly.questly';
 
   // ── API ───────────────────────────────────────────────────
-  static const String baseUrl = 'http://localhost:4000/api/v1';
+  static const String baseUrl = 'https://qjhcp0ph-3000.inc1.devtunnels.ms/api/v1';
   static const String prodBaseUrl = 'https://api.questly.app/api/v1';
 
   // ── OAuth ─────────────────────────────────────────────────
