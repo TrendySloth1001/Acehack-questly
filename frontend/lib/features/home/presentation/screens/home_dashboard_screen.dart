@@ -24,6 +24,15 @@ class HomeDashboardScreen extends ConsumerWidget {
     final firstName = user?.name?.split(' ').first ?? 'explorer';
     final greeting = _genZGreeting(firstName);
 
+    // Filter out bounties the current user already claimed
+    final claimedBountyIds = myClaims.claims
+        .where((c) => c.bounty != null)
+        .map((c) => c.bounty!.id)
+        .toSet();
+    final latestDrops = allBounties.bounties
+        .where((b) => !claimedBountyIds.contains(b.id))
+        .toList();
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
@@ -195,12 +204,12 @@ class HomeDashboardScreen extends ConsumerWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   sliver: SliverList(
                     delegate: SliverChildBuilderDelegate((context, index) {
-                      final b = allBounties.bounties[index];
+                      final b = latestDrops[index];
                       return _BountyCard(
                         bounty: b,
                         onTap: () => context.push('/home/bounty/${b.id}'),
                       );
-                    }, childCount: allBounties.bounties.length.clamp(0, 10)),
+                    }, childCount: latestDrops.length.clamp(0, 10)),
                   ),
                 ),
 
