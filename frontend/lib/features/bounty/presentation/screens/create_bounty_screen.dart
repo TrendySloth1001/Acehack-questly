@@ -549,6 +549,12 @@ class _CreateBountyScreenState extends ConsumerState<CreateBountyScreen> {
         context.pop();
       }
     } catch (e) {
+      debugPrint('[CreateBounty] Error: $e');
+      if (e is DioException) {
+        debugPrint('[CreateBounty] URL: ${e.requestOptions.uri}');
+        debugPrint('[CreateBounty] Status: ${e.response?.statusCode}');
+        debugPrint('[CreateBounty] Body: ${e.response?.data}');
+      }
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

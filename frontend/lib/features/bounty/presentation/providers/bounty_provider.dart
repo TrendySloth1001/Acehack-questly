@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/network/dio_client.dart';
 import '../../data/datasources/bounty_remote_datasource.dart';
@@ -47,13 +48,17 @@ class BountyListNotifier extends StateNotifier<BountyListState> {
   Future<void> loadBounties({String? status, String? category}) async {
     state = state.copyWith(isLoading: true, error: null);
     try {
+      debugPrint('[BountyList] loading bounties...');
       final result = await _repo.listBounties(
         status: status,
         category: category,
         limit: 20,
       );
+      debugPrint('[BountyList] loaded ${result.bounties.length} bounties');
       state = BountyListState(bounties: result.bounties);
-    } catch (e) {
+    } catch (e, st) {
+      debugPrint('[BountyList] ERROR: $e');
+      debugPrint('[BountyList] stack: $st');
       state = state.copyWith(isLoading: false, error: e.toString());
     }
   }

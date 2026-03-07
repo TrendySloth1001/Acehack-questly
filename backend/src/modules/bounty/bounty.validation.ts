@@ -44,7 +44,7 @@ export const createBountyValidation = [
   body("imageUrls.*")
     .optional()
     .isString()
-    .isURL()
+    .isURL({ require_tld: false })
     .withMessage("Each imageUrl must be a valid URL"),
 ];
 

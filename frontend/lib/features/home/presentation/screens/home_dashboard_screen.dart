@@ -26,8 +26,10 @@ class HomeDashboardScreen extends ConsumerWidget {
           color: AppColors.primary,
           backgroundColor: AppColors.surface,
           onRefresh: () async {
-            ref.read(bountyListProvider.notifier).refresh();
-            ref.read(myClaimsProvider.notifier).load();
+            await Future.wait([
+              ref.read(bountyListProvider.notifier).refresh(),
+              ref.read(myClaimsProvider.notifier).load(),
+            ]);
           },
           child: CustomScrollView(
             slivers: [
@@ -224,6 +226,45 @@ class HomeDashboardScreen extends ConsumerWidget {
                         color: AppColors.primary,
                         strokeWidth: 2,
                       ),
+                    ),
+                  ),
+                )
+              else if (bountyState.error != null)
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 32,
+                    ),
+                    child: Column(
+                      children: [
+                        const Icon(
+                          Icons.error_outline,
+                          size: 40,
+                          color: AppColors.error,
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          'failed to load bounties',
+                          style: const TextStyle(
+                            color: AppColors.textHint,
+                            fontSize: 13,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        GestureDetector(
+                          onTap: () =>
+                              ref.read(bountyListProvider.notifier).refresh(),
+                          child: const Text(
+                            'tap to retry',
+                            style: TextStyle(
+                              color: AppColors.primary,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 )

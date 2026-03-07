@@ -56,6 +56,9 @@ export const env = {
   // Client
   CLIENT_URL: optional("CLIENT_URL", "http://localhost:3000"),
 
+  // Public URL (tunnel / production base URL for file proxy)
+  PUBLIC_URL: optional("PUBLIC_URL", ""),
+
   // Rate limit
   RATE_LIMIT_WINDOW_MS: parseInt(optional("RATE_LIMIT_WINDOW_MS", "900000"), 10),
   RATE_LIMIT_MAX: parseInt(optional("RATE_LIMIT_MAX", "100"), 10),

@@ -138,6 +138,44 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
                     ),
                   ),
                 )
+              // Error
+              else if (bountyState.error != null)
+                SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.error_outline,
+                          size: 40,
+                          color: AppColors.error,
+                        ),
+                        const SizedBox(height: 10),
+                        const Text(
+                          'failed to load bounties',
+                          style: TextStyle(
+                            color: AppColors.textHint,
+                            fontSize: 14,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        GestureDetector(
+                          onTap: () =>
+                              ref.read(bountyListProvider.notifier).refresh(),
+                          child: const Text(
+                            'tap to retry',
+                            style: TextStyle(
+                              color: AppColors.primary,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
               // Empty
               else if (bounties.isEmpty)
                 SliverFillRemaining(

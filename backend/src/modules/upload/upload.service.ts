@@ -106,8 +106,10 @@ export class UploadService {
   // ── Private ──────────────────────────────────────────────
 
   private buildUrl(objectKey: string): string {
-    const protocol = env.MINIO_USE_SSL ? "https" : "http";
-    return `${protocol}://${env.MINIO_ENDPOINT}:${env.MINIO_PORT}/${env.MINIO_BUCKET}/${objectKey}`;
+    // Serve via backend proxy so mobile devices can reach the file
+    // Route: GET /files/:bucket/:objectKey
+    const base = env.PUBLIC_URL || `http://localhost:${env.PORT || 3000}`;
+    return `${base}/files/${env.MINIO_BUCKET}/${objectKey}`;
   }
 }
 
