@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../data/models/bounty_model.dart';
 import '../providers/bounty_provider.dart';
 
@@ -233,6 +234,8 @@ class _BountyDetailScreenState extends ConsumerState<BountyDetailScreen> {
     final hasCoords = b.latitude != null && b.longitude != null;
     final isExpired = b.deadline.isBefore(DateTime.now());
     final isOpen = b.status == 'OPEN';
+    final currentUserId = ref.watch(authProvider).user?.id;
+    final isOwner = currentUserId != null && currentUserId == b.creator.id;
 
     return CustomScrollView(
       slivers: [
@@ -571,7 +574,41 @@ class _BountyDetailScreenState extends ConsumerState<BountyDetailScreen> {
                 const SizedBox(height: 24),
 
                 // Action buttons
-                if (isOpen && !isExpired) ...[
+                if (isOwner && isOpen) ...[
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: AppColors.primary.withValues(alpha: 0.2),
+                        width: 0.5,
+                      ),
+                    ),
+                    child: const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.verified_rounded,
+                          color: AppColors.primary,
+                          size: 18,
+                        ),
+                        SizedBox(width: 8),
+                        Text(
+                          'This is your bounty',
+                          style: TextStyle(
+                            color: AppColors.primary,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                ],
+                if (!isOwner && isOpen && !isExpired) ...[
                   SizedBox(
                     width: double.infinity,
                     height: 50,
@@ -610,7 +647,7 @@ class _BountyDetailScreenState extends ConsumerState<BountyDetailScreen> {
                 ],
 
                 // Delete (owner only, shown for OPEN status)
-                if (isOpen)
+                if (isOwner && isOpen)
                   SizedBox(
                     width: double.infinity,
                     height: 44,

@@ -102,6 +102,10 @@ export class BountyService {
     if (params.status) where.status = params.status;
     if (params.category) where.category = params.category;
     if (params.creatorId) where.creatorId = params.creatorId;
+    // If no explicit filter and no creatorId, hide CLAIMED/IN_REVIEW from public
+    if (!params.status && !params.creatorId) {
+      where.status = { in: ["OPEN", "COMPLETED", "CANCELLED"] };
+    }
 
     const [bounties, total] = await Promise.all([
       prisma.bounty.findMany({
@@ -244,12 +248,12 @@ export class BountyService {
   }
 
   /**
-   * Submit proof for a claim.
+   * Submit proof for a claim (supports multiple file URLs).
    */
   async submitProof(
     claimId: string,
     claimerId: string,
-    proofUrl: string,
+    proofUrls: string[],
     note?: string
   ) {
     const claim = await prisma.bountyClaim.findUnique({
@@ -269,7 +273,7 @@ export class BountyService {
       where: { id: claimId },
       data: {
         status: "SUBMITTED",
-        proofUrl,
+        proofUrl: proofUrls.join(","),
         note,
         submittedAt: new Date(),
       },
@@ -282,6 +286,40 @@ export class BountyService {
     });
 
     return updated;
+  }
+
+  /**
+   * Declaim / leave a bounty (only the claimer, only ACTIVE claims).
+   */
+  async declaim(claimId: string, claimerId: string) {
+    const claim = await prisma.bountyClaim.findUnique({
+      where: { id: claimId },
+      select: { claimerId: true, status: true, bountyId: true },
+    });
+
+    if (!claim) throw new NotFoundError("Claim not found");
+    if (claim.claimerId !== claimerId) {
+      throw new UnauthorizedError("Not your claim");
+    }
+    if (claim.status !== "ACTIVE") {
+      throw new UnauthorizedError("Can only leave active claims");
+    }
+
+    // Delete the claim
+    await prisma.bountyClaim.delete({ where: { id: claimId } });
+
+    // Check if any remaining claims exist for this bounty
+    const remaining = await prisma.bountyClaim.count({
+      where: { bountyId: claim.bountyId },
+    });
+
+    // If no claims left, re-open the bounty
+    if (remaining === 0) {
+      await prisma.bounty.update({
+        where: { id: claim.bountyId },
+        data: { status: "OPEN" },
+      });
+    }
   }
 
   /**
@@ -333,6 +371,7 @@ export class BountyService {
         submittedAt: true,
         resolvedAt: true,
         createdAt: true,
+        claimer: { select: { id: true, name: true, avatarUrl: true } },
         bounty: {
           select: {
             id: true,

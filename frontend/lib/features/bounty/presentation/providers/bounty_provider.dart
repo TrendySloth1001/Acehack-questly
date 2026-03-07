@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/network/dio_client.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../data/datasources/bounty_remote_datasource.dart';
 import '../../data/models/bounty_model.dart';
 import '../../data/repositories/bounty_repository.dart';
@@ -95,9 +96,13 @@ class MyClaimsNotifier extends StateNotifier<MyClaimsState> {
   Future<void> load() async {
     state = const MyClaimsState(isLoading: true);
     try {
+      debugPrint('[MyClaims] fetching claims...');
       final claims = await _repo.getMyClaims();
+      debugPrint('[MyClaims] loaded ${claims.length} claims');
       state = MyClaimsState(claims: claims);
-    } catch (e) {
+    } catch (e, st) {
+      debugPrint('[MyClaims] ERROR: $e');
+      debugPrint('[MyClaims] stack: $st');
       state = MyClaimsState(error: e.toString());
     }
   }
@@ -108,3 +113,46 @@ final myClaimsProvider = StateNotifierProvider<MyClaimsNotifier, MyClaimsState>(
     return MyClaimsNotifier(ref.read(bountyRepositoryProvider));
   },
 );
+
+// ── My created bounties ─────────────────────────────────────
+
+class MyBountiesState {
+  final List<BountyModel> bounties;
+  final bool isLoading;
+  final String? error;
+
+  const MyBountiesState({
+    this.bounties = const [],
+    this.isLoading = false,
+    this.error,
+  });
+}
+
+class MyBountiesNotifier extends StateNotifier<MyBountiesState> {
+  final BountyRepository _repo;
+  final String _userId;
+
+  MyBountiesNotifier(this._repo, this._userId)
+    : super(const MyBountiesState()) {
+    load();
+  }
+
+  Future<void> load() async {
+    state = const MyBountiesState(isLoading: true);
+    try {
+      final result = await _repo.listBounties(creatorId: _userId, limit: 20);
+      state = MyBountiesState(bounties: result.bounties);
+    } catch (e) {
+      debugPrint('[MyBounties] ERROR: $e');
+      state = MyBountiesState(error: e.toString());
+    }
+  }
+
+  Future<void> refresh() => load();
+}
+
+final myBountiesProvider =
+    StateNotifierProvider<MyBountiesNotifier, MyBountiesState>((ref) {
+      final userId = ref.watch(authProvider).user?.id ?? '';
+      return MyBountiesNotifier(ref.read(bountyRepositoryProvider), userId);
+    });
