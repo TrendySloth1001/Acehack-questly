@@ -81,10 +81,13 @@ class AuthNotifier extends StateNotifier<AuthState> {
       } catch (_) {}
     }
 
-    final onboarded = await _storage.read(AppConstants.onboardingKey);
-    final needsOnboarding = onboarded != 'true';
+    final needsOnboarding = cachedUser == null || !cachedUser.onboarded;
 
     if (cachedUser != null) {
+      // Sync local key from cached user
+      if (cachedUser.onboarded) {
+        await _storage.write(AppConstants.onboardingKey, 'true');
+      }
       state = AuthState(
         status: AuthStatus.authenticated,
         user: cachedUser,
@@ -96,10 +99,14 @@ class AuthNotifier extends StateNotifier<AuthState> {
     try {
       final freshUser = await _repo.me();
       await _cacheUser(freshUser);
+      // Use server's onboarded flag as source of truth
+      if (freshUser.onboarded) {
+        await _storage.write(AppConstants.onboardingKey, 'true');
+      }
       state = AuthState(
         status: AuthStatus.authenticated,
         user: freshUser,
-        needsOnboarding: needsOnboarding,
+        needsOnboarding: !freshUser.onboarded,
       );
     } catch (_) {
       // Token invalid → if no cached user, force logout
@@ -140,12 +147,15 @@ class AuthNotifier extends StateNotifier<AuthState> {
       final user = await _repo.loginWithGoogle(idToken);
       await _cacheUser(user);
 
-      final onboarded = await _storage.read(AppConstants.onboardingKey);
+      // Use server's onboarded flag as source of truth
+      if (user.onboarded) {
+        await _storage.write(AppConstants.onboardingKey, 'true');
+      }
 
       state = AuthState(
         status: AuthStatus.authenticated,
         user: user,
-        needsOnboarding: onboarded != 'true',
+        needsOnboarding: !user.onboarded,
       );
     } catch (e) {
       final msg = _friendlyError(e);
@@ -163,20 +173,39 @@ class AuthNotifier extends StateNotifier<AuthState> {
       await _repo.loginWithOAuthTokens(accessToken, refreshToken);
       final user = await _repo.me();
       await _cacheUser(user);
-      final onboarded = await _storage.read(AppConstants.onboardingKey);
+
+      if (user.onboarded) {
+        await _storage.write(AppConstants.onboardingKey, 'true');
+      }
+
       state = AuthState(
         status: AuthStatus.authenticated,
         user: user,
-        needsOnboarding: onboarded != 'true',
+        needsOnboarding: !user.onboarded,
       );
     } catch (e) {
       state = state.copyWith(isLoading: false, error: _friendlyError(e));
     }
   }
 
-  Future<void> completeOnboarding() async {
-    await _storage.write(AppConstants.onboardingKey, 'true');
-    state = state.copyWith(needsOnboarding: false);
+  /// Save onboarding data to backend, then mark as done locally.
+  Future<void> completeOnboarding(Map<String, dynamic> profileData) async {
+    try {
+      // Include onboarded flag in the payload
+      profileData['onboarded'] = true;
+      final updatedUser = await _repo.saveOnboardingProfile(profileData);
+      await _cacheUser(updatedUser);
+      await _storage.write(AppConstants.onboardingKey, 'true');
+      state = AuthState(
+        status: AuthStatus.authenticated,
+        user: updatedUser,
+        needsOnboarding: false,
+      );
+    } catch (e) {
+      // Even if backend fails, mark locally so user isn't stuck
+      await _storage.write(AppConstants.onboardingKey, 'true');
+      state = state.copyWith(needsOnboarding: false, error: _friendlyError(e));
+    }
   }
 
   Future<void> logout() async {

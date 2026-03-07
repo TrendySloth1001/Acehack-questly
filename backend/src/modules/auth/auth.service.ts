@@ -205,7 +205,7 @@ export class AuthService {
   }
 
   /**
-   * Get current user profile with minimal fields.
+   * Get current user profile (includes onboarding data).
    */
   async me(userId: string) {
     return prisma.user.findUniqueOrThrow({
@@ -216,6 +216,59 @@ export class AuthService {
         name: true,
         avatarUrl: true,
         role: true,
+        phone: true,
+        reason: true,
+        skills: true,
+        location: true,
+        latitude: true,
+        longitude: true,
+        onboarded: true,
+        createdAt: true,
+      },
+    });
+  }
+
+  /**
+   * Update user profile (onboarding + general edits).
+   */
+  async updateProfile(
+    userId: string,
+    data: {
+      name?: string;
+      phone?: string;
+      reason?: string;
+      skills?: string[];
+      location?: string;
+      latitude?: number;
+      longitude?: number;
+      onboarded?: boolean;
+    }
+  ) {
+    return prisma.user.update({
+      where: { id: userId },
+      data: {
+        ...(data.name !== undefined && { name: data.name }),
+        ...(data.phone !== undefined && { phone: data.phone }),
+        ...(data.reason !== undefined && { reason: data.reason }),
+        ...(data.skills !== undefined && { skills: data.skills }),
+        ...(data.location !== undefined && { location: data.location }),
+        ...(data.latitude !== undefined && { latitude: data.latitude }),
+        ...(data.longitude !== undefined && { longitude: data.longitude }),
+        ...(data.onboarded !== undefined && { onboarded: data.onboarded }),
+      },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        avatarUrl: true,
+        role: true,
+        phone: true,
+        reason: true,
+        skills: true,
+        location: true,
+        latitude: true,
+        longitude: true,
+        onboarded: true,
         createdAt: true,
       },
     });

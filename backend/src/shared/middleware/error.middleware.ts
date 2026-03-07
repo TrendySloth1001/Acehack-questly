@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from "express";
+import { Prisma } from "@prisma/client";
 import { AppError } from "../errors";
 import { sendError } from "../utils/api-response";
 import { HTTP_STATUS, ERROR_MESSAGES } from "../constants";
@@ -12,6 +13,15 @@ export function errorHandler(
 ): void {
   if (err instanceof AppError) {
     sendError(res, err.message, err.statusCode);
+    return;
+  }
+
+  // Prisma "record not found" → 404 or 401 depending on context
+  if (
+    err instanceof Prisma.PrismaClientKnownRequestError &&
+    err.code === "P2025"
+  ) {
+    sendError(res, "Resource not found", HTTP_STATUS.NOT_FOUND);
     return;
   }
 

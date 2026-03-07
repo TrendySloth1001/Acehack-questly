@@ -9,6 +9,13 @@ class UserModel {
   final String? name;
   final String? avatarUrl;
   final String role;
+  final String? phone;
+  final String? reason;
+  final List<String> skills;
+  final String? location;
+  final double? latitude;
+  final double? longitude;
+  final bool onboarded;
   final DateTime createdAt;
 
   const UserModel({
@@ -17,6 +24,13 @@ class UserModel {
     this.name,
     this.avatarUrl,
     required this.role,
+    this.phone,
+    this.reason,
+    this.skills = const [],
+    this.location,
+    this.latitude,
+    this.longitude,
+    this.onboarded = false,
     required this.createdAt,
   });
 

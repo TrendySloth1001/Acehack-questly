@@ -124,7 +124,11 @@ class _OnboardingLocationScreenState
 
     ref.read(onboardingProvider.notifier).setLocation(_locationC.text.trim());
 
-    await ref.read(authProvider.notifier).completeOnboarding();
+    // Collect all onboarding data and send to backend
+    final onboardingData = ref.read(onboardingProvider);
+    await ref
+        .read(authProvider.notifier)
+        .completeOnboarding(onboardingData.toJson());
 
     if (mounted) {
       context.go(AppRoutes.home);
@@ -153,7 +157,7 @@ class _OnboardingLocationScreenState
                     const StepIndicator(current: 4, total: 4),
                     const SizedBox(height: 24),
                     Text(
-                      'Your location',
+                      'Pin your location',
                       style: TextStyle(
                         color: AppColors.textPrimary,
                         fontSize: 22,
@@ -162,10 +166,12 @@ class _OnboardingLocationScreenState
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'We detect your coordinates and show them on the map.',
+                      'This helps people nearby find your bounties. '
+                      'Enter your campus or city below and tap "Let\'s go" to finish setup.',
                       style: TextStyle(
                         color: AppColors.textSecondary,
                         fontSize: 13,
+                        height: 1.4,
                       ),
                     ),
                   ],
@@ -272,21 +278,40 @@ class _OnboardingLocationScreenState
                           child: GestureDetector(
                             onTap: _locating ? null : _fetchLocation,
                             child: Container(
-                              padding: const EdgeInsets.all(10),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 8,
+                              ),
                               decoration: BoxDecoration(
                                 color: AppColors.surface,
-                                shape: BoxShape.circle,
+                                borderRadius: BorderRadius.circular(20),
                                 border: Border.all(
                                   color: AppColors.border,
                                   width: 0.5,
                                 ),
                               ),
-                              child: Icon(
-                                Icons.my_location,
-                                color: _locating
-                                    ? AppColors.textHint
-                                    : AppColors.primary,
-                                size: 18,
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.my_location,
+                                    color: _locating
+                                        ? AppColors.textHint
+                                        : AppColors.primary,
+                                    size: 16,
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    _locating ? 'Locating...' : 'Re-center',
+                                    style: TextStyle(
+                                      color: _locating
+                                          ? AppColors.textHint
+                                          : AppColors.primary,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ),
@@ -330,15 +355,15 @@ class _OnboardingLocationScreenState
                 padding: const EdgeInsets.fromLTRB(24, 12, 24, 0),
                 child: NeonTextField(
                   controller: _locationC,
-                  label: 'Campus / City',
-                  hint: 'e.g. IIT Delhi, VIT Vellore...',
+                  label: 'Campus / City *',
+                  hint: 'e.g. IIT Delhi, VIT Vellore, Bangalore...',
                   icon: Icons.location_city_outlined,
                 ),
               ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(24, 14, 24, 24),
                 child: NeonButton(
-                  label: 'Finish',
+                  label: "Let's go \u2192",
                   onPressed: _isSaving ? null : _finish,
                   isLoading: _isSaving,
                   color: AppColors.neonGreen,

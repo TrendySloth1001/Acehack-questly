@@ -30,17 +30,26 @@ model User {
   name          String?
   avatarUrl     String?
   password      String?      // null for OAuth-only users
+  phone         String?
+  reason        String?
+  skills        String[]     @default([])
+  location      String?
+  latitude      Float?
+  longitude     Float?
   role          Role         @default(USER)
   isActive      Boolean      @default(true)
   emailVerified Boolean      @default(false)
+  onboarded     Boolean      @default(false)
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
 
   // Relations
-  accounts      Account[]
-  refreshTokens RefreshToken[]
-  quests        Quest[]
-  uploads       Upload[]
+  accounts       Account[]
+  refreshTokens  RefreshToken[]
+  quests         Quest[]
+  uploads        Upload[]
+  bounties       Bounty[]
+  bountyClaims   BountyClaim[]
 
   @@index([email])
   @@map("users")
@@ -140,4 +149,74 @@ model Upload {
 
   @@index([userId])
   @@map("uploads")
+}
+
+// ──────────────────────────────
+// Bounty Domain (Micro-Task Board)
+// ──────────────────────────────
+
+enum BountyStatus {
+  OPEN
+  CLAIMED
+  IN_REVIEW
+  COMPLETED
+  CANCELLED
+}
+
+enum ClaimStatus {
+  ACTIVE
+  SUBMITTED
+  APPROVED
+  REJECTED
+}
+
+model Bounty {
+  id          String       @id @default(cuid())
+  creatorId   String
+  title       String
+  description String
+  category    String
+  algoAmount  Float        @default(0)
+  deadline    DateTime
+  status      BountyStatus @default(OPEN)
+  latitude    Float?
+  longitude   Float?
+  location    String?
+
+  // Images uploaded via MinIO
+  imageUrls   String[]     @default([])
+
+  // Dynamic extra fields the creator added (stored as JSON)
+  extraFields Json?
+
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  creator     User         @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  claims      BountyClaim[]
+
+  @@index([creatorId])
+  @@index([status])
+  @@index([deadline])
+  @@map("bounties")
+}
+
+model BountyClaim {
+  id          String      @id @default(cuid())
+  bountyId    String
+  claimerId   String
+  status      ClaimStatus @default(ACTIVE)
+  proofUrl    String?
+  note        String?
+  submittedAt DateTime?
+  resolvedAt  DateTime?
+  createdAt   DateTime    @default(now())
+
+  bounty      Bounty      @relation(fields: [bountyId], references: [id], onDelete: Cascade)
+  claimer     User        @relation(fields: [claimerId], references: [id], onDelete: Cascade)
+
+  @@unique([bountyId, claimerId])
+  @@index([bountyId])
+  @@index([claimerId])
+  @@map("bounty_claims")
 }

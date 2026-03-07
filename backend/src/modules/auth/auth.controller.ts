@@ -77,6 +77,11 @@ export class AuthController {
     sendSuccess({ res, data: user });
   }
 
+  async updateProfile(req: Request, res: Response) {
+    const user = await authService.updateProfile(req.currentUser!.userId, req.body);
+    sendSuccess({ res, data: user, message: 'Profile updated' });
+  }
+
   /**
    * POST /auth/google
    * Mobile clients (Flutter) send a Google idToken; we verify it and return JWTs.

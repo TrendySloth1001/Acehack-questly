@@ -36,6 +36,7 @@ router.post("/logout", asyncHandler(authController.logout));
 
 // ── Current user ────────────────────────────────────────────
 router.get("/me", authenticate, asyncHandler(authController.me));
+router.patch("/me", authenticate, asyncHandler(authController.updateProfile));
 
 // ── Google OAuth ────────────────────────────────────────────
 // Mobile clients (Flutter) POST an idToken here; web uses the redirect flow below

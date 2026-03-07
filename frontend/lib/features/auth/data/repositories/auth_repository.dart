@@ -44,6 +44,12 @@ class AuthRepository {
     return token != null;
   }
 
+  /// Save onboarding profile to backend and return updated user.
+  Future<UserModel> saveOnboardingProfile(Map<String, dynamic> data) async {
+    final response = await _remote.saveOnboardingProfile(data);
+    return UserModel.fromJson(response['data']);
+  }
+
   Future<void> _persistTokens(AuthTokensModel tokens) async {
     await _storage.write(AppConstants.accessTokenKey, tokens.accessToken);
     await _storage.write(AppConstants.refreshTokenKey, tokens.refreshToken);

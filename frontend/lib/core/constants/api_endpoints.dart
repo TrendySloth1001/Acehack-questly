@@ -22,4 +22,15 @@ class ApiEndpoints {
   static const String uploads = '/uploads';
   static String uploadPresigned(String id) => '/uploads/$id/presigned';
   static String uploadById(String id) => '/uploads/$id';
+
+  // ── Bounties ──────────────────────────────────────────────
+  static const String bounties = '/bounties';
+  static const String bountyUploadImages = '/bounties/upload-images';
+  static String bountyById(String id) => '/bounties/$id';
+  static String claimBounty(String id) => '/bounties/$id/claim';
+  static const String myClaims = '/bounties/claims/mine';
+  static String submitProof(String claimId) =>
+      '/bounties/claims/$claimId/proof';
+  static String resolveClaim(String claimId) =>
+      '/bounties/claims/$claimId/resolve';
 }
