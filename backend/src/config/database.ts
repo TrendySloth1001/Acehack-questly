@@ -10,7 +10,7 @@ function createPrismaClient() {
   const adapter = new PrismaPg(pool);
   return new PrismaClient({
     adapter,
-    log: env.IS_PRODUCTION ? ["error"] : ["query", "error", "warn"],
+    log: env.IS_PRODUCTION ? ["error"] : ["error", "warn"],
   });
 }
 

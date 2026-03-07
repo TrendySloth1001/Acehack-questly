@@ -15,7 +15,7 @@ const app = express();
 app.use(helmet());
 app.use(
   cors({
-    origin: env.CLIENT_URL,
+    origin: true, // allow any origin (mobile apps, dev tunnels, etc.)
     credentials: true,
   })
 );

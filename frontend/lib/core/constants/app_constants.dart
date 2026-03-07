@@ -43,9 +43,9 @@ class AppConstants {
   ];
 
   // ── Timeouts ──────────────────────────────────────────────
-  static const Duration connectTimeout = Duration(seconds: 20);
-  static const Duration receiveTimeout = Duration(seconds: 30);
-  static const Duration sendTimeout = Duration(seconds: 60);
+  static const Duration connectTimeout = Duration(seconds: 30);
+  static const Duration receiveTimeout = Duration(seconds: 60);
+  static const Duration sendTimeout = Duration(seconds: 90);
 
   // ── Animation ─────────────────────────────────────────────
   static const Duration defaultAnimDuration = Duration(milliseconds: 300);
