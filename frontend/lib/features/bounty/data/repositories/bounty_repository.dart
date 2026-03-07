@@ -64,4 +64,21 @@ class BountyRepository {
         .map((e) => BountyClaimModel.fromJson(e as Map<String, dynamic>))
         .toList();
   }
+
+  Future<void> submitProof(
+    String claimId, {
+    required List<String> proofUrls,
+    String? note,
+  }) async {
+    await _remote.submitProof(claimId, proofUrls: proofUrls, note: note);
+  }
+
+  Future<void> declaim(String claimId) async {
+    await _remote.declaim(claimId);
+  }
+
+  /// Approve or reject a claim.
+  Future<void> resolveClaim(String claimId, {required String action}) async {
+    await _remote.resolveClaim(claimId, action: action);
+  }
 }

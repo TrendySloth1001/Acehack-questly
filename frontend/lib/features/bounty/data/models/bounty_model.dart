@@ -17,6 +17,9 @@ class BountyModel {
   final BountyCreator creator;
   final int claimCount;
 
+  /// Only populated by getById (detail endpoint).
+  final List<BountyClaimModel> claims;
+
   const BountyModel({
     required this.id,
     required this.title,
@@ -34,6 +37,7 @@ class BountyModel {
     required this.updatedAt,
     required this.creator,
     this.claimCount = 0,
+    this.claims = const [],
   });
 
   factory BountyModel.fromJson(Map<String, dynamic> json) {
@@ -55,6 +59,11 @@ class BountyModel {
       updatedAt: DateTime.parse(json['updatedAt'] as String),
       creator: BountyCreator.fromJson(json['creator'] as Map<String, dynamic>),
       claimCount: count?['claims'] as int? ?? 0,
+      claims:
+          (json['claims'] as List<dynamic>?)
+              ?.map((e) => BountyClaimModel.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const [],
     );
   }
 }
@@ -97,6 +106,11 @@ class BountyClaimModel {
     required this.claimer,
     this.bounty,
   });
+
+  /// Multiple proof URLs stored comma-separated in [proofUrl].
+  List<String> get proofUrls => proofUrl != null && proofUrl!.isNotEmpty
+      ? proofUrl!.split(',')
+      : const [];
 
   factory BountyClaimModel.fromJson(Map<String, dynamic> json) {
     return BountyClaimModel(

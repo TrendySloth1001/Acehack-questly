@@ -55,13 +55,17 @@ export const resolveClaimValidation = [
 ];
 
 export const submitProofValidation = [
-  body("proofUrl")
+  body("proofUrls")
+    .isArray({ min: 1, max: 10 })
+    .withMessage("proofUrls must be an array with 1-10 items"),
+  body("proofUrls.*")
     .isString()
-    .trim()
-    .notEmpty()
-    .withMessage("Proof URL is required"),
+    .isURL({ require_tld: false })
+    .withMessage("Each proof URL must be a valid URL"),
   body("note")
     .optional()
     .isString()
     .trim(),
 ];
+
+export const declaimValidation: never[] = [];

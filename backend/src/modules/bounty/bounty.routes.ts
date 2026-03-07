@@ -5,6 +5,7 @@ import {
   createBountyValidation,
   resolveClaimValidation,
   submitProofValidation,
+  declaimValidation,
 } from "./bounty.validation";
 import { validate, authenticate, asyncHandler } from "../../shared/middleware";
 import { UPLOAD } from "../../shared/constants";
@@ -59,6 +60,11 @@ router.patch(
   resolveClaimValidation,
   validate,
   asyncHandler(bountyController.resolveClaim)
+);
+
+router.delete(
+  "/claims/:claimId",
+  asyncHandler(bountyController.declaim)
 );
 
 export default router;

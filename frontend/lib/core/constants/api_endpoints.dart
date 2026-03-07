@@ -9,7 +9,6 @@ class ApiEndpoints {
   static const String logout = '/auth/logout';
   static const String me = '/auth/me';
   static const String googleAuth = '/auth/google';
-  static const String githubAuth = '/auth/github';
 
   // ── Quests ────────────────────────────────────────────────
   static const String quests = '/quests';
@@ -33,4 +32,5 @@ class ApiEndpoints {
       '/bounties/claims/$claimId/proof';
   static String resolveClaim(String claimId) =>
       '/bounties/claims/$claimId/resolve';
+  static String declaim(String claimId) => '/bounties/claims/$claimId';
 }

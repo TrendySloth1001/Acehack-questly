@@ -23,6 +23,7 @@ class _BountyDetailScreenState extends ConsumerState<BountyDetailScreen> {
   String? _error;
   bool _claiming = false;
   bool _deleting = false;
+  bool _declaiming = false;
 
   @override
   void initState() {
@@ -52,6 +53,7 @@ class _BountyDetailScreenState extends ConsumerState<BountyDetailScreen> {
       final repo = ref.read(bountyRepositoryProvider);
       await repo.claimBounty(widget.bountyId);
       ref.read(bountyListProvider.notifier).refresh();
+      ref.read(myClaimsProvider.notifier).load();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -72,6 +74,121 @@ class _BountyDetailScreenState extends ConsumerState<BountyDetailScreen> {
       }
     } finally {
       if (mounted) setState(() => _claiming = false);
+    }
+  }
+
+  Future<void> _declaimBounty(String claimId) async {
+    final confirmed = await showModalBottomSheet<bool>(
+      context: context,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (_) => Padding(
+        padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              margin: const EdgeInsets.only(bottom: 20),
+              decoration: BoxDecoration(
+                color: AppColors.border,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const Icon(
+              Icons.exit_to_app_rounded,
+              color: AppColors.warning,
+              size: 36,
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'Leave this bounty?',
+              style: TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 6),
+            const Text(
+              'Your claim will be removed and the bounty will return to the public pool.',
+              style: TextStyle(color: AppColors.textHint, fontSize: 13),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.textSecondary,
+                      side: const BorderSide(color: AppColors.border),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                    child: const Text('Cancel'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.pop(context, true),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.warning,
+                      foregroundColor: Colors.black,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      elevation: 0,
+                    ),
+                    child: const Text(
+                      'Leave',
+                      style: TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    setState(() => _declaiming = true);
+    try {
+      final repo = ref.read(bountyRepositoryProvider);
+      await repo.declaim(claimId);
+      ref.read(bountyListProvider.notifier).refresh();
+      ref.read(myClaimsProvider.notifier).load();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('You left the bounty'),
+            backgroundColor: AppColors.neonGreen,
+          ),
+        );
+        _load();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(_friendlyError(e)),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _declaiming = false);
     }
   }
 
@@ -188,6 +305,38 @@ class _BountyDetailScreenState extends ConsumerState<BountyDetailScreen> {
     }
   }
 
+  Future<void> _resolveClaim(String claimId, String action) async {
+    try {
+      final repo = ref.read(bountyRepositoryProvider);
+      await repo.resolveClaim(claimId, action: action);
+      ref.read(bountyListProvider.notifier).refresh();
+      ref.read(myClaimsProvider.notifier).load();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              action == 'APPROVED'
+                  ? 'Claim approved!'
+                  : 'Claim rejected',
+            ),
+            backgroundColor:
+                action == 'APPROVED' ? AppColors.neonGreen : AppColors.error,
+          ),
+        );
+        _load();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(_friendlyError(e)),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -200,10 +349,10 @@ class _BountyDetailScreenState extends ConsumerState<BountyDetailScreen> {
               ),
             )
           : _error != null
-          ? _buildError()
-          : _bounty != null
-          ? _buildContent()
-          : const SizedBox.shrink(),
+              ? _buildError()
+              : _bounty != null
+                  ? _buildContent()
+                  : const SizedBox.shrink(),
     );
   }
 
@@ -237,23 +386,35 @@ class _BountyDetailScreenState extends ConsumerState<BountyDetailScreen> {
     final currentUserId = ref.watch(authProvider).user?.id;
     final isOwner = currentUserId != null && currentUserId == b.creator.id;
 
+    // Find current user's claim on this bounty (if any)
+    BountyClaimModel? myClaim;
+    if (currentUserId != null && b.claims.isNotEmpty) {
+      for (final c in b.claims) {
+        if (c.claimer.id == currentUserId) {
+          myClaim = c;
+          break;
+        }
+      }
+    }
+
     return CustomScrollView(
       slivers: [
-        // Image gallery or placeholder
+        // ── Minimal AppBar (no cover image) ───────────────────
         SliverAppBar(
           backgroundColor: AppColors.background,
-          expandedHeight: b.imageUrls.isNotEmpty ? 260 : 0,
           pinned: true,
+          expandedHeight: 0,
           leading: IconButton(
             icon: Container(
               padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.5),
+                color: AppColors.surface,
                 shape: BoxShape.circle,
+                border: Border.all(color: AppColors.border, width: 0.5),
               ),
               child: const Icon(
                 Icons.arrow_back,
-                color: Colors.white,
+                color: AppColors.textPrimary,
                 size: 20,
               ),
             ),
@@ -264,46 +425,28 @@ class _BountyDetailScreenState extends ConsumerState<BountyDetailScreen> {
               icon: Container(
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.5),
+                  color: AppColors.surface,
                   shape: BoxShape.circle,
+                  border: Border.all(color: AppColors.border, width: 0.5),
                 ),
                 child: const Icon(
                   Icons.share_outlined,
-                  color: Colors.white,
+                  color: AppColors.textPrimary,
                   size: 18,
                 ),
               ),
               onPressed: () {},
             ),
           ],
-          flexibleSpace: b.imageUrls.isNotEmpty
-              ? FlexibleSpaceBar(
-                  background: PageView.builder(
-                    itemCount: b.imageUrls.length,
-                    itemBuilder: (_, i) => Image.network(
-                      b.imageUrls[i],
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, _, _) => Container(
-                        color: AppColors.surface,
-                        child: const Icon(
-                          Icons.broken_image_outlined,
-                          color: AppColors.textHint,
-                          size: 40,
-                        ),
-                      ),
-                    ),
-                  ),
-                )
-              : null,
         ),
 
         SliverToBoxAdapter(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Status + category row
+                // ── Status + category + reward ─────────────────
                 Row(
                   children: [
                     _statusChip(b.status),
@@ -311,32 +454,47 @@ class _BountyDetailScreenState extends ConsumerState<BountyDetailScreen> {
                     _chip(Icons.category_outlined, b.category),
                     const Spacer(),
                     if (b.algoAmount > 0)
-                      Text(
-                        '${b.algoAmount.toStringAsFixed(b.algoAmount == b.algoAmount.roundToDouble() ? 0 : 1)} ALGO',
-                        style: const TextStyle(
-                          color: AppColors.neonGreen,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w800,
-                          fontFamily: 'monospace',
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.neonGreen.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: AppColors.neonGreen.withValues(alpha: 0.3),
+                            width: 0.5,
+                          ),
+                        ),
+                        child: Text(
+                          '${b.algoAmount.toStringAsFixed(b.algoAmount == b.algoAmount.roundToDouble() ? 0 : 1)} ALGO',
+                          style: const TextStyle(
+                            color: AppColors.neonGreen,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                            fontFamily: 'monospace',
+                          ),
                         ),
                       ),
                   ],
                 ),
-                const SizedBox(height: 14),
+                const SizedBox(height: 16),
 
-                // Title
+                // ── Title ──────────────────────────────────────
                 Text(
                   b.title,
                   style: const TextStyle(
                     color: AppColors.textPrimary,
-                    fontSize: 20,
+                    fontSize: 22,
                     fontWeight: FontWeight.w800,
                     height: 1.3,
+                    letterSpacing: -0.3,
                   ),
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 12),
 
-                // Creator row
+                // ── Creator row ────────────────────────────────
                 Row(
                   children: [
                     CircleAvatar(
@@ -394,9 +552,9 @@ class _BountyDetailScreenState extends ConsumerState<BountyDetailScreen> {
                     ],
                   ],
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 24),
 
-                // Description
+                // ── Description ────────────────────────────────
                 const Text(
                   'Description',
                   style: TextStyle(
@@ -414,9 +572,15 @@ class _BountyDetailScreenState extends ConsumerState<BountyDetailScreen> {
                     height: 1.5,
                   ),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 24),
 
-                // Location + Map
+                // ── Reference Images Gallery ──────────────────
+                if (b.imageUrls.isNotEmpty) ...[
+                  _ReferenceImagesGallery(imageUrls: b.imageUrls),
+                  const SizedBox(height: 24),
+                ],
+
+                // ── Location + Map ────────────────────────────
                 if (b.location != null || hasCoords) ...[
                   const Text(
                     'Location',
@@ -476,9 +640,7 @@ class _BountyDetailScreenState extends ConsumerState<BountyDetailScreen> {
                                       shape: BoxShape.circle,
                                       boxShadow: [
                                         BoxShadow(
-                                          color: AppColors.primary.withValues(
-                                            alpha: 0.4,
-                                          ),
+                                          color: AppColors.primary.withValues(alpha: 0.4),
                                           blurRadius: 10,
                                         ),
                                       ],
@@ -497,10 +659,10 @@ class _BountyDetailScreenState extends ConsumerState<BountyDetailScreen> {
                       ),
                     ),
                   ],
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 24),
                 ],
 
-                // Extra fields
+                // ── Extra fields ──────────────────────────────
                 if (b.extraFields != null && b.extraFields!.isNotEmpty) ...[
                   const Text(
                     'Details',
@@ -541,10 +703,10 @@ class _BountyDetailScreenState extends ConsumerState<BountyDetailScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 24),
                 ],
 
-                // Meta info
+                // ── Meta info ─────────────────────────────────
                 Container(
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
@@ -556,24 +718,39 @@ class _BountyDetailScreenState extends ConsumerState<BountyDetailScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
                       _metaItem('Deadline', _formatDate(b.deadline)),
-                      Container(
-                        width: 0.5,
-                        height: 30,
-                        color: AppColors.border,
-                      ),
+                      Container(width: 0.5, height: 30, color: AppColors.border),
                       _metaItem('Claims', '${b.claimCount}'),
-                      Container(
-                        width: 0.5,
-                        height: 30,
-                        color: AppColors.border,
-                      ),
+                      Container(width: 0.5, height: 30, color: AppColors.border),
                       _metaItem('Status', b.status.toLowerCase()),
                     ],
                   ),
                 ),
                 const SizedBox(height: 24),
 
-                // Action buttons
+                // ── Your claim status section ─────────────────
+                if (myClaim != null) ...[
+                  _MyClaimSection(
+                    claim: myClaim,
+                    bountyId: widget.bountyId,
+                    onDeclaim: () => _declaimBounty(myClaim!.id),
+                    isDeclaiming: _declaiming,
+                    onReload: _load,
+                  ),
+                  const SizedBox(height: 16),
+                ],
+
+                // ── Owner: Claims & Submissions ───────────────
+                if (isOwner && b.claims.isNotEmpty) ...[
+                  _OwnerClaimsSection(
+                    claims: b.claims,
+                    onResolve: (claimId, action) async {
+                      await _resolveClaim(claimId, action);
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                ],
+
+                // ── Owner banner ──────────────────────────────
                 if (isOwner && isOpen) ...[
                   Container(
                     width: double.infinity,
@@ -589,11 +766,7 @@ class _BountyDetailScreenState extends ConsumerState<BountyDetailScreen> {
                     child: const Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(
-                          Icons.verified_rounded,
-                          color: AppColors.primary,
-                          size: 18,
-                        ),
+                        Icon(Icons.verified_rounded, color: AppColors.primary, size: 18),
                         SizedBox(width: 8),
                         Text(
                           'This is your bounty',
@@ -608,7 +781,9 @@ class _BountyDetailScreenState extends ConsumerState<BountyDetailScreen> {
                   ),
                   const SizedBox(height: 10),
                 ],
-                if (!isOwner && isOpen && !isExpired) ...[
+
+                // ── Claim button ──────────────────────────────
+                if (!isOwner && isOpen && !isExpired && myClaim == null) ...[
                   SizedBox(
                     width: double.infinity,
                     height: 50,
@@ -617,9 +792,7 @@ class _BountyDetailScreenState extends ConsumerState<BountyDetailScreen> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.neonGreen,
                         foregroundColor: Colors.black,
-                        disabledBackgroundColor: AppColors.neonGreen.withValues(
-                          alpha: 0.3,
-                        ),
+                        disabledBackgroundColor: AppColors.neonGreen.withValues(alpha: 0.3),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -636,17 +809,14 @@ class _BountyDetailScreenState extends ConsumerState<BountyDetailScreen> {
                             )
                           : const Text(
                               'Claim this bounty',
-                              style: TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w700,
-                              ),
+                              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
                             ),
                     ),
                   ),
                   const SizedBox(height: 10),
                 ],
 
-                // Delete (owner only, shown for OPEN status)
+                // ── Delete (owner only) ─────────────────────
                 if (isOwner && isOpen)
                   SizedBox(
                     width: double.infinity,
@@ -666,9 +836,7 @@ class _BountyDetailScreenState extends ConsumerState<BountyDetailScreen> {
                       label: const Text('Delete bounty'),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: AppColors.error,
-                        side: BorderSide(
-                          color: AppColors.error.withValues(alpha: 0.3),
-                        ),
+                        side: BorderSide(color: AppColors.error.withValues(alpha: 0.3)),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -685,24 +853,21 @@ class _BountyDetailScreenState extends ConsumerState<BountyDetailScreen> {
     );
   }
 
+  // ─── Helper widgets ───────────────────────────────────────
+
   Widget _statusChip(String status) {
     Color color;
     switch (status) {
       case 'OPEN':
         color = AppColors.neonGreen;
-        break;
       case 'CLAIMED':
         color = AppColors.primary;
-        break;
       case 'IN_REVIEW':
         color = AppColors.warning;
-        break;
       case 'COMPLETED':
         color = AppColors.neonGreen;
-        break;
       case 'CANCELLED':
         color = AppColors.error;
-        break;
       default:
         color = AppColors.textHint;
     }
@@ -715,11 +880,7 @@ class _BountyDetailScreenState extends ConsumerState<BountyDetailScreen> {
       ),
       child: Text(
         status.toLowerCase().replaceAll('_', ' '),
-        style: TextStyle(
-          color: color,
-          fontSize: 11,
-          fontWeight: FontWeight.w700,
-        ),
+        style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w700),
       ),
     );
   }
@@ -753,10 +914,7 @@ class _BountyDetailScreenState extends ConsumerState<BountyDetailScreen> {
   Widget _metaItem(String label, String value) {
     return Column(
       children: [
-        Text(
-          label,
-          style: const TextStyle(color: AppColors.textHint, fontSize: 11),
-        ),
+        Text(label, style: const TextStyle(color: AppColors.textHint, fontSize: 11)),
         const SizedBox(height: 4),
         Text(
           value,
@@ -807,19 +965,910 @@ class _BountyDetailScreenState extends ConsumerState<BountyDetailScreen> {
 
   String _formatDate(DateTime d) {
     const months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
     ];
     return '${months[d.month - 1]} ${d.day}, ${d.year}';
+  }
+}
+
+// ═════════════════════════════════════════════════════════════
+//  Reference Images Gallery — horizontal scroll + counter
+// ═════════════════════════════════════════════════════════════
+
+class _ReferenceImagesGallery extends StatefulWidget {
+  final List<String> imageUrls;
+  const _ReferenceImagesGallery({required this.imageUrls});
+
+  @override
+  State<_ReferenceImagesGallery> createState() =>
+      _ReferenceImagesGalleryState();
+}
+
+class _ReferenceImagesGalleryState extends State<_ReferenceImagesGallery> {
+  int _currentPage = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    final count = widget.imageUrls.length;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Section header with count
+        Row(
+          children: [
+            const Icon(
+              Icons.photo_library_outlined,
+              color: AppColors.primary,
+              size: 16,
+            ),
+            const SizedBox(width: 6),
+            const Text(
+              'Reference Images',
+              style: TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: AppColors.primaryDim,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                '$count image${count == 1 ? '' : 's'}',
+                style: const TextStyle(
+                  color: AppColors.primary,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            const Spacer(),
+            if (count > 1)
+              Text(
+                'swipe to browse \u2192',
+                style: TextStyle(
+                  color: AppColors.textHint.withValues(alpha: 0.6),
+                  fontSize: 11,
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(height: 10),
+
+        // Scrollable gallery
+        SizedBox(
+          height: 200,
+          child: PageView.builder(
+            itemCount: count,
+            onPageChanged: (i) => setState(() => _currentPage = i),
+            itemBuilder: (_, i) => GestureDetector(
+              onTap: () => _showFullScreen(context, i),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    Image.network(
+                      widget.imageUrls[i],
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, _, _) => Container(
+                        color: AppColors.surface,
+                        child: const Icon(
+                          Icons.broken_image_outlined,
+                          color: AppColors.textHint,
+                          size: 40,
+                        ),
+                      ),
+                    ),
+                    // Gradient overlay at bottom
+                    Positioned(
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
+                      child: Container(
+                        height: 40,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Colors.transparent,
+                              Colors.black.withValues(alpha: 0.5),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    // Counter badge
+                    if (count > 1)
+                      Positioned(
+                        bottom: 8,
+                        right: 8,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withValues(alpha: 0.6),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            '${i + 1} / $count',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+
+        // Dot indicator
+        if (count > 1) ...[
+          const SizedBox(height: 10),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(
+              count,
+              (i) => AnimatedContainer(
+                duration: const Duration(milliseconds: 250),
+                margin: const EdgeInsets.symmetric(horizontal: 3),
+                width: _currentPage == i ? 18 : 6,
+                height: 6,
+                decoration: BoxDecoration(
+                  color: _currentPage == i ? AppColors.primary : AppColors.border,
+                  borderRadius: BorderRadius.circular(3),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  void _showFullScreen(BuildContext context, int initialIndex) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => _FullScreenGallery(
+          imageUrls: widget.imageUrls,
+          initialIndex: initialIndex,
+        ),
+      ),
+    );
+  }
+}
+
+// ═════════════════════════════════════════════════════════════
+//  Full-screen image viewer
+// ═════════════════════════════════════════════════════════════
+
+class _FullScreenGallery extends StatefulWidget {
+  final List<String> imageUrls;
+  final int initialIndex;
+
+  const _FullScreenGallery({
+    required this.imageUrls,
+    required this.initialIndex,
+  });
+
+  @override
+  State<_FullScreenGallery> createState() => _FullScreenGalleryState();
+}
+
+class _FullScreenGalleryState extends State<_FullScreenGallery> {
+  late PageController _controller;
+  late int _currentPage;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentPage = widget.initialIndex;
+    _controller = PageController(initialPage: widget.initialIndex);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final count = widget.imageUrls.length;
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        foregroundColor: Colors.white,
+        elevation: 0,
+        title: Text(
+          '${_currentPage + 1} of $count',
+          style: const TextStyle(fontSize: 14),
+        ),
+        centerTitle: true,
+      ),
+      body: PageView.builder(
+        controller: _controller,
+        itemCount: count,
+        onPageChanged: (i) => setState(() => _currentPage = i),
+        itemBuilder: (_, i) => InteractiveViewer(
+          minScale: 0.5,
+          maxScale: 4.0,
+          child: Center(
+            child: Image.network(
+              widget.imageUrls[i],
+              fit: BoxFit.contain,
+              errorBuilder: (_, _, _) => const Icon(
+                Icons.broken_image_outlined,
+                color: AppColors.textHint,
+                size: 60,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ═════════════════════════════════════════════════════════════
+//  My Claim Section — shows claim status + actions
+// ═════════════════════════════════════════════════════════════
+
+class _MyClaimSection extends ConsumerWidget {
+  final BountyClaimModel claim;
+  final String bountyId;
+  final VoidCallback onDeclaim;
+  final bool isDeclaiming;
+  final VoidCallback onReload;
+
+  const _MyClaimSection({
+    required this.claim,
+    required this.bountyId,
+    required this.onDeclaim,
+    required this.isDeclaiming,
+    required this.onReload,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isActive = claim.status == 'ACTIVE';
+    final isSubmitted = claim.status == 'SUBMITTED';
+    final isApproved = claim.status == 'APPROVED';
+    final isRejected = claim.status == 'REJECTED';
+
+    final statusColor = _claimColor(claim.status);
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: statusColor.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: statusColor.withValues(alpha: 0.2),
+          width: 0.5,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Row(
+            children: [
+              Icon(
+                isActive
+                    ? Icons.assignment_outlined
+                    : isSubmitted
+                        ? Icons.hourglass_top_rounded
+                        : isApproved
+                            ? Icons.check_circle_outlined
+                            : Icons.cancel_outlined,
+                color: statusColor,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  isActive
+                      ? 'You claimed this bounty'
+                      : isSubmitted
+                          ? 'Work submitted \u2014 under review'
+                          : isApproved
+                              ? 'Your work was approved!'
+                              : 'Your submission was rejected',
+                  style: TextStyle(
+                    color: statusColor,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          // Show submitted proof
+          if (isSubmitted || isApproved || isRejected) ...[
+            if (claim.proofUrls.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              const Text(
+                'Submitted attachments',
+                style: TextStyle(
+                  color: AppColors.textHint,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 8),
+              SizedBox(
+                height: 80,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: claim.proofUrls.length,
+                  separatorBuilder: (_, _) => const SizedBox(width: 8),
+                  itemBuilder: (_, i) {
+                    final url = claim.proofUrls[i];
+                    final isPdf = url.toLowerCase().endsWith('.pdf');
+                    return ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: isPdf
+                          ? Container(
+                              width: 80,
+                              height: 80,
+                              color: AppColors.surface,
+                              child: const Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.picture_as_pdf_outlined,
+                                    color: AppColors.error,
+                                    size: 28,
+                                  ),
+                                  SizedBox(height: 4),
+                                  Text(
+                                    'PDF',
+                                    style: TextStyle(
+                                      color: AppColors.textHint,
+                                      fontSize: 10,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            )
+                          : Image.network(
+                              url,
+                              width: 80,
+                              height: 80,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, _, _) => Container(
+                                width: 80,
+                                height: 80,
+                                color: AppColors.surface,
+                                child: const Icon(
+                                  Icons.broken_image_outlined,
+                                  color: AppColors.textHint,
+                                  size: 24,
+                                ),
+                              ),
+                            ),
+                    );
+                  },
+                ),
+              ),
+            ],
+            if (claim.note != null && claim.note!.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  claim.note!,
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 13,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ),
+            ],
+          ],
+
+          const SizedBox(height: 14),
+
+          // Action buttons
+          if (isActive) ...[
+            // Submit Work button
+            SizedBox(
+              width: double.infinity,
+              height: 46,
+              child: ElevatedButton.icon(
+                onPressed: () async {
+                  final result = await context.push<bool>(
+                    '/home/bounty/$bountyId/submit-proof?claimId=${claim.id}',
+                  );
+                  if (result == true) onReload();
+                },
+                icon: const Icon(Icons.upload_file_rounded, size: 18),
+                label: const Text(
+                  'Submit Work',
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.neonGreen,
+                  foregroundColor: Colors.black,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  elevation: 0,
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+            // Leave bounty button
+            SizedBox(
+              width: double.infinity,
+              height: 42,
+              child: OutlinedButton.icon(
+                onPressed: isDeclaiming ? null : onDeclaim,
+                icon: isDeclaiming
+                    ? const SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(
+                          color: AppColors.warning,
+                          strokeWidth: 1.5,
+                        ),
+                      )
+                    : const Icon(Icons.exit_to_app_rounded, size: 16),
+                label: const Text('Leave bounty'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.warning,
+                  side: BorderSide(color: AppColors.warning.withValues(alpha: 0.3)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ),
+          ],
+
+          // Rejected — allow resubmission
+          if (isRejected) ...[
+            SizedBox(
+              width: double.infinity,
+              height: 46,
+              child: ElevatedButton.icon(
+                onPressed: () async {
+                  final result = await context.push<bool>(
+                    '/home/bounty/$bountyId/submit-proof?claimId=${claim.id}',
+                  );
+                  if (result == true) onReload();
+                },
+                icon: const Icon(Icons.refresh_rounded, size: 18),
+                label: const Text(
+                  'Resubmit Work',
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.neonOrange,
+                  foregroundColor: Colors.black,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  elevation: 0,
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Color _claimColor(String status) {
+    switch (status) {
+      case 'ACTIVE':
+        return AppColors.primary;
+      case 'SUBMITTED':
+        return AppColors.warning;
+      case 'APPROVED':
+        return AppColors.neonGreen;
+      case 'REJECTED':
+        return AppColors.error;
+      default:
+        return AppColors.textHint;
+    }
+  }
+}
+
+// ═════════════════════════════════════════════════════════════
+//  Owner Claims Section — see all claims + approve / reject
+// ═════════════════════════════════════════════════════════════
+
+class _OwnerClaimsSection extends StatefulWidget {
+  final List<BountyClaimModel> claims;
+  final Future<void> Function(String claimId, String action) onResolve;
+
+  const _OwnerClaimsSection({
+    required this.claims,
+    required this.onResolve,
+  });
+
+  @override
+  State<_OwnerClaimsSection> createState() => _OwnerClaimsSectionState();
+}
+
+class _OwnerClaimsSectionState extends State<_OwnerClaimsSection> {
+  String? _resolvingClaimId;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Section header
+        Row(
+          children: [
+            const Icon(Icons.group_outlined, color: AppColors.primary, size: 18),
+            const SizedBox(width: 8),
+            const Text(
+              'Claims & Submissions',
+              style: TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: AppColors.primaryDim,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                '${widget.claims.length}',
+                style: const TextStyle(
+                  color: AppColors.primary,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+
+        // Claim cards
+        ...widget.claims.map((claim) => _buildClaimCard(claim)),
+      ],
+    );
+  }
+
+  Widget _buildClaimCard(BountyClaimModel claim) {
+    final statusColor = _statusColor(claim.status);
+    final isSubmitted = claim.status == 'SUBMITTED';
+    final isApproved = claim.status == 'APPROVED';
+    final isRejected = claim.status == 'REJECTED';
+    final hasProof = isSubmitted || isApproved || isRejected;
+    final isResolving = _resolvingClaimId == claim.id;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.border, width: 0.5),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ── Claimer row ─────────────────────────────
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 16,
+                backgroundColor: AppColors.primaryDim,
+                backgroundImage: claim.claimer.avatarUrl != null
+                    ? NetworkImage(claim.claimer.avatarUrl!)
+                    : null,
+                child: claim.claimer.avatarUrl == null
+                    ? const Icon(Icons.person, color: AppColors.primary, size: 16)
+                    : null,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      claim.claimer.name ?? 'anonymous',
+                      style: const TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'claimed ${_timeAgo(claim.createdAt)}',
+                      style: const TextStyle(
+                        color: AppColors.textHint,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Status badge
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: statusColor.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: statusColor.withValues(alpha: 0.25),
+                    width: 0.5,
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      isApproved
+                          ? Icons.check_circle_outline_rounded
+                          : isSubmitted
+                              ? Icons.hourglass_top_rounded
+                              : isRejected
+                                  ? Icons.cancel_outlined
+                                  : Icons.assignment_outlined,
+                      color: statusColor,
+                      size: 12,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      claim.status.toLowerCase(),
+                      style: TextStyle(
+                        color: statusColor,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+
+          // ── Proof thumbnails ────────────────────────
+          if (hasProof && claim.proofUrls.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            const Text(
+              'Submitted work',
+              style: TextStyle(
+                color: AppColors.textHint,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 8),
+            SizedBox(
+              height: 80,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: claim.proofUrls.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 8),
+                itemBuilder: (_, i) {
+                  final url = claim.proofUrls[i];
+                  final isPdf = url.toLowerCase().endsWith('.pdf');
+                  return GestureDetector(
+                    onTap: () => _showFullScreenProof(context, claim.proofUrls, i),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: isPdf
+                          ? Container(
+                              width: 80,
+                              height: 80,
+                              color: AppColors.card,
+                              child: const Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.picture_as_pdf_outlined,
+                                      color: AppColors.error, size: 28),
+                                  SizedBox(height: 4),
+                                  Text('PDF',
+                                      style: TextStyle(
+                                          color: AppColors.textHint,
+                                          fontSize: 10)),
+                                ],
+                              ),
+                            )
+                          : Image.network(
+                              url,
+                              width: 80,
+                              height: 80,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, e, s) => Container(
+                                width: 80,
+                                height: 80,
+                                color: AppColors.card,
+                                child: const Icon(Icons.broken_image_outlined,
+                                    color: AppColors.textHint, size: 24),
+                              ),
+                            ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+
+          // ── Note ────────────────────────────────────
+          if (hasProof && claim.note != null && claim.note!.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: AppColors.card,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                claim.note!,
+                style: const TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 13,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ),
+          ],
+
+          // ── Submitted at ────────────────────────────
+          if (hasProof && claim.submittedAt != null) ...[
+            const SizedBox(height: 8),
+            Text(
+              'submitted ${_timeAgo(claim.submittedAt!)}',
+              style: const TextStyle(
+                color: AppColors.textHint,
+                fontSize: 11,
+              ),
+            ),
+          ],
+
+          // ── Approve / Reject buttons ────────────────
+          if (isSubmitted) ...[
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                Expanded(
+                  child: SizedBox(
+                    height: 40,
+                    child: OutlinedButton.icon(
+                      onPressed: isResolving
+                          ? null
+                          : () => _resolve(claim.id, 'REJECTED'),
+                      icon: isResolving
+                          ? const SizedBox(
+                              width: 14,
+                              height: 14,
+                              child: CircularProgressIndicator(
+                                color: AppColors.error,
+                                strokeWidth: 1.5,
+                              ),
+                            )
+                          : const Icon(Icons.close_rounded, size: 16),
+                      label: const Text('Reject'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.error,
+                        side: BorderSide(
+                            color: AppColors.error.withValues(alpha: 0.3)),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10)),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: SizedBox(
+                    height: 40,
+                    child: ElevatedButton.icon(
+                      onPressed: isResolving
+                          ? null
+                          : () => _resolve(claim.id, 'APPROVED'),
+                      icon: isResolving
+                          ? const SizedBox(
+                              width: 14,
+                              height: 14,
+                              child: CircularProgressIndicator(
+                                color: Colors.black,
+                                strokeWidth: 1.5,
+                              ),
+                            )
+                          : const Icon(Icons.check_rounded, size: 18),
+                      label: const Text('Approve',
+                          style: TextStyle(fontWeight: FontWeight.w700)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.neonGreen,
+                        foregroundColor: Colors.black,
+                        disabledBackgroundColor:
+                            AppColors.neonGreen.withValues(alpha: 0.3),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10)),
+                        elevation: 0,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Future<void> _resolve(String claimId, String action) async {
+    setState(() => _resolvingClaimId = claimId);
+    try {
+      await widget.onResolve(claimId, action);
+    } finally {
+      if (mounted) setState(() => _resolvingClaimId = null);
+    }
+  }
+
+  void _showFullScreenProof(
+      BuildContext context, List<String> urls, int initialIndex) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => _FullScreenGallery(
+          imageUrls: urls,
+          initialIndex: initialIndex,
+        ),
+      ),
+    );
+  }
+
+  Color _statusColor(String status) {
+    switch (status) {
+      case 'ACTIVE':
+        return AppColors.primary;
+      case 'SUBMITTED':
+        return AppColors.warning;
+      case 'APPROVED':
+        return AppColors.neonGreen;
+      case 'REJECTED':
+        return AppColors.error;
+      default:
+        return AppColors.textHint;
+    }
+  }
+
+  String _timeAgo(DateTime dt) {
+    final diff = DateTime.now().difference(dt);
+    if (diff.inDays > 30) return '${(diff.inDays / 30).floor()}mo ago';
+    if (diff.inDays > 0) return '${diff.inDays}d ago';
+    if (diff.inHours > 0) return '${diff.inHours}h ago';
+    if (diff.inMinutes > 0) return '${diff.inMinutes}m ago';
+    return 'just now';
   }
 }

@@ -84,4 +84,32 @@ class BountyRemoteDataSource {
     final response = await _dio.get(ApiEndpoints.myClaims);
     return response.data as Map<String, dynamic>;
   }
+
+  Future<Map<String, dynamic>> submitProof(
+    String claimId, {
+    required List<String> proofUrls,
+    String? note,
+  }) async {
+    final response = await _dio.patch(
+      ApiEndpoints.submitProof(claimId),
+      data: {'proofUrls': proofUrls, if (note != null) 'note': note},
+    );
+    return response.data as Map<String, dynamic>;
+  }
+
+  Future<void> declaim(String claimId) async {
+    await _dio.delete(ApiEndpoints.declaim(claimId));
+  }
+
+  /// Approve or reject a claim (bounty owner only).
+  Future<Map<String, dynamic>> resolveClaim(
+    String claimId, {
+    required String action,
+  }) async {
+    final response = await _dio.patch(
+      ApiEndpoints.resolveClaim(claimId),
+      data: {'action': action},
+    );
+    return response.data as Map<String, dynamic>;
+  }
 }

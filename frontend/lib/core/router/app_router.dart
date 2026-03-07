@@ -18,6 +18,7 @@ import '../../features/quest/presentation/screens/quest_detail_screen.dart';
 import '../../features/quest/presentation/screens/create_quest_screen.dart';
 import '../../features/bounty/presentation/screens/create_bounty_screen.dart';
 import '../../features/bounty/presentation/screens/bounty_detail_screen.dart';
+import '../../features/bounty/presentation/screens/submit_proof_screen.dart';
 
 /// Route name constants.
 class AppRoutes {
@@ -46,6 +47,7 @@ class AppRoutes {
   // Bounties
   static const String createBounty = '/home/bounty/new';
   static const String bountyDetail = '/home/bounty/:id';
+  static const String submitProof = '/home/bounty/:id/submit-proof';
 }
 
 /// Bridges Riverpod auth state changes into GoRouter.
@@ -173,6 +175,16 @@ final routerProvider = Provider<GoRouter>((ref) {
                 name: 'bountyDetail',
                 builder: (context, state) =>
                     BountyDetailScreen(bountyId: state.pathParameters['id']!),
+                routes: [
+                  GoRoute(
+                    path: 'submit-proof',
+                    name: 'submitProof',
+                    builder: (context, state) => SubmitProofScreen(
+                      bountyId: state.pathParameters['id']!,
+                      claimId: state.uri.queryParameters['claimId']!,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),

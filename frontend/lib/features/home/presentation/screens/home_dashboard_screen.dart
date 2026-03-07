@@ -20,7 +20,6 @@ class HomeDashboardScreen extends ConsumerWidget {
     final user = ref.watch(authProvider).user;
     final allBounties = ref.watch(bountyListProvider);
     final myClaims = ref.watch(myClaimsProvider);
-    final myBounties = ref.watch(myBountiesProvider);
 
     final firstName = user?.name?.split(' ').first ?? 'explorer';
     final greeting = _genZGreeting(firstName);
@@ -35,7 +34,6 @@ class HomeDashboardScreen extends ConsumerWidget {
             await Future.wait([
               ref.read(bountyListProvider.notifier).refresh(),
               ref.read(myClaimsProvider.notifier).load(),
-              ref.read(myBountiesProvider.notifier).refresh(),
             ]);
           },
           child: CustomScrollView(
@@ -59,64 +57,79 @@ class HomeDashboardScreen extends ConsumerWidget {
                 ),
               ),
 
-              // ── YOUR BOUNTIES ──────────────────────────────
-              if (myBounties.isLoading ||
-                  myBounties.error != null ||
-                  myBounties.bounties.isNotEmpty)
-                SliverToBoxAdapter(
-                  child: _SectionBlock(
-                    title: 'your bounties',
-                    accent: AppColors.neonCyan,
-                    isLoading: myBounties.isLoading,
-                    error: myBounties.error,
-                    onRetry: () =>
-                        ref.read(myBountiesProvider.notifier).refresh(),
-                    child: Column(
-                      children: [
-                        for (
-                          int i = 0;
-                          i < myBounties.bounties.length && i < 3;
-                          i++
-                        )
-                          _BountyTile(
-                            bounty: myBounties.bounties[i],
-                            onTap: () => context.push(
-                              '/home/bounty/${myBounties.bounties[i].id}',
+              // ── JOINED BOUNTIES ────────────────────────────
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 28, 20, 4),
+                  child: Row(
+                    children: [
+                      const Text(
+                        'joined bounties',
+                        style: TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                      const Spacer(),
+                      if (myClaims.claims.isNotEmpty)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 7,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.neonGreen.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            '${myClaims.claims.length}',
+                            style: const TextStyle(
+                              color: AppColors.neonGreen,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
-                      ],
-                    ),
+                        ),
+                    ],
                   ),
                 ),
+              ),
 
-              // ── JOINED BOUNTIES ────────────────────────────
-              if (myClaims.isLoading ||
-                  myClaims.error != null ||
-                  myClaims.claims.isNotEmpty)
+              if (myClaims.isLoading)
+                const SliverToBoxAdapter(child: _LoadingIndicator())
+              else if (myClaims.error != null)
                 SliverToBoxAdapter(
-                  child: _SectionBlock(
-                    title: 'joined bounties',
-                    accent: AppColors.neonGreen,
-                    isLoading: myClaims.isLoading,
-                    error: myClaims.error,
+                  child: _InlineError(
                     onRetry: () => ref.read(myClaimsProvider.notifier).load(),
-                    child: Column(
-                      children: [
-                        for (
-                          int i = 0;
-                          i < myClaims.claims.length && i < 3;
-                          i++
-                        )
-                          _ClaimTile(
-                            claim: myClaims.claims[i],
-                            onTap: myClaims.claims[i].bounty != null
-                                ? () => context.push(
-                                    '/home/bounty/${myClaims.claims[i].bounty!.id}',
-                                  )
-                                : null,
-                          ),
-                      ],
+                  ),
+                )
+              else if (myClaims.claims.isEmpty)
+                const SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+                    child: Text(
+                      'no joined bounties yet — claim one below ↓',
+                      style: TextStyle(color: AppColors.textHint, fontSize: 13),
                     ),
+                  ),
+                )
+              else
+                SliverPadding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  sliver: SliverList(
+                    delegate: SliverChildBuilderDelegate((context, i) {
+                      final claim = myClaims.claims[i];
+                      return _ClaimCard(
+                        claim: claim,
+                        onTap: claim.bounty != null
+                            ? () => context.push(
+                                '/home/bounty/${claim.bounty!.id}',
+                              )
+                            : null,
+                      );
+                    }, childCount: myClaims.claims.length.clamp(0, 5)),
                   ),
                 ),
 
@@ -390,221 +403,134 @@ class _SectionBlock extends StatelessWidget {
   }
 }
 
-/// A bounty tile — for "your bounties" section.
-/// Shows: title · category · status dot · deadline · reward
-class _BountyTile extends StatelessWidget {
-  final BountyModel bounty;
-  final VoidCallback? onTap;
-
-  const _BountyTile({required this.bounty, this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final timeLeft = _timeLeft(bounty.deadline);
-    final isExpired = bounty.deadline.isBefore(DateTime.now());
-
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 14),
-        decoration: const BoxDecoration(
-          border: Border(
-            bottom: BorderSide(color: AppColors.divider, width: 0.5),
-          ),
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Status dot
-            Padding(
-              padding: const EdgeInsets.only(top: 6),
-              child: Container(
-                width: 8,
-                height: 8,
-                decoration: BoxDecoration(
-                  color: _bountyStatusColor(bounty.status),
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: _bountyStatusColor(
-                        bounty.status,
-                      ).withValues(alpha: 0.4),
-                      blurRadius: 6,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            // Info
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    bounty.title,
-                    style: const TextStyle(
-                      color: AppColors.textPrimary,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      height: 1.3,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 4),
-                  // category · deadline
-                  Row(
-                    children: [
-                      Text(
-                        bounty.category.toLowerCase(),
-                        style: const TextStyle(
-                          color: AppColors.textHint,
-                          fontSize: 12,
-                        ),
-                      ),
-                      _dot(),
-                      Icon(
-                        Icons.schedule_rounded,
-                        size: 11,
-                        color: isExpired ? AppColors.error : AppColors.textHint,
-                      ),
-                      const SizedBox(width: 3),
-                      Text(
-                        isExpired ? 'expired' : timeLeft,
-                        style: TextStyle(
-                          color: isExpired
-                              ? AppColors.error
-                              : AppColors.textHint,
-                          fontSize: 12,
-                        ),
-                      ),
-                      _dot(),
-                      Text(
-                        '${bounty.claimCount} claim${bounty.claimCount == 1 ? '' : 's'}',
-                        style: const TextStyle(
-                          color: AppColors.textHint,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 8),
-            // Reward
-            if (bounty.algoAmount > 0) _RewardBadge(amount: bounty.algoAmount),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// A claim tile — for "joined bounties" section.
-/// Shows: bounty title · who posted it · your claim status · reward
-class _ClaimTile extends StatelessWidget {
+/// Joined bounty feed card — mirrors _BountyCard layout.
+class _ClaimCard extends StatelessWidget {
   final BountyClaimModel claim;
   final VoidCallback? onTap;
 
-  const _ClaimTile({required this.claim, this.onTap});
+  const _ClaimCard({required this.claim, this.onTap});
 
   @override
   Widget build(BuildContext context) {
     final bounty = claim.bounty;
+    final claimStatusColor = _claimStatusColor(claim.status);
 
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 14),
+        padding: const EdgeInsets.fromLTRB(0, 16, 0, 16),
         decoration: const BoxDecoration(
           border: Border(
             bottom: BorderSide(color: AppColors.divider, width: 0.5),
           ),
         ),
-        child: Row(
+        child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Claim status dot
-            Padding(
-              padding: const EdgeInsets.only(top: 6),
-              child: Container(
-                width: 8,
-                height: 8,
-                decoration: BoxDecoration(
-                  color: _claimStatusColor(claim.status),
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: _claimStatusColor(
-                        claim.status,
-                      ).withValues(alpha: 0.4),
-                      blurRadius: 6,
-                    ),
-                  ],
+            // ── Row 1: Creator avatar + name + joined time + claim status ──
+            Row(
+              children: [
+                CircleAvatar(
+                  radius: 14,
+                  backgroundColor: AppColors.primaryDim,
+                  backgroundImage: bounty?.creator?.avatarUrl != null
+                      ? NetworkImage(bounty!.creator!.avatarUrl!)
+                      : null,
+                  child: bounty?.creator?.avatarUrl == null
+                      ? const Icon(
+                          Icons.person,
+                          color: AppColors.primary,
+                          size: 14,
+                        )
+                      : null,
                 ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            // Info
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    bounty?.title ?? 'Bounty',
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    bounty?.creator?.name ?? 'anonymous',
                     style: const TextStyle(
-                      color: AppColors.textPrimary,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      height: 1.3,
+                      color: AppColors.textSecondary,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 4),
-                  Row(
+                ),
+                Text(
+                  _timeAgo(claim.createdAt),
+                  style: const TextStyle(
+                    color: AppColors.textHint,
+                    fontSize: 11,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+
+            // ── Row 2: Bounty title ───────────────────────────
+            Text(
+              bounty?.title ?? 'Bounty',
+              style: const TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                height: 1.3,
+                letterSpacing: -0.2,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 10),
+
+            // ── Row 3: Claim status + reward ──────────────────
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: claimStatusColor.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(
+                      color: claimStatusColor.withValues(alpha: 0.25),
+                      width: 0.5,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      // Creator info
-                      if (bounty?.creator != null) ...[
-                        Text(
-                          'by ${bounty!.creator!.name ?? 'anon'}',
-                          style: const TextStyle(
-                            color: AppColors.textHint,
-                            fontSize: 12,
-                          ),
-                        ),
-                        _dot(),
-                      ],
-                      // Claim status
+                      Icon(
+                        claim.status == 'APPROVED'
+                            ? Icons.check_circle_outline_rounded
+                            : claim.status == 'SUBMITTED'
+                            ? Icons.hourglass_top_rounded
+                            : claim.status == 'REJECTED'
+                            ? Icons.cancel_outlined
+                            : Icons.assignment_outlined,
+                        color: claimStatusColor,
+                        size: 11,
+                      ),
+                      const SizedBox(width: 5),
                       Text(
                         claim.status.toLowerCase(),
                         style: TextStyle(
-                          color: _claimStatusColor(claim.status),
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      _dot(),
-                      // When you joined
-                      Text(
-                        _timeAgo(claim.createdAt),
-                        style: const TextStyle(
-                          color: AppColors.textHint,
-                          fontSize: 12,
+                          color: claimStatusColor,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ],
                   ),
-                ],
-              ),
+                ),
+                const Spacer(),
+                if (bounty != null && bounty.algoAmount > 0)
+                  _RewardBadge(amount: bounty.algoAmount),
+              ],
             ),
-            const SizedBox(width: 8),
-            if (bounty != null && bounty.algoAmount > 0)
-              _RewardBadge(amount: bounty.algoAmount),
           ],
         ),
       ),

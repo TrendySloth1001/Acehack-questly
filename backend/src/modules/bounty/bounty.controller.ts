@@ -87,14 +87,22 @@ export class BountyController {
   }
 
   async submitProof(req: Request, res: Response) {
-    const { proofUrl, note } = req.body;
+    const { proofUrls, note } = req.body;
     const claim = await bountyService.submitProof(
       req.params.claimId as string,
       req.currentUser!.userId,
-      proofUrl,
+      proofUrls,
       note
     );
     sendSuccess({ res, data: claim, message: "Proof submitted" });
+  }
+
+  async declaim(req: Request, res: Response) {
+    await bountyService.declaim(
+      req.params.claimId as string,
+      req.currentUser!.userId
+    );
+    sendSuccess({ res, message: "Left the bounty" });
   }
 
   async resolveClaim(req: Request, res: Response) {
