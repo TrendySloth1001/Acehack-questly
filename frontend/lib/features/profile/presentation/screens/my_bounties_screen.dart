@@ -19,8 +19,11 @@ class MyBountiesScreen extends ConsumerWidget {
         backgroundColor: AppColors.background,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded,
-              color: AppColors.textPrimary, size: 18),
+          icon: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: AppColors.textPrimary,
+            size: 18,
+          ),
           onPressed: () => context.pop(),
         ),
         title: const Text(
@@ -34,10 +37,12 @@ class MyBountiesScreen extends ConsumerWidget {
         actions: [
           if (!state.isLoading)
             IconButton(
-              icon: const Icon(Icons.refresh_rounded,
-                  color: AppColors.textSecondary, size: 20),
-              onPressed: () =>
-                  ref.read(myBountiesProvider.notifier).refresh(),
+              icon: const Icon(
+                Icons.refresh_rounded,
+                color: AppColors.textSecondary,
+                size: 20,
+              ),
+              onPressed: () => ref.read(myBountiesProvider.notifier).refresh(),
             ),
         ],
       ),
@@ -70,14 +75,19 @@ class MyBountiesScreen extends ConsumerWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.bolt_rounded, size: 52, color: AppColors.primary.withValues(alpha: 0.4)),
+            Icon(
+              Icons.bolt_rounded,
+              size: 52,
+              color: AppColors.primary.withValues(alpha: 0.4),
+            ),
             const SizedBox(height: 16),
             const Text(
               'No bounties yet',
               style: TextStyle(
-                  color: AppColors.textSecondary,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600),
+                color: AppColors.textSecondary,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
             ),
             const SizedBox(height: 6),
             const Text(
@@ -93,8 +103,7 @@ class MyBountiesScreen extends ConsumerWidget {
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
       itemCount: state.bounties.length,
       separatorBuilder: (_, __) => const SizedBox(height: 10),
-      itemBuilder: (context, i) =>
-          _BountyTile(bounty: state.bounties[i]),
+      itemBuilder: (context, i) => _BountyTile(bounty: state.bounties[i]),
     );
   }
 }
@@ -143,17 +152,25 @@ class _BountyTile extends StatelessWidget {
             // Category + deadline
             Row(
               children: [
-                Icon(Icons.category_outlined,
-                    size: 12, color: AppColors.textHint),
+                Icon(
+                  Icons.category_outlined,
+                  size: 12,
+                  color: AppColors.textHint,
+                ),
                 const SizedBox(width: 4),
                 Text(
                   bounty.category,
                   style: const TextStyle(
-                      color: AppColors.textHint, fontSize: 12),
+                    color: AppColors.textHint,
+                    fontSize: 12,
+                  ),
                 ),
                 const SizedBox(width: 12),
-                Icon(Icons.schedule_outlined,
-                    size: 12, color: AppColors.textHint),
+                Icon(
+                  Icons.schedule_outlined,
+                  size: 12,
+                  color: AppColors.textHint,
+                ),
                 const SizedBox(width: 4),
                 Text(
                   _deadlineLabel(bounty.deadline),
@@ -174,13 +191,14 @@ class _BountyTile extends StatelessWidget {
                 ],
                 _EscrowBadge(status: bounty.escrowStatus),
                 const Spacer(),
-                Icon(Icons.group_outlined,
-                    size: 13, color: AppColors.textHint),
+                Icon(Icons.group_outlined, size: 13, color: AppColors.textHint),
                 const SizedBox(width: 4),
                 Text(
                   '${bounty.claimCount} claim${bounty.claimCount == 1 ? '' : 's'}',
                   style: const TextStyle(
-                      color: AppColors.textHint, fontSize: 12),
+                    color: AppColors.textHint,
+                    fontSize: 12,
+                  ),
                 ),
               ],
             ),
@@ -226,7 +244,10 @@ class _StatusChip extends StatelessWidget {
       child: Text(
         label,
         style: TextStyle(
-            color: color, fontSize: 11, fontWeight: FontWeight.w700),
+          color: color,
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+        ),
       ),
     );
   }
@@ -255,7 +276,10 @@ class _EscrowBadge extends StatelessWidget {
       child: Text(
         label,
         style: TextStyle(
-            color: color, fontSize: 10, fontWeight: FontWeight.w600),
+          color: color,
+          fontSize: 10,
+          fontWeight: FontWeight.w600,
+        ),
       ),
     );
   }

@@ -231,8 +231,7 @@ export class AlgorandController {
 
   // ── POST /algorand/dispense ───────────────────────────────
   // Local faucet — sends ALGO from the devmode genesis to user.
-  async dispense(req: Request, res: Response) {
-    const userId = req.currentUser!.userId;
+  async dispense(req: Request, res: Response) {    const userId = req.currentUser!.userId;
     const { amount } = req.body as { amount?: number };
     const amountAlgo = amount ?? 10;
 

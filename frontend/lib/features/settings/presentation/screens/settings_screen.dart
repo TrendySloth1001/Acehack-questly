@@ -45,10 +45,7 @@ class SettingsScreen extends ConsumerWidget {
                     const SizedBox(height: 6),
                     const Text(
                       'settings will be available in a future update',
-                      style: TextStyle(
-                        color: AppColors.textHint,
-                        fontSize: 14,
-                      ),
+                      style: TextStyle(color: AppColors.textHint, fontSize: 14),
                     ),
                   ],
                 ),

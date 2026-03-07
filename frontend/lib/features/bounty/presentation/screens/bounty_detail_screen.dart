@@ -455,46 +455,54 @@ class _BountyDetailScreenState extends ConsumerState<BountyDetailScreen> {
                     _chip(Icons.category_outlined, b.category),
                     const Spacer(),
                     if (b.algoAmount > 0)
-                      Consumer(builder: (context, cRef, _) {
-                        final inrRate = cRef.watch(algoInrRateProvider).valueOrNull;
-                        return Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppColors.neonGreen.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(
-                              color: AppColors.neonGreen.withValues(alpha: 0.3),
-                              width: 0.5,
+                      Consumer(
+                        builder: (context, cRef, _) {
+                          final inrRate = cRef
+                              .watch(algoInrRateProvider)
+                              .valueOrNull;
+                          return Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6,
                             ),
-                          ),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                formatAlgo(b.algoAmount),
-                                style: const TextStyle(
-                                  color: AppColors.neonGreen,
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w800,
-                                  fontFamily: 'monospace',
+                            decoration: BoxDecoration(
+                              color: AppColors.neonGreen.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                color: AppColors.neonGreen.withValues(
+                                  alpha: 0.3,
                                 ),
+                                width: 0.5,
                               ),
-                              if (inrRate != null)
+                            ),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
                                 Text(
-                                  algoToInrString(b.algoAmount, inrRate),
-                                  style: TextStyle(
-                                    color: AppColors.neonGreen.withValues(alpha: 0.6),
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w600,
+                                  formatAlgo(b.algoAmount),
+                                  style: const TextStyle(
+                                    color: AppColors.neonGreen,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w800,
+                                    fontFamily: 'monospace',
                                   ),
                                 ),
-                            ],
-                          ),
-                        );
-                      }),
+                                if (inrRate != null)
+                                  Text(
+                                    algoToInrString(b.algoAmount, inrRate),
+                                    style: TextStyle(
+                                      color: AppColors.neonGreen.withValues(
+                                        alpha: 0.6,
+                                      ),
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
                   ],
                 ),
                 // ── Escrow Status Badge ────────────────────────
@@ -2050,20 +2058,19 @@ class _FundEscrowButtonState extends ConsumerState<_FundEscrowButton> {
                   fontSize: 14,
                 ),
               ),
-              Consumer(builder: (context, cRef, _) {
-                final inrRate = cRef.watch(algoInrRateProvider).valueOrNull;
-                if (inrRate == null) return const SizedBox.shrink();
-                return Padding(
-                  padding: const EdgeInsets.only(top: 4),
-                  child: Text(
-                    '~${algoToInrString(fundTxn.amountAlgo, inrRate)}',
-                    style: TextStyle(
-                      color: AppColors.textHint,
-                      fontSize: 12,
+              Consumer(
+                builder: (context, cRef, _) {
+                  final inrRate = cRef.watch(algoInrRateProvider).valueOrNull;
+                  if (inrRate == null) return const SizedBox.shrink();
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text(
+                      '~${algoToInrString(fundTxn.amountAlgo, inrRate)}',
+                      style: TextStyle(color: AppColors.textHint, fontSize: 12),
                     ),
-                  ),
-                );
-              }),
+                  );
+                },
+              ),
               const SizedBox(height: 14),
               Container(
                 padding: const EdgeInsets.all(12),
@@ -2204,17 +2211,24 @@ class _FundEscrowButtonState extends ConsumerState<_FundEscrowButton> {
                   ),
                 )
               : const Icon(Icons.account_balance_wallet, size: 18),
-          label: Consumer(builder: (context, cRef, _) {
-            final inrRate = cRef.watch(algoInrRateProvider).valueOrNull;
-            final algoStr = formatAlgo(widget.bounty.algoAmount);
-            final label = _step ?? (inrRate != null
-                ? 'Fund Escrow ($algoStr · ${algoToInrString(widget.bounty.algoAmount, inrRate)})'
-                : 'Fund Escrow ($algoStr)');
-            return Text(
-              label,
-              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
-            );
-          }),
+          label: Consumer(
+            builder: (context, cRef, _) {
+              final inrRate = cRef.watch(algoInrRateProvider).valueOrNull;
+              final algoStr = formatAlgo(widget.bounty.algoAmount);
+              final label =
+                  _step ??
+                  (inrRate != null
+                      ? 'Fund Escrow ($algoStr · ${algoToInrString(widget.bounty.algoAmount, inrRate)})'
+                      : 'Fund Escrow ($algoStr)');
+              return Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                ),
+              );
+            },
+          ),
           style: ElevatedButton.styleFrom(
             backgroundColor: AppColors.neonOrange,
             foregroundColor: Colors.black,

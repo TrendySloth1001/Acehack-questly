@@ -59,10 +59,7 @@ class ProfileScreen extends ConsumerWidget {
             Center(
               child: Text(
                 user?.email ?? '',
-                style: const TextStyle(
-                  color: AppColors.textHint,
-                  fontSize: 14,
-                ),
+                style: const TextStyle(color: AppColors.textHint, fontSize: 14),
               ),
             ),
             const SizedBox(height: 32),
@@ -76,19 +73,11 @@ class ProfileScreen extends ConsumerWidget {
                     label: 'Bounties',
                   ),
                 ),
-                Container(
-                  width: 0.5,
-                  height: 36,
-                  color: AppColors.border,
-                ),
+                Container(width: 0.5, height: 36, color: AppColors.border),
                 const Expanded(
                   child: _MiniStat(value: '0', label: 'Completed'),
                 ),
-                Container(
-                  width: 0.5,
-                  height: 36,
-                  color: AppColors.border,
-                ),
+                Container(width: 0.5, height: 36, color: AppColors.border),
                 const Expanded(
                   child: _MiniStat(value: '0', label: 'Streak'),
                 ),
@@ -156,10 +145,7 @@ class _MiniStat extends StatelessWidget {
         const SizedBox(height: 2),
         Text(
           label,
-          style: const TextStyle(
-            color: AppColors.textHint,
-            fontSize: 12,
-          ),
+          style: const TextStyle(color: AppColors.textHint, fontSize: 12),
         ),
       ],
     );

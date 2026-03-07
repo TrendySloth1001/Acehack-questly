@@ -31,8 +31,9 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
       setState(() => _dispensing = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content:
-              Text(ok ? '10 ALGO dispensed!' : 'Dispense failed — is algod running?'),
+          content: Text(
+            ok ? '10 ALGO dispensed!' : 'Dispense failed — is algod running?',
+          ),
           backgroundColor: ok ? AppColors.neonGreen : AppColors.error,
           behavior: SnackBarBehavior.floating,
         ),
@@ -85,15 +86,15 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
                   ),
                 )
               : !hasWallet
-                  ? _buildNoWallet()
-                  : _buildDashboard(
-                      wallet: wallet,
-                      balance: balance,
-                      escrowBalance: escrowBalance,
-                      totalEscrowed: totalEscrowed,
-                      totalEarnings: totalEarnings,
-                      inrRate: inrRate,
-                    ),
+              ? _buildNoWallet()
+              : _buildDashboard(
+                  wallet: wallet,
+                  balance: balance,
+                  escrowBalance: escrowBalance,
+                  totalEscrowed: totalEscrowed,
+                  totalEarnings: totalEarnings,
+                  inrRate: inrRate,
+                ),
         ),
       ),
     );
@@ -265,10 +266,7 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
               const SizedBox(height: 6),
               Text(
                 '~${algoToInrString(balance, inrRate)}',
-                style: const TextStyle(
-                  color: AppColors.textHint,
-                  fontSize: 14,
-                ),
+                style: const TextStyle(color: AppColors.textHint, fontSize: 14),
               ),
               const SizedBox(height: 16),
               // Address
@@ -460,10 +458,7 @@ class _StatTile extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.card,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: color.withValues(alpha: 0.1),
-          width: 0.5,
-        ),
+        border: Border.all(color: color.withValues(alpha: 0.1), width: 0.5),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -509,10 +504,7 @@ class _StatTile extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               inrHint!,
-              style: const TextStyle(
-                color: AppColors.textHint,
-                fontSize: 11,
-              ),
+              style: const TextStyle(color: AppColors.textHint, fontSize: 11),
             ),
           ],
         ],
