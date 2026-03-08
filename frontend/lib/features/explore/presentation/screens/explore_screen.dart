@@ -606,7 +606,6 @@ class _BountyCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.black,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFF1E1E1E), width: 1),
         ),
         clipBehavior: Clip.antiAlias,
         child: Column(

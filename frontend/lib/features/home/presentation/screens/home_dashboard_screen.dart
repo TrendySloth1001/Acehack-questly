@@ -629,7 +629,6 @@ class _ClaimCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bounty = claim.bounty;
-    final statusColor = _claimStatusColor(claim.status);
     final hasImage = bounty != null && bounty.imageUrls.isNotEmpty;
     final isExpired =
         bounty != null && bounty.deadline.isBefore(DateTime.now());
@@ -642,7 +641,6 @@ class _ClaimCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.black,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFF1E1E1E), width: 1),
         ),
         clipBehavior: Clip.antiAlias,
         child: Column(
@@ -866,19 +864,6 @@ class _ClaimCard extends StatelessWidget {
                 ],
               ),
             ),
-
-            // ── Status accent strip at bottom ─────────────────
-            Container(
-              height: 3,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    statusColor.withValues(alpha: 0.7),
-                    statusColor.withValues(alpha: 0.0),
-                  ],
-                ),
-              ),
-            ),
           ],
         ),
       ),
@@ -929,11 +914,6 @@ class _BountyCard extends StatelessWidget {
       child: Container(
         margin: const EdgeInsets.only(top: 6),
         padding: const EdgeInsets.fromLTRB(0, 16, 0, 16),
-        decoration: const BoxDecoration(
-          border: Border(
-            bottom: BorderSide(color: Color(0xFF1A1A1A), width: 1),
-          ),
-        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -1160,50 +1140,6 @@ class _InlineError extends StatelessWidget {
 // ═════════════════════════════════════════════════════════════
 //  HELPERS
 // ═════════════════════════════════════════════════════════════
-
-Widget _dot() {
-  return Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 6),
-    child: Container(
-      width: 3,
-      height: 3,
-      decoration: const BoxDecoration(
-        color: AppColors.textHint,
-        shape: BoxShape.circle,
-      ),
-    ),
-  );
-}
-
-Color _bountyStatusColor(String status) {
-  switch (status.toUpperCase()) {
-    case 'OPEN':
-      return AppColors.neonGreen;
-    case 'CLAIMED':
-      return AppColors.neonCyan;
-    case 'COMPLETED':
-      return AppColors.primary;
-    case 'EXPIRED':
-      return AppColors.error;
-    default:
-      return AppColors.textHint;
-  }
-}
-
-Color _claimStatusColor(String status) {
-  switch (status.toUpperCase()) {
-    case 'ACTIVE':
-      return AppColors.primary;
-    case 'SUBMITTED':
-      return AppColors.warning;
-    case 'APPROVED':
-      return AppColors.neonGreen;
-    case 'REJECTED':
-      return AppColors.error;
-    default:
-      return AppColors.textHint;
-  }
-}
 
 String _timeLeft(DateTime deadline) {
   final diff = deadline.difference(DateTime.now());

@@ -65,8 +65,17 @@ class BountyRepository {
 
   Future<List<BountyClaimModel>> getMyClaims() async {
     final response = await _remote.getMyClaims();
-    final data = response['data'] as List;
-    return data
+    final rawData = response['data'];
+    // Backend returns { claims: [...], pagination: {...} } or just a List
+    final List list;
+    if (rawData is Map<String, dynamic>) {
+      list = rawData['claims'] as List? ?? [];
+    } else if (rawData is List) {
+      list = rawData;
+    } else {
+      list = [];
+    }
+    return list
         .map((e) => BountyClaimModel.fromJson(e as Map<String, dynamic>))
         .toList();
   }

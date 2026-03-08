@@ -205,7 +205,9 @@ class ClaimBountyInfo {
       description: json['description'] as String? ?? '',
       category: json['category'] as String? ?? 'Other',
       algoAmount: (json['algoAmount'] as num).toDouble(),
-      deadline: DateTime.parse(json['deadline'] as String),
+      deadline: json['deadline'] != null
+          ? DateTime.parse(json['deadline'] as String)
+          : DateTime.now().add(const Duration(days: 7)),
       status: json['status'] as String,
       imageUrls: (json['imageUrls'] as List<dynamic>?)?.cast<String>() ?? [],
       location: json['location'] as String?,
