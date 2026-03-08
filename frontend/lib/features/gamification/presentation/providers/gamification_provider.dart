@@ -101,8 +101,9 @@ class LeaderboardNotifier extends StateNotifier<LeaderboardState> {
     try {
       final response = await _dio.get(ApiEndpoints.leaderboard);
       final data = response.data['data'] as List;
-      final entries =
-          data.map((e) => LeaderboardEntry.fromJson(e as Map<String, dynamic>)).toList();
+      final entries = data
+          .map((e) => LeaderboardEntry.fromJson(e as Map<String, dynamic>))
+          .toList();
       state = LeaderboardState(entries: entries);
     } catch (e) {
       debugPrint('[Leaderboard] ERROR: $e');
@@ -115,12 +116,14 @@ class LeaderboardNotifier extends StateNotifier<LeaderboardState> {
 
 final leaderboardProvider =
     StateNotifierProvider<LeaderboardNotifier, LeaderboardState>((ref) {
-  return LeaderboardNotifier(ref.read(dioProvider));
-});
+      return LeaderboardNotifier(ref.read(dioProvider));
+    });
 
 // ── My gamification stats provider ──────────────────────────
 
-final gamificationStatsProvider = FutureProvider<GamificationStats>((ref) async {
+final gamificationStatsProvider = FutureProvider<GamificationStats>((
+  ref,
+) async {
   final dio = ref.read(dioProvider);
   try {
     final response = await dio.get(ApiEndpoints.gamificationMe);

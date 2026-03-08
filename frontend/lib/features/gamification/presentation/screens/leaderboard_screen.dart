@@ -37,36 +37,38 @@ class LeaderboardScreen extends ConsumerWidget {
       ),
       body: state.isLoading
           ? const Center(
-              child: CircularProgressIndicator(color: AppColors.primary))
+              child: CircularProgressIndicator(color: AppColors.primary),
+            )
           : state.error != null
-              ? Center(
-                  child: Text(
-                    'Failed to load leaderboard',
-                    style: TextStyle(color: AppColors.error),
-                  ),
-                )
-              : state.entries.isEmpty
-                  ? const Center(
-                      child: Text(
-                        'No rankings yet — go complete some bounties!',
-                        style: TextStyle(color: AppColors.textHint),
-                      ),
-                    )
-                  : RefreshIndicator(
-                      color: AppColors.primary,
-                      backgroundColor: AppColors.surface,
-                      onRefresh: () =>
-                          ref.read(leaderboardProvider.notifier).refresh(),
-                      child: ListView.builder(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 12),
-                        itemCount: state.entries.length,
-                        itemBuilder: (context, index) {
-                          final entry = state.entries[index];
-                          return _LeaderboardTile(entry: entry, index: index);
-                        },
-                      ),
-                    ),
+          ? Center(
+              child: Text(
+                'Failed to load leaderboard',
+                style: TextStyle(color: AppColors.error),
+              ),
+            )
+          : state.entries.isEmpty
+          ? const Center(
+              child: Text(
+                'No rankings yet — go complete some bounties!',
+                style: TextStyle(color: AppColors.textHint),
+              ),
+            )
+          : RefreshIndicator(
+              color: AppColors.primary,
+              backgroundColor: AppColors.surface,
+              onRefresh: () => ref.read(leaderboardProvider.notifier).refresh(),
+              child: ListView.builder(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                itemCount: state.entries.length,
+                itemBuilder: (context, index) {
+                  final entry = state.entries[index];
+                  return _LeaderboardTile(entry: entry, index: index);
+                },
+              ),
+            ),
     );
   }
 }
@@ -87,14 +89,10 @@ class _LeaderboardTile extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: isTop3
-            ? rankColor.withValues(alpha: 0.08)
-            : AppColors.surface,
+        color: isTop3 ? rankColor.withValues(alpha: 0.08) : AppColors.surface,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: isTop3
-              ? rankColor.withValues(alpha: 0.3)
-              : AppColors.border,
+          color: isTop3 ? rankColor.withValues(alpha: 0.3) : AppColors.border,
         ),
         boxShadow: isTop3
             ? [
@@ -112,10 +110,7 @@ class _LeaderboardTile extends StatelessWidget {
             width: 36,
             child: Center(
               child: isTop3
-                  ? Text(
-                      medals[index],
-                      style: const TextStyle(fontSize: 20),
-                    )
+                  ? Text(medals[index], style: const TextStyle(fontSize: 20))
                   : Text(
                       '#${entry.rank}',
                       style: const TextStyle(

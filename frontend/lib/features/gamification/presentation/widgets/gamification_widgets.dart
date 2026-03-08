@@ -9,13 +9,20 @@ class MinecraftRank {
     'IRON': _RankData('Iron', Color(0xFFC8C8C8), '⚔️', Color(0xFFA0A0A0)),
     'GOLD': _RankData('Gold', Color(0xFFFFD700), '👑', Color(0xFFCCAA00)),
     'DIAMOND': _RankData('Diamond', Color(0xFF00D4FF), '💎', Color(0xFF00A0CC)),
-    'NETHERITE': _RankData('Netherite', Color(0xFF4A3728), '🔱', Color(0xFF352619)),
+    'NETHERITE': _RankData(
+      'Netherite',
+      Color(0xFF4A3728),
+      '🔱',
+      Color(0xFF352619),
+    ),
   };
 
   static String label(String tier) => _ranks[tier]?.label ?? 'Wood';
-  static Color color(String tier) => _ranks[tier]?.color ?? const Color(0xFF8B6914);
+  static Color color(String tier) =>
+      _ranks[tier]?.color ?? const Color(0xFF8B6914);
   static String emoji(String tier) => _ranks[tier]?.emoji ?? '🪓';
-  static Color dimColor(String tier) => _ranks[tier]?.dimColor ?? const Color(0xFF6B4F0A);
+  static Color dimColor(String tier) =>
+      _ranks[tier]?.dimColor ?? const Color(0xFF6B4F0A);
 }
 
 class _RankData {
@@ -47,7 +54,9 @@ class XpBar extends StatelessWidget {
     final prevLevelXp = level * level * 25;
     final xpInLevel = currentXp - prevLevelXp;
     final xpNeeded = nextLevelXp - prevLevelXp;
-    final progress = xpNeeded > 0 ? (xpInLevel / xpNeeded).clamp(0.0, 1.0) : 1.0;
+    final progress = xpNeeded > 0
+        ? (xpInLevel / xpNeeded).clamp(0.0, 1.0)
+        : 1.0;
     final rankColor = MinecraftRank.color(rankTier);
 
     return Column(
@@ -70,7 +79,10 @@ class XpBar extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     color: rankColor.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(4),
@@ -132,10 +144,7 @@ class XpBar extends StatelessWidget {
                   child: Container(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
-                        colors: [
-                          rankColor.withValues(alpha: 0.8),
-                          rankColor,
-                        ],
+                        colors: [rankColor.withValues(alpha: 0.8), rankColor],
                       ),
                       boxShadow: [
                         BoxShadow(
@@ -185,10 +194,7 @@ class RankBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(6),
         border: Border.all(color: rankColor.withValues(alpha: 0.4)),
         boxShadow: [
-          BoxShadow(
-            color: rankColor.withValues(alpha: 0.2),
-            blurRadius: 8,
-          ),
+          BoxShadow(color: rankColor.withValues(alpha: 0.2), blurRadius: 8),
         ],
       ),
       child: Center(
@@ -227,8 +233,8 @@ class StarRating extends StatelessWidget {
             fill >= 0.75
                 ? Icons.star_rounded
                 : fill >= 0.25
-                    ? Icons.star_half_rounded
-                    : Icons.star_border_rounded,
+                ? Icons.star_half_rounded
+                : Icons.star_border_rounded,
             color: AppColors.warning,
             size: starSize,
           );

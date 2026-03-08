@@ -55,18 +55,23 @@ Future<void> submitReview(
   required int stars,
   String? comment,
 }) async {
-  await dio.post(ApiEndpoints.reviews, data: {
-    'bountyId': bountyId,
-    'revieweeId': revieweeId,
-    'stars': stars,
-    if (comment != null && comment.isNotEmpty) 'comment': comment,
-  });
+  await dio.post(
+    ApiEndpoints.reviews,
+    data: {
+      'bountyId': bountyId,
+      'revieweeId': revieweeId,
+      'stars': stars,
+      if (comment != null && comment.isNotEmpty) 'comment': comment,
+    },
+  );
 }
 
 // ── User reviews provider ───────────────────────────────────
 
-final userReviewsProvider =
-    FutureProvider.family<List<ReviewModel>, String>((ref, userId) async {
+final userReviewsProvider = FutureProvider.family<List<ReviewModel>, String>((
+  ref,
+  userId,
+) async {
   final dio = ref.read(dioProvider);
   try {
     final response = await dio.get(ApiEndpoints.reviewsForUser(userId));
@@ -82,8 +87,10 @@ final userReviewsProvider =
 
 // ── Bounty reviews provider ─────────────────────────────────
 
-final bountyReviewsProvider =
-    FutureProvider.family<List<ReviewModel>, String>((ref, bountyId) async {
+final bountyReviewsProvider = FutureProvider.family<List<ReviewModel>, String>((
+  ref,
+  bountyId,
+) async {
   final dio = ref.read(dioProvider);
   try {
     final response = await dio.get(ApiEndpoints.reviewsForBounty(bountyId));

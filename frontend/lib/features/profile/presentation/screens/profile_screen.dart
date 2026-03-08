@@ -81,10 +81,7 @@ class ProfileScreen extends ConsumerWidget {
                   Positioned(
                     bottom: -4,
                     right: -4,
-                    child: RankBadge(
-                      tier: user?.rankTier ?? 'WOOD',
-                      size: 30,
-                    ),
+                    child: RankBadge(tier: user?.rankTier ?? 'WOOD', size: 30),
                   ),
                 ],
               ),

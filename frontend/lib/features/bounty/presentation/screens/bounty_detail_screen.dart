@@ -536,10 +536,7 @@ class _BountyDetailScreenState extends ConsumerState<BountyDetailScreen> {
               const SizedBox(height: 6),
               Text(
                 'Rate your experience with $revieweeName',
-                style: const TextStyle(
-                  color: AppColors.textHint,
-                  fontSize: 13,
-                ),
+                style: const TextStyle(color: AppColors.textHint, fontSize: 13),
               ),
               const SizedBox(height: 20),
               StarPicker(
@@ -601,8 +598,9 @@ class _BountyDetailScreenState extends ConsumerState<BountyDetailScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.warning,
                     foregroundColor: Colors.black,
-                    disabledBackgroundColor:
-                        AppColors.warning.withValues(alpha: 0.3),
+                    disabledBackgroundColor: AppColors.warning.withValues(
+                      alpha: 0.3,
+                    ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
                     ),
@@ -1472,13 +1470,16 @@ class _BountyDetailScreenState extends ConsumerState<BountyDetailScreen> {
                       String revieweeName = 'Unknown';
                       if (isOwner) {
                         // Owner reviews the claimer
-                        final approvedClaim = b.claims.cast<BountyClaimModel?>().firstWhere(
-                          (c) => c?.status == 'APPROVED',
-                          orElse: () => null,
-                        );
+                        final approvedClaim = b.claims
+                            .cast<BountyClaimModel?>()
+                            .firstWhere(
+                              (c) => c?.status == 'APPROVED',
+                              orElse: () => null,
+                            );
                         if (approvedClaim != null) {
                           revieweeId = approvedClaim.claimer.id;
-                          revieweeName = approvedClaim.claimer.name ?? 'the hunter';
+                          revieweeName =
+                              approvedClaim.claimer.name ?? 'the hunter';
                         }
                       } else if (myClaim?.status == 'APPROVED') {
                         // Claimer reviews the owner
