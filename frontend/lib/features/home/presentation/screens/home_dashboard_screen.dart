@@ -93,7 +93,7 @@ class HomeDashboardScreen extends ConsumerWidget {
                   child: Row(
                     children: [
                       const Text(
-                        'joined bounties',
+                        'Joined Bounties',
                         style: TextStyle(
                           color: Color(0xFF444444),
                           fontSize: 12,
@@ -172,7 +172,7 @@ class HomeDashboardScreen extends ConsumerWidget {
                   child: Row(
                     children: [
                       const Text(
-                        'latest drops',
+                        'Latest Drops',
                         style: TextStyle(
                           color: Color(0xFF444444),
                           fontSize: 12,
@@ -247,10 +247,10 @@ class HomeDashboardScreen extends ConsumerWidget {
   String _genZGreeting(String name) {
     final hour = DateTime.now().hour;
     final greetings = hour < 12
-        ? ['yo $name ☀️', 'rise & grind, $name', 'gm $name 👋']
+        ? ['Yo $name ☀️', 'rise & grind, $name', 'gm $name 👋']
         : hour < 17
-        ? ['yo $name 🔥', 'what\'s good, $name', 'hey $name ⚡']
-        : ['yo $name 🌙', 'evening vibes, $name', 'sup $name ✨'];
+        ? ['Yo $name 🔥', 'what\'s good, $name', 'hey $name ⚡']
+        : ['Yo $name 🌙', 'evening vibes, $name', 'sup $name ✨'];
     // Rotate based on day-of-year so it feels varied but deterministic
     final dayIndex = DateTime.now()
         .difference(DateTime(DateTime.now().year))
@@ -314,6 +314,25 @@ class _Header extends StatelessWidget {
               width: 38,
               height: 38,
               fit: BoxFit.cover,
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        // Leaderboard
+        GestureDetector(
+          onTap: () => context.push('/home/leaderboard'),
+          child: Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: Colors.black,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFF1E1E1E), width: 1),
+            ),
+            child: Icon(
+              Icons.emoji_events_outlined,
+              color: AppColors.neonCyan.withValues(alpha: 0.5),
+              size: 18,
             ),
           ),
         ),
@@ -531,7 +550,7 @@ class _PostCTA extends StatelessWidget {
             const SizedBox(width: 12),
             const Expanded(
               child: Text(
-                'post a bounty',
+                'Post a bounty',
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 15,

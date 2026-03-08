@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
+import 'package:latlong2/latlong.dart';
+import '../../../../core/constants/map_constants.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/algo_inr.dart';
 import '../../../bounty/data/models/bounty_model.dart';
@@ -31,10 +35,60 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
   String _searchQuery = '';
   final _searchController = TextEditingController();
 
+  // ── Map state ──────────────────────────────────────
+  bool _mapExpanded = false;
+  bool _locating = false;
+  LatLng? _userPosition;
+  final _mapController = MapController();
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchUserLocation();
+  }
+
   @override
   void dispose() {
     _searchController.dispose();
+    _mapController.dispose();
     super.dispose();
+  }
+
+  Future<void> _fetchUserLocation() async {
+    setState(() => _locating = true);
+    try {
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        setState(() => _locating = false);
+        return;
+      }
+      LocationPermission perm = await Geolocator.checkPermission();
+      if (perm == LocationPermission.denied) {
+        perm = await Geolocator.requestPermission();
+        if (perm == LocationPermission.denied) {
+          setState(() => _locating = false);
+          return;
+        }
+      }
+      if (perm == LocationPermission.deniedForever) {
+        setState(() => _locating = false);
+        return;
+      }
+      final pos = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+          timeLimit: Duration(seconds: 10),
+        ),
+      );
+      if (mounted) {
+        setState(() {
+          _userPosition = LatLng(pos.latitude, pos.longitude);
+          _locating = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _locating = false);
+    }
   }
 
   @override
@@ -76,7 +130,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
-                        'explore',
+                        'Explore',
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 26,
@@ -86,7 +140,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
                       ),
                       const SizedBox(height: 4),
                       const Text(
-                        'find bounties and earn rewards',
+                        'Find bounties and earn rewards.',
                         style: TextStyle(
                           color: Color(0xFF3A3A3A),
                           fontSize: 13,
@@ -195,7 +249,99 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
                           },
                         ),
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 14),
+                    ],
+                  ),
+                ),
+              ),
+
+              // ── Expandable Map ──────────────────────────────
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 14),
+                  child: Column(
+                    children: [
+                      // Toggle bar
+                      GestureDetector(
+                        onTap: () =>
+                            setState(() => _mapExpanded = !_mapExpanded),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 250),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 10,
+                          ),
+                          decoration: BoxDecoration(
+                            color: _mapExpanded
+                                ? AppColors.primary.withValues(alpha: 0.08)
+                                : const Color(0xFF0D0D0D),
+                            borderRadius: BorderRadius.circular(
+                              _mapExpanded ? 12 : 12,
+                            ),
+                            border: Border.all(
+                              color: _mapExpanded
+                                  ? AppColors.primary.withValues(alpha: 0.3)
+                                  : const Color(0xFF1E1E1E),
+                              width: 0.5,
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.map_outlined,
+                                color: _mapExpanded
+                                    ? AppColors.primary
+                                    : AppColors.textHint,
+                                size: 18,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Map View',
+                                style: TextStyle(
+                                  color: _mapExpanded
+                                      ? AppColors.primary
+                                      : AppColors.textHint,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              if (_locating) ...[
+                                const SizedBox(width: 8),
+                                const SizedBox(
+                                  width: 12,
+                                  height: 12,
+                                  child: CircularProgressIndicator(
+                                    color: AppColors.primary,
+                                    strokeWidth: 1.5,
+                                  ),
+                                ),
+                              ],
+                              const Spacer(),
+                              AnimatedRotation(
+                                duration: const Duration(milliseconds: 250),
+                                turns: _mapExpanded ? 0.5 : 0.0,
+                                child: Icon(
+                                  Icons.keyboard_arrow_down_rounded,
+                                  color: _mapExpanded
+                                      ? AppColors.primary
+                                      : AppColors.textHint,
+                                  size: 22,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                      // Map body with animation
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeInOut,
+                        height: _mapExpanded ? 260 : 0,
+                        child: _mapExpanded
+                            ? _buildExploreMap(bounties)
+                            : const SizedBox.shrink(),
+                      ),
                     ],
                   ),
                 ),
@@ -299,6 +445,140 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  // ── Explore map builder ──────────────────────────
+  Widget _buildExploreMap(List<BountyModel> bounties) {
+    final center =
+        _userPosition ?? const LatLng(20.5937, 78.9629); // India fallback
+    const radiusKm = 2.0;
+
+    // Filter bounties with coordinates within ~2km
+    final nearbyBounties = bounties.where((b) {
+      if (b.latitude == null || b.longitude == null) return false;
+      final dist = const Distance().as(
+        LengthUnit.Kilometer,
+        center,
+        LatLng(b.latitude!, b.longitude!),
+      );
+      return dist <= radiusKm;
+    }).toList();
+
+    return ClipRRect(
+      borderRadius: const BorderRadius.vertical(bottom: Radius.circular(12)),
+      child: FlutterMap(
+        mapController: _mapController,
+        options: MapOptions(
+          initialCenter: center,
+          initialZoom: MapConstants.zoomForRadius(radiusKm),
+          interactionOptions: const InteractionOptions(
+            flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
+          ),
+        ),
+        children: [
+          TileLayer(
+            urlTemplate: MapConstants.darkTileUrl,
+            subdomains: MapConstants.subdomains,
+            userAgentPackageName: 'com.questly.questly',
+          ),
+
+          // 2km radius circle
+          if (_userPosition != null)
+            CircleLayer(
+              circles: [
+                CircleMarker(
+                  point: center,
+                  radius: radiusKm * 1000, // metres
+                  useRadiusInMeter: true,
+                  color: AppColors.neonCyan.withValues(alpha: 0.08),
+                  borderColor: AppColors.neonCyan.withValues(alpha: 0.35),
+                  borderStrokeWidth: 1.5,
+                ),
+              ],
+            ),
+
+          // User position dot
+          if (_userPosition != null)
+            MarkerLayer(
+              markers: [
+                Marker(
+                  point: _userPosition!,
+                  width: 18,
+                  height: 18,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: AppColors.neonCyan,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 2),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.neonCyan.withValues(alpha: 0.5),
+                          blurRadius: 8,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+
+          // Bounty pins
+          MarkerLayer(
+            markers: nearbyBounties.map((b) {
+              final pos = LatLng(b.latitude!, b.longitude!);
+              final hasImage = b.imageUrls.isNotEmpty;
+              return Marker(
+                point: pos,
+                width: 40,
+                height: 40,
+                child: GestureDetector(
+                  onTap: () => context.push('/home/bounty/${b.id}'),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: AppColors.primary, width: 2),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.primary.withValues(alpha: 0.4),
+                          blurRadius: 6,
+                        ),
+                      ],
+                    ),
+                    child: ClipOval(
+                      child: hasImage
+                          ? Image.network(
+                              b.imageUrls.first,
+                              width: 36,
+                              height: 36,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => Container(
+                                color: AppColors.card,
+                                child: const Icon(
+                                  Icons.work_outline,
+                                  color: AppColors.primary,
+                                  size: 18,
+                                ),
+                              ),
+                            )
+                          : Container(
+                              width: 36,
+                              height: 36,
+                              color: AppColors.card,
+                              child: const Icon(
+                                Icons.work_outline,
+                                color: AppColors.primary,
+                                size: 18,
+                              ),
+                            ),
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ],
       ),
     );
   }

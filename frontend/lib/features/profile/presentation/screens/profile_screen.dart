@@ -6,6 +6,7 @@ import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../bounty/data/models/bounty_model.dart';
 import '../../../bounty/presentation/providers/bounty_provider.dart';
 import '../../../gamification/presentation/widgets/gamification_widgets.dart';
+import '../../../../core/router/app_router.dart';
 
 /// Compute consecutive-day activity streak from bounties + claims.
 int _calcStreak(List<BountyModel> bounties, List<BountyClaimModel> claims) {
@@ -129,6 +130,41 @@ class ProfileScreen extends ConsumerWidget {
               nextLevelXp: user?.nextLevelXp ?? 25,
               level: user?.level ?? 0,
               rankTier: user?.rankTier ?? 'WOOD',
+            ),
+            const SizedBox(height: 12),
+
+            // ── How XP Works button ───────────────────
+            GestureDetector(
+              onTap: () => context.push(AppRoutes.xpRules),
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  border: Border.all(
+                    color: AppColors.neonCyan.withValues(alpha: 0.2),
+                  ),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.info_outline_rounded,
+                      size: 14,
+                      color: AppColors.neonCyan.withValues(alpha: 0.5),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      'how xp works',
+                      style: TextStyle(
+                        color: AppColors.neonCyan.withValues(alpha: 0.5),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
 
             const SizedBox(height: 24),

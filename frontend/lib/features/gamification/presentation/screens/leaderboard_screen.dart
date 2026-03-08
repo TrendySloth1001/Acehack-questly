@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../providers/gamification_provider.dart';
@@ -41,6 +42,41 @@ class LeaderboardScreen extends ConsumerWidget {
           ),
         ),
         centerTitle: true,
+        actions: [
+          GestureDetector(
+            onTap: () => context.push('/home/xp-rules'),
+            child: Container(
+              margin: const EdgeInsets.only(right: 16),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                border: Border.all(
+                  color: AppColors.neonCyan.withValues(alpha: 0.25),
+                ),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.info_outline_rounded,
+                    size: 13,
+                    color: AppColors.neonCyan.withValues(alpha: 0.6),
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Rules',
+                    style: TextStyle(
+                      color: AppColors.neonCyan.withValues(alpha: 0.6),
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
       body: state.isLoading
           ? const Center(

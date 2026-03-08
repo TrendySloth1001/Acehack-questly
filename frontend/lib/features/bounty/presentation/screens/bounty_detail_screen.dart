@@ -7,6 +7,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/constants/map_constants.dart';
 import '../../../../core/utils/algo_inr.dart';
 import '../../../../core/constants/api_endpoints.dart';
 import '../../../../core/network/dio_client.dart';
@@ -484,12 +485,16 @@ class _BountyDetailScreenState extends ConsumerState<BountyDetailScreen> {
             0;
         if (action == 'APPROVED' && xpAwarded > 0 && mounted) {
           final user = ref.read(authProvider).user;
+          final prevLevel = user?.level ?? 0;
           await showXpRewardPopup(
             context,
             xpGained: xpAwarded,
             reason: 'Bounty completed!',
             newTotalXp: (user?.xp ?? 0) + xpAwarded,
-            newLevel: user?.level,
+            newLevel: (response['data'] as Map<String, dynamic>?)?['newLevel']
+                as int? ??
+                user?.level,
+            previousLevel: prevLevel,
             rankTier: user?.rankTier ?? 'WOOD',
           );
         }
@@ -648,12 +653,16 @@ class _BountyDetailScreenState extends ConsumerState<BountyDetailScreen> {
       final data = submitted['data'] as Map<String, dynamic>?;
       final xpAwarded = data?['xpAwarded'] as int? ?? 0;
       if (xpAwarded != 0 && mounted) {
+        final prevLevel = ref.read(authProvider).user?.level ?? 0;
         await showXpRewardPopup(
           context,
           xpGained: xpAwarded,
           reason: xpAwarded > 0
               ? 'Great review received!'
               : 'Poor review impact',
+          previousLevel: prevLevel,
+          newLevel: data?['newLevel'] as int? ?? prevLevel,
+          rankTier: ref.read(authProvider).user?.rankTier ?? 'WOOD',
         );
       }
 
@@ -1160,8 +1169,8 @@ class _BountyDetailScreenState extends ConsumerState<BountyDetailScreen> {
                           ),
                           children: [
                             TileLayer(
-                              urlTemplate:
-                                  'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                              urlTemplate: MapConstants.darkTileUrl,
+                              subdomains: MapConstants.subdomains,
                               userAgentPackageName: 'com.questly.questly',
                             ),
                             MarkerLayer(
@@ -2788,7 +2797,7 @@ class _OwnerClaimsSectionState extends ConsumerState<_OwnerClaimsSection> {
             ],
           ),
 
-          // ── Proof thumbnails ────────────────────────
+          // ── Proof thumbnails (restricted preview) ──────
           if (hasProof && claim.proofUrls.isNotEmpty) ...[
             const SizedBox(height: 12),
             const Text(
@@ -2804,56 +2813,95 @@ class _OwnerClaimsSectionState extends ConsumerState<_OwnerClaimsSection> {
               height: 80,
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
-                itemCount: claim.proofUrls.length,
+                // Show max 2 thumbnails
+                itemCount: claim.proofUrls.length.clamp(0, 2),
                 separatorBuilder: (_, __) => const SizedBox(width: 8),
                 itemBuilder: (_, i) {
                   final url = claim.proofUrls[i];
                   final isPdf = url.toLowerCase().endsWith('.pdf');
+                  final hiddenCount = claim.proofUrls.length - 2;
+                  final showOverlay = i == 1 && hiddenCount > 0;
+
                   return GestureDetector(
                     onTap: () =>
                         _showFullScreenProof(context, claim.proofUrls, i),
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(10),
-                      child: isPdf
-                          ? Container(
-                              width: 80,
-                              height: 80,
-                              color: AppColors.card,
-                              child: const Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Icons.picture_as_pdf_outlined,
-                                    color: AppColors.error,
-                                    size: 28,
-                                  ),
-                                  SizedBox(height: 4),
-                                  Text(
-                                    'PDF',
-                                    style: TextStyle(
-                                      color: AppColors.textHint,
-                                      fontSize: 10,
+                      child: SizedBox(
+                        width: 80,
+                        height: 80,
+                        child: Stack(
+                          fit: StackFit.expand,
+                          children: [
+                            // Base content
+                            isPdf
+                                ? Container(
+                                    color: AppColors.card,
+                                    child: const Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Icon(
+                                          Icons.picture_as_pdf_outlined,
+                                          color: AppColors.error,
+                                          size: 28,
+                                        ),
+                                        SizedBox(height: 4),
+                                        Text(
+                                          'PDF',
+                                          style: TextStyle(
+                                            color: AppColors.textHint,
+                                            fontSize: 10,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  )
+                                : Image.network(
+                                    url,
+                                    width: 80,
+                                    height: 80,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, e, s) => Container(
+                                      color: AppColors.card,
+                                      child: const Icon(
+                                        Icons.broken_image_outlined,
+                                        color: AppColors.textHint,
+                                        size: 24,
+                                      ),
                                     ),
                                   ),
-                                ],
-                              ),
-                            )
-                          : Image.network(
-                              url,
-                              width: 80,
-                              height: 80,
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, e, s) => Container(
-                                width: 80,
-                                height: 80,
-                                color: AppColors.card,
-                                child: const Icon(
-                                  Icons.broken_image_outlined,
-                                  color: AppColors.textHint,
-                                  size: 24,
+                            // Blur overlay on 2nd item when more exist
+                            if (showOverlay)
+                              Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withValues(alpha: 0.7),
+                                ),
+                                child: Center(
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(
+                                        Icons.visibility_outlined,
+                                        color: AppColors.primary,
+                                        size: 20,
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        '+$hiddenCount more',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
-                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   );
                 },

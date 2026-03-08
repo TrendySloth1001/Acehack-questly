@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/constants/map_constants.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../providers/onboarding_provider.dart';
 import '../widgets/onboarding_widgets.dart';
@@ -198,8 +199,8 @@ class _OnboardingLocationScreenState
                           ),
                           children: [
                             TileLayer(
-                              urlTemplate:
-                                  'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                              urlTemplate: MapConstants.darkTileUrl,
+                              subdomains: MapConstants.subdomains,
                               userAgentPackageName: 'com.questly.questly',
                             ),
                             if (_position != null)

@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import 'gamification_widgets.dart';
+import 'level_up_popup.dart';
 
 /// Shows a Minecraft-themed XP reward popup overlay.
+/// If [previousLevel] is provided and [newLevel] is higher,
+/// a clean level-up popup will follow automatically.
 ///
 /// Call [showXpRewardPopup] to display it.
 Future<void> showXpRewardPopup(
@@ -11,6 +14,7 @@ Future<void> showXpRewardPopup(
   required String reason,
   int? newTotalXp,
   int? newLevel,
+  int? previousLevel,
   String? rankTier,
 }) async {
   if (xpGained == 0) return;
@@ -35,6 +39,18 @@ Future<void> showXpRewardPopup(
       rankTier: rankTier ?? 'WOOD',
     ),
   );
+
+  // Show level-up popup if level increased
+  if (previousLevel != null &&
+      newLevel != null &&
+      newLevel > previousLevel &&
+      context.mounted) {
+    await showLevelUpPopup(
+      context,
+      newLevel: newLevel,
+      rankTier: rankTier,
+    );
+  }
 }
 
 class _XpRewardDialog extends StatefulWidget {

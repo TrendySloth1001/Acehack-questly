@@ -116,11 +116,19 @@ class _SubmitProofScreenState extends ConsumerState<SubmitProofScreen> {
           ),
         );
         if (xpAwarded > 0) {
+          final prevLevel = ref.read(authProvider).user?.level ?? 0;
           ref.read(authProvider.notifier).fetchUser();
           showXpRewardPopup(
             context,
             xpGained: xpAwarded,
             reason: 'Proof Submitted',
+            previousLevel: prevLevel,
+            newLevel:
+                (response['data'] as Map<String, dynamic>?)?['newLevel']
+                    as int? ??
+                response['newLevel'] as int? ??
+                prevLevel,
+            rankTier: ref.read(authProvider).user?.rankTier ?? 'WOOD',
           );
           await Future.delayed(const Duration(milliseconds: 2800));
         }

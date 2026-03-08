@@ -176,7 +176,7 @@ class XpBar extends StatelessWidget {
   }
 }
 
-/// Compact rank badge for lists / leaderboard.
+/// Compact rank badge — clean circle with tier color.
 class RankBadge extends StatelessWidget {
   final String tier;
   final double size;
@@ -186,21 +186,33 @@ class RankBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final rankColor = MinecraftRank.color(tier);
+    final label = MinecraftRank.label(tier);
     return Container(
       width: size,
       height: size,
       decoration: BoxDecoration(
-        color: rankColor.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: rankColor.withValues(alpha: 0.4)),
+        shape: BoxShape.circle,
+        color: Colors.black,
+        border: Border.all(
+          color: rankColor.withValues(alpha: 0.6),
+          width: 1.5,
+        ),
         boxShadow: [
-          BoxShadow(color: rankColor.withValues(alpha: 0.2), blurRadius: 8),
+          BoxShadow(
+            color: rankColor.withValues(alpha: 0.25),
+            blurRadius: 8,
+          ),
         ],
       ),
       child: Center(
         child: Text(
-          MinecraftRank.emoji(tier),
-          style: TextStyle(fontSize: size * 0.5),
+          label[0],
+          style: TextStyle(
+            color: rankColor,
+            fontSize: size * 0.38,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 0,
+          ),
         ),
       ),
     );

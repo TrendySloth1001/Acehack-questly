@@ -9,6 +9,7 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:latlong2/latlong.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/constants/map_constants.dart';
 import '../../../../core/utils/algo_inr.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../gamification/presentation/widgets/xp_reward_popup.dart';
@@ -412,8 +413,8 @@ class _CreateBountyScreenState extends ConsumerState<CreateBountyScreen> {
                         ),
                         children: [
                           TileLayer(
-                            urlTemplate:
-                                'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                            urlTemplate: MapConstants.darkTileUrl,
+                            subdomains: MapConstants.subdomains,
                             userAgentPackageName: 'com.questly.questly',
                           ),
                           MarkerLayer(
@@ -571,11 +572,15 @@ class _CreateBountyScreenState extends ConsumerState<CreateBountyScreen> {
           ),
         );
         if (xpAwarded > 0) {
+          final prevLevel = ref.read(authProvider).user?.level ?? 0;
           ref.read(authProvider.notifier).fetchUser();
           showXpRewardPopup(
             context,
             xpGained: xpAwarded,
             reason: 'Bounty Created',
+            previousLevel: prevLevel,
+            newLevel: response['newLevel'] as int? ?? prevLevel,
+            rankTier: ref.read(authProvider).user?.rankTier ?? 'WOOD',
           );
           await Future.delayed(const Duration(milliseconds: 2800));
         }
@@ -623,7 +628,7 @@ class _CreateBountyScreenState extends ConsumerState<CreateBountyScreen> {
           onPressed: () => context.pop(),
         ),
         title: const Text(
-          'post a bounty',
+          'Post a bounty',
           style: TextStyle(
             color: AppColors.textPrimary,
             fontSize: 18,
@@ -840,8 +845,8 @@ class _CreateBountyScreenState extends ConsumerState<CreateBountyScreen> {
                                   ),
                                   children: [
                                     TileLayer(
-                                      urlTemplate:
-                                          'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                                      urlTemplate: MapConstants.darkTileUrl,
+                                      subdomains: MapConstants.subdomains,
                                       userAgentPackageName:
                                           'com.questly.questly',
                                     ),
