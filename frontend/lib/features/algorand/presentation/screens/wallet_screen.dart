@@ -133,23 +133,35 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
               ),
             ),
             const SizedBox(height: 28),
-            SizedBox(
+            Container(
               width: double.infinity,
-              child: ElevatedButton(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(14),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.neonCyan.withValues(alpha: 0.25),
+                    blurRadius: 20,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: ElevatedButton.icon(
                 onPressed: _generate,
+                icon: const Icon(Icons.add_circle_outline_rounded, size: 20),
+                label: const Text('Generate Wallet'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.neonCyan,
                   foregroundColor: Colors.black,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(14),
                   ),
+                  elevation: 0,
                   textStyle: const TextStyle(
                     fontWeight: FontWeight.w700,
                     fontSize: 15,
                   ),
                 ),
-                child: const Text('Generate Wallet'),
               ),
             ),
           ],

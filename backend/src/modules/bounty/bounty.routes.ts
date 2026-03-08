@@ -23,7 +23,7 @@ router.use(authenticate);
 // ── Image upload (multiple) ─────────────────────────────────
 router.post(
   "/upload-images",
-  upload.array("images", 5),
+  upload.array("images", 10),
   asyncHandler(bountyController.uploadImages)
 );
 
@@ -66,6 +66,22 @@ router.patch(
 router.delete(
   "/claims/:claimId",
   asyncHandler(bountyController.declaim)
+);
+
+// ── Disputes ────────────────────────────────────────────────
+router.post(
+  "/claims/:claimId/dispute",
+  asyncHandler(bountyController.raiseDispute)
+);
+
+router.patch(
+  "/disputes/:disputeId/resolve",
+  asyncHandler(bountyController.resolveDispute)
+);
+
+router.get(
+  "/:id/disputes",
+  asyncHandler(bountyController.getDisputes)
 );
 
 export default router;

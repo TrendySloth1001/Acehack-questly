@@ -28,16 +28,37 @@ class ExploreScreen extends ConsumerStatefulWidget {
 
 class _ExploreScreenState extends ConsumerState<ExploreScreen> {
   String _selectedCategory = 'All';
+  String _searchQuery = '';
+  final _searchController = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final bountyState = ref.watch(bountyListProvider);
 
-    final bounties = _selectedCategory == 'All'
+    var bounties = _selectedCategory == 'All'
         ? bountyState.bounties
         : bountyState.bounties
               .where((b) => b.category == _selectedCategory)
               .toList();
+
+    // Apply text search filter
+    if (_searchQuery.isNotEmpty) {
+      final q = _searchQuery.toLowerCase();
+      bounties = bounties
+          .where(
+            (b) =>
+                b.title.toLowerCase().contains(q) ||
+                b.description.toLowerCase().contains(q) ||
+                (b.location?.toLowerCase().contains(q) ?? false),
+          )
+          .toList();
+    }
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -70,7 +91,58 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
                           fontSize: 13,
                         ),
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 14),
+
+                      // Search bar
+                      Container(
+                        height: 42,
+                        decoration: BoxDecoration(
+                          color: AppColors.surface,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: AppColors.border,
+                            width: 0.5,
+                          ),
+                        ),
+                        child: TextField(
+                          controller: _searchController,
+                          onChanged: (v) => setState(() => _searchQuery = v),
+                          style: const TextStyle(
+                            color: AppColors.textPrimary,
+                            fontSize: 14,
+                          ),
+                          decoration: InputDecoration(
+                            hintText: 'Search bounties...',
+                            hintStyle: const TextStyle(
+                              color: AppColors.textHint,
+                              fontSize: 14,
+                            ),
+                            prefixIcon: const Icon(
+                              Icons.search_rounded,
+                              color: AppColors.textHint,
+                              size: 18,
+                            ),
+                            suffixIcon: _searchQuery.isNotEmpty
+                                ? GestureDetector(
+                                    onTap: () {
+                                      _searchController.clear();
+                                      setState(() => _searchQuery = '');
+                                    },
+                                    child: const Icon(
+                                      Icons.close_rounded,
+                                      color: AppColors.textHint,
+                                      size: 16,
+                                    ),
+                                  )
+                                : null,
+                            border: InputBorder.none,
+                            contentPadding: const EdgeInsets.symmetric(
+                              vertical: 10,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 14),
 
                       // Category filter
                       SizedBox(

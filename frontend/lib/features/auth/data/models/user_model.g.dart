@@ -22,6 +22,13 @@ UserModel _$UserModelFromJson(Map<String, dynamic> json) => UserModel(
   longitude: (json['longitude'] as num?)?.toDouble(),
   onboarded: json['onboarded'] as bool? ?? false,
   walletAddress: json['walletAddress'] as String?,
+  xp: (json['xp'] as num?)?.toInt() ?? 0,
+  level: (json['level'] as num?)?.toInt() ?? 0,
+  avgRating: (json['avgRating'] as num?)?.toDouble(),
+  totalReviews: (json['totalReviews'] as num?)?.toInt() ?? 0,
+  lastActiveAt: json['lastActiveAt'] == null
+      ? null
+      : DateTime.parse(json['lastActiveAt'] as String),
   createdAt: DateTime.parse(json['createdAt'] as String),
 );
 
@@ -39,5 +46,10 @@ Map<String, dynamic> _$UserModelToJson(UserModel instance) => <String, dynamic>{
   'longitude': instance.longitude,
   'onboarded': instance.onboarded,
   'walletAddress': instance.walletAddress,
+  'xp': instance.xp,
+  'level': instance.level,
+  'avgRating': instance.avgRating,
+  'totalReviews': instance.totalReviews,
+  'lastActiveAt': instance.lastActiveAt?.toIso8601String(),
   'createdAt': instance.createdAt.toIso8601String(),
 };

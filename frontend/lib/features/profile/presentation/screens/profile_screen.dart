@@ -3,7 +3,35 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../bounty/data/models/bounty_model.dart';
 import '../../../bounty/presentation/providers/bounty_provider.dart';
+import '../../../gamification/presentation/widgets/gamification_widgets.dart';
+
+/// Compute consecutive-day activity streak from bounties + claims.
+int _calcStreak(List<BountyModel> bounties, List<BountyClaimModel> claims) {
+  final dates = <DateTime>{};
+  for (final b in bounties) {
+    dates.add(DateTime(b.createdAt.year, b.createdAt.month, b.createdAt.day));
+  }
+  for (final c in claims) {
+    dates.add(DateTime(c.createdAt.year, c.createdAt.month, c.createdAt.day));
+  }
+  if (dates.isEmpty) return 0;
+  final sorted = dates.toList()..sort((a, b) => b.compareTo(a));
+  int streak = 0;
+  var cursor = DateTime.now();
+  cursor = DateTime(cursor.year, cursor.month, cursor.day);
+  for (final d in sorted) {
+    final diff = cursor.difference(d).inDays;
+    if (diff <= 1) {
+      streak++;
+      cursor = d;
+    } else {
+      break;
+    }
+  }
+  return streak;
+}
 
 /// Profile tab — ultra-minimal, premium.
 class ProfileScreen extends ConsumerWidget {
@@ -13,6 +41,15 @@ class ProfileScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(authProvider).user;
     final myBounties = ref.watch(myBountiesProvider);
+    final myClaims = ref.watch(myClaimsProvider);
+
+    // Compute real stats
+    final completedCount =
+        myBounties.bounties.where((b) => b.status == 'COMPLETED').length +
+        myClaims.claims.where((c) => c.status == 'APPROVED').length;
+
+    // Streak: count consecutive days with bounty/claim activity (simplified)
+    final streak = _calcStreak(myBounties.bounties, myClaims.claims);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -22,21 +59,34 @@ class ProfileScreen extends ConsumerWidget {
           children: [
             const SizedBox(height: 20),
 
-            // ── Avatar ────────────────────────────────
+            // ── Avatar + Rank Badge ───────────────────
             Center(
-              child: CircleAvatar(
-                radius: 44,
-                backgroundColor: AppColors.primaryDim,
-                backgroundImage: user?.avatarUrl != null
-                    ? NetworkImage(user!.avatarUrl!)
-                    : null,
-                child: user?.avatarUrl == null
-                    ? const Icon(
-                        Icons.person,
-                        color: AppColors.primary,
-                        size: 36,
-                      )
-                    : null,
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  CircleAvatar(
+                    radius: 44,
+                    backgroundColor: AppColors.primaryDim,
+                    backgroundImage: user?.avatarUrl != null
+                        ? NetworkImage(user!.avatarUrl!)
+                        : null,
+                    child: user?.avatarUrl == null
+                        ? const Icon(
+                            Icons.person,
+                            color: AppColors.primary,
+                            size: 36,
+                          )
+                        : null,
+                  ),
+                  Positioned(
+                    bottom: -4,
+                    right: -4,
+                    child: RankBadge(
+                      tier: user?.rankTier ?? 'WOOD',
+                      size: 30,
+                    ),
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: 16),
@@ -62,7 +112,29 @@ class ProfileScreen extends ConsumerWidget {
                 style: const TextStyle(color: AppColors.textHint, fontSize: 14),
               ),
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: 8),
+
+            // ── Star Rating ───────────────────────────
+            if (user != null && user.avgRating != null)
+              Center(
+                child: StarRating(
+                  rating: user.avgRating!,
+                  totalReviews: user.totalReviews,
+                  starSize: 18,
+                ),
+              ),
+
+            const SizedBox(height: 20),
+
+            // ── XP Bar (Minecraft) ────────────────────
+            XpBar(
+              currentXp: user?.xp ?? 0,
+              nextLevelXp: user?.nextLevelXp ?? 25,
+              level: user?.level ?? 0,
+              rankTier: user?.rankTier ?? 'WOOD',
+            ),
+
+            const SizedBox(height: 24),
 
             // ── Stats row ─────────────────────────────
             Row(
@@ -74,18 +146,26 @@ class ProfileScreen extends ConsumerWidget {
                   ),
                 ),
                 Container(width: 0.5, height: 36, color: AppColors.border),
-                const Expanded(
-                  child: _MiniStat(value: '0', label: 'Completed'),
+                Expanded(
+                  child: _MiniStat(
+                    value: '$completedCount',
+                    label: 'Completed',
+                  ),
                 ),
                 Container(width: 0.5, height: 36, color: AppColors.border),
-                const Expanded(
-                  child: _MiniStat(value: '0', label: 'Streak'),
+                Expanded(
+                  child: _MiniStat(value: '$streak', label: 'Streak'),
                 ),
               ],
             ),
             const SizedBox(height: 36),
 
             // ── Menu items ────────────────────────────
+            _MenuItem(
+              icon: Icons.emoji_events_rounded,
+              label: 'Leaderboard',
+              onTap: () => context.push('/home/leaderboard'),
+            ),
             _MenuItem(
               icon: Icons.bolt_rounded,
               label: 'My Bounties',

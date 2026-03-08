@@ -42,6 +42,14 @@ model User {
   isActive      Boolean      @default(true)
   emailVerified Boolean      @default(false)
   onboarded     Boolean      @default(false)
+
+  // Gamification
+  xp            Int          @default(0)
+  level         Int          @default(0)
+  avgRating     Float?
+  totalReviews  Int          @default(0)
+  lastActiveAt  DateTime?
+
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
 
@@ -53,8 +61,12 @@ model User {
   bounties       Bounty[]
   bountyClaims   BountyClaim[]
   walletTxns     WalletTransaction[]
+  reviewsGiven   Review[]     @relation("ReviewerReviews")
+  reviewsReceived Review[]    @relation("RevieweeReviews")
+  disputesRaised Dispute[]
 
   @@index([email])
+  @@index([xp(sort: Desc)])
   @@map("users")
 }
 
@@ -209,6 +221,7 @@ model Bounty {
 
   creator     User         @relation(fields: [creatorId], references: [id], onDelete: Cascade)
   claims      BountyClaim[]
+  reviews     Review[]
 
   @@index([creatorId])
   @@index([status])
@@ -230,6 +243,7 @@ model BountyClaim {
 
   bounty      Bounty      @relation(fields: [bountyId], references: [id], onDelete: Cascade)
   claimer     User        @relation(fields: [claimerId], references: [id], onDelete: Cascade)
+  disputes    Dispute[]
 
   @@unique([bountyId, claimerId])
   @@index([bountyId])
@@ -263,4 +277,55 @@ model WalletTransaction {
   @@index([userId])
   @@index([createdAt])
   @@map("wallet_transactions")
+}
+
+// ──────────────────────────────
+// Review Domain
+// ──────────────────────────────
+
+model Review {
+  id          String   @id @default(cuid())
+  reviewerId  String
+  revieweeId  String
+  bountyId    String
+  stars       Int      // 1-5
+  comment     String?
+  createdAt   DateTime @default(now())
+
+  reviewer    User     @relation("ReviewerReviews", fields: [reviewerId], references: [id], onDelete: Cascade)
+  reviewee    User     @relation("RevieweeReviews", fields: [revieweeId], references: [id], onDelete: Cascade)
+  bounty      Bounty   @relation(fields: [bountyId], references: [id], onDelete: Cascade)
+
+  @@unique([reviewerId, bountyId])
+  @@index([revieweeId])
+  @@index([bountyId])
+  @@map("reviews")
+}
+
+// ──────────────────────────────
+// Dispute Domain
+// ──────────────────────────────
+
+enum DisputeStatus {
+  OPEN
+  RESOLVED
+  DISMISSED
+}
+
+model Dispute {
+  id          String        @id @default(cuid())
+  claimId     String
+  raisedById  String
+  reason      String
+  status      DisputeStatus @default(OPEN)
+  resolution  String?
+  resolvedAt  DateTime?
+  createdAt   DateTime      @default(now())
+
+  claim       BountyClaim   @relation(fields: [claimId], references: [id], onDelete: Cascade)
+  raisedBy    User          @relation(fields: [raisedById], references: [id], onDelete: Cascade)
+
+  @@index([claimId])
+  @@index([raisedById])
+  @@map("disputes")
 }

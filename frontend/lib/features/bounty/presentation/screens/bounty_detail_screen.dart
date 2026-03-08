@@ -8,8 +8,12 @@ import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/algo_inr.dart';
+import '../../../../core/constants/api_endpoints.dart';
+import '../../../../core/network/dio_client.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../algorand/presentation/providers/wallet_provider.dart';
+import '../../../gamification/presentation/providers/review_provider.dart';
+import '../../../gamification/presentation/widgets/gamification_widgets.dart';
 import '../../data/models/bounty_model.dart';
 import '../providers/bounty_provider.dart';
 
@@ -482,6 +486,257 @@ class _BountyDetailScreenState extends ConsumerState<BountyDetailScreen> {
           ),
         );
       }
+    }
+  }
+
+  // ── Review bottom sheet ───────────────────────────────────
+  Future<void> _showReviewSheet({
+    required String bountyId,
+    required String revieweeId,
+    required String revieweeName,
+  }) async {
+    int stars = 0;
+    final commentCtrl = TextEditingController();
+
+    final submitted = await showModalBottomSheet<bool>(
+      context: context,
+      backgroundColor: AppColors.surface,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheetState) => Padding(
+          padding: EdgeInsets.only(
+            left: 24,
+            right: 24,
+            top: 24,
+            bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppColors.border,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 20),
+              const Text(
+                '⭐ Leave a Review',
+                style: TextStyle(
+                  color: AppColors.textPrimary,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Rate your experience with $revieweeName',
+                style: const TextStyle(
+                  color: AppColors.textHint,
+                  fontSize: 13,
+                ),
+              ),
+              const SizedBox(height: 20),
+              StarPicker(
+                selected: stars,
+                onChanged: (v) => setSheetState(() => stars = v),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: commentCtrl,
+                maxLines: 3,
+                style: const TextStyle(color: AppColors.textPrimary),
+                decoration: InputDecoration(
+                  hintText: 'Optional comment...',
+                  hintStyle: const TextStyle(color: AppColors.textHint),
+                  filled: true,
+                  fillColor: AppColors.surfaceLight,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: ElevatedButton.icon(
+                  onPressed: stars == 0
+                      ? null
+                      : () async {
+                          try {
+                            final dio = ref.read(dioProvider);
+                            await submitReview(
+                              dio,
+                              bountyId: bountyId,
+                              revieweeId: revieweeId,
+                              stars: stars,
+                              comment: commentCtrl.text.trim().isEmpty
+                                  ? null
+                                  : commentCtrl.text.trim(),
+                            );
+                            if (ctx.mounted) Navigator.of(ctx).pop(true);
+                          } catch (e) {
+                            if (ctx.mounted) {
+                              ScaffoldMessenger.of(ctx).showSnackBar(
+                                SnackBar(
+                                  content: Text(_friendlyError(e)),
+                                  backgroundColor: AppColors.error,
+                                ),
+                              );
+                            }
+                          }
+                        },
+                  icon: const Icon(Icons.star_rounded, size: 18),
+                  label: const Text(
+                    'Submit Review',
+                    style: TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.warning,
+                    foregroundColor: Colors.black,
+                    disabledBackgroundColor:
+                        AppColors.warning.withValues(alpha: 0.3),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    if (submitted == true && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Review submitted! 🌟'),
+          backgroundColor: AppColors.neonGreen,
+        ),
+      );
+    }
+  }
+
+  // ── Raise dispute ─────────────────────────────────────────
+  Future<void> _raiseDisputeSheet(String claimId) async {
+    final reasonCtrl = TextEditingController();
+
+    final submitted = await showModalBottomSheet<bool>(
+      context: context,
+      backgroundColor: AppColors.surface,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.only(
+          left: 24,
+          right: 24,
+          top: 24,
+          bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppColors.border,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              '⚠️ Raise Dispute',
+              style: TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 6),
+            const Text(
+              'Explain why you disagree with the rejection',
+              style: TextStyle(color: AppColors.textHint, fontSize: 13),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: reasonCtrl,
+              maxLines: 4,
+              style: const TextStyle(color: AppColors.textPrimary),
+              decoration: InputDecoration(
+                hintText: 'Describe the issue...',
+                hintStyle: const TextStyle(color: AppColors.textHint),
+                filled: true,
+                fillColor: AppColors.surfaceLight,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: ElevatedButton.icon(
+                onPressed: () async {
+                  final reason = reasonCtrl.text.trim();
+                  if (reason.isEmpty) return;
+                  try {
+                    final dio = ref.read(dioProvider);
+                    await dio.post(
+                      ApiEndpoints.raiseDispute(claimId),
+                      data: {'reason': reason},
+                    );
+                    if (ctx.mounted) Navigator.of(ctx).pop(true);
+                  } catch (e) {
+                    if (ctx.mounted) {
+                      ScaffoldMessenger.of(ctx).showSnackBar(
+                        SnackBar(
+                          content: Text(_friendlyError(e)),
+                          backgroundColor: AppColors.error,
+                        ),
+                      );
+                    }
+                  }
+                },
+                icon: const Icon(Icons.gavel_rounded, size: 18),
+                label: const Text(
+                  'Submit Dispute',
+                  style: TextStyle(fontWeight: FontWeight.w700),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.error,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (submitted == true && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Dispute raised — the bounty creator will review it'),
+          backgroundColor: AppColors.neonOrange,
+        ),
+      );
+      _load();
     }
   }
 
@@ -989,6 +1244,7 @@ class _BountyDetailScreenState extends ConsumerState<BountyDetailScreen> {
                     onDeclaim: () => _declaimBounty(myClaim!.id),
                     isDeclaiming: _declaiming,
                     onReload: _load,
+                    onDispute: _raiseDisputeSheet,
                   ),
                   const SizedBox(height: 16),
                 ],
@@ -1126,38 +1382,51 @@ class _BountyDetailScreenState extends ConsumerState<BountyDetailScreen> {
 
                 // ── Claim button ──────────────────────────────
                 if (!isOwner && isOpen && !isExpired && myClaim == null) ...[
-                  SizedBox(
+                  Container(
                     width: double.infinity,
-                    height: 50,
-                    child: ElevatedButton(
-                      onPressed: _claiming ? null : _claimBounty,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.neonGreen,
-                        foregroundColor: Colors.black,
-                        disabledBackgroundColor: AppColors.neonGreen.withValues(
-                          alpha: 0.3,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(14),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.neonGreen.withValues(alpha: 0.3),
+                          blurRadius: 20,
+                          offset: const Offset(0, 4),
                         ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                      ],
+                    ),
+                    child: SizedBox(
+                      height: 52,
+                      child: ElevatedButton.icon(
+                        onPressed: _claiming ? null : _claimBounty,
+                        icon: _claiming
+                            ? const SizedBox(
+                                width: 22,
+                                height: 22,
+                                child: CircularProgressIndicator(
+                                  color: Colors.black,
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Icon(Icons.rocket_launch_rounded, size: 18),
+                        label: Text(
+                          _claiming ? 'Claiming...' : 'Claim this bounty',
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: -0.2,
+                          ),
                         ),
-                        elevation: 0,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.neonGreen,
+                          foregroundColor: Colors.black,
+                          disabledBackgroundColor: AppColors.neonGreen
+                              .withValues(alpha: 0.3),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          elevation: 0,
+                        ),
                       ),
-                      child: _claiming
-                          ? const SizedBox(
-                              width: 22,
-                              height: 22,
-                              child: CircularProgressIndicator(
-                                color: Colors.black,
-                                strokeWidth: 2,
-                              ),
-                            )
-                          : const Text(
-                              'Claim this bounty',
-                              style: TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
                     ),
                   ),
                   const SizedBox(height: 10),
@@ -1192,6 +1461,73 @@ class _BountyDetailScreenState extends ConsumerState<BountyDetailScreen> {
                       ),
                     ),
                   ),
+
+                // ── Leave Review (completed bounty) ─────────
+                if (b.status == 'COMPLETED') ...[
+                  const SizedBox(height: 12),
+                  Builder(
+                    builder: (context) {
+                      // Determine the reviewee (opposite party)
+                      String? revieweeId;
+                      String revieweeName = 'Unknown';
+                      if (isOwner) {
+                        // Owner reviews the claimer
+                        final approvedClaim = b.claims.cast<BountyClaimModel?>().firstWhere(
+                          (c) => c?.status == 'APPROVED',
+                          orElse: () => null,
+                        );
+                        if (approvedClaim != null) {
+                          revieweeId = approvedClaim.claimer.id;
+                          revieweeName = approvedClaim.claimer.name ?? 'the hunter';
+                        }
+                      } else if (myClaim?.status == 'APPROVED') {
+                        // Claimer reviews the owner
+                        revieweeId = b.creator.id;
+                        revieweeName = b.creator.name ?? 'the poster';
+                      }
+                      if (revieweeId == null) return const SizedBox.shrink();
+                      return Container(
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(14),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.warning.withValues(alpha: 0.25),
+                              blurRadius: 18,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: SizedBox(
+                          height: 48,
+                          child: ElevatedButton.icon(
+                            onPressed: () => _showReviewSheet(
+                              bountyId: b.id,
+                              revieweeId: revieweeId!,
+                              revieweeName: revieweeName,
+                            ),
+                            icon: const Icon(Icons.star_rounded, size: 18),
+                            label: Text(
+                              'Review $revieweeName',
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.warning,
+                              foregroundColor: Colors.black,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              elevation: 0,
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ],
 
                 const SizedBox(height: 40),
               ],
@@ -1603,6 +1939,7 @@ class _MyClaimSection extends ConsumerWidget {
   final VoidCallback onDeclaim;
   final bool isDeclaiming;
   final VoidCallback onReload;
+  final void Function(String claimId) onDispute;
 
   const _MyClaimSection({
     required this.claim,
@@ -1610,6 +1947,7 @@ class _MyClaimSection extends ConsumerWidget {
     required this.onDeclaim,
     required this.isDeclaiming,
     required this.onReload,
+    required this.onDispute,
   });
 
   @override
@@ -1763,28 +2101,40 @@ class _MyClaimSection extends ConsumerWidget {
           // Action buttons
           if (isActive) ...[
             // Submit Work button
-            SizedBox(
+            Container(
               width: double.infinity,
-              height: 46,
-              child: ElevatedButton.icon(
-                onPressed: () async {
-                  final result = await context.push<bool>(
-                    '/home/bounty/$bountyId/submit-proof?claimId=${claim.id}',
-                  );
-                  if (result == true) onReload();
-                },
-                icon: const Icon(Icons.upload_file_rounded, size: 18),
-                label: const Text(
-                  'Submit Work',
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.neonGreen,
-                  foregroundColor: Colors.black,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(14),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.neonGreen.withValues(alpha: 0.25),
+                    blurRadius: 18,
+                    offset: const Offset(0, 4),
                   ),
-                  elevation: 0,
+                ],
+              ),
+              child: SizedBox(
+                height: 48,
+                child: ElevatedButton.icon(
+                  onPressed: () async {
+                    final result = await context.push<bool>(
+                      '/home/bounty/$bountyId/submit-proof?claimId=${claim.id}',
+                    );
+                    if (result == true) onReload();
+                  },
+                  icon: const Icon(Icons.upload_file_rounded, size: 18),
+                  label: const Text(
+                    'Submit Work',
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.neonGreen,
+                    foregroundColor: Colors.black,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    elevation: 0,
+                  ),
                 ),
               ),
             ),
@@ -1819,30 +2169,65 @@ class _MyClaimSection extends ConsumerWidget {
             ),
           ],
 
-          // Rejected — allow resubmission
+          // Rejected — allow resubmission + dispute
           if (isRejected) ...[
+            Container(
+              width: double.infinity,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(14),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.neonOrange.withValues(alpha: 0.25),
+                    blurRadius: 18,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: SizedBox(
+                height: 48,
+                child: ElevatedButton.icon(
+                  onPressed: () async {
+                    final result = await context.push<bool>(
+                      '/home/bounty/$bountyId/submit-proof?claimId=${claim.id}',
+                    );
+                    if (result == true) onReload();
+                  },
+                  icon: const Icon(Icons.refresh_rounded, size: 18),
+                  label: const Text(
+                    'Resubmit Work',
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.neonOrange,
+                    foregroundColor: Colors.black,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    elevation: 0,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            // Raise dispute button
             SizedBox(
               width: double.infinity,
-              height: 46,
-              child: ElevatedButton.icon(
-                onPressed: () async {
-                  final result = await context.push<bool>(
-                    '/home/bounty/$bountyId/submit-proof?claimId=${claim.id}',
-                  );
-                  if (result == true) onReload();
-                },
-                icon: const Icon(Icons.refresh_rounded, size: 18),
+              height: 44,
+              child: OutlinedButton.icon(
+                onPressed: () => onDispute(claim.id),
+                icon: const Icon(Icons.gavel_rounded, size: 16),
                 label: const Text(
-                  'Resubmit Work',
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+                  'Raise Dispute',
+                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
                 ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.neonOrange,
-                  foregroundColor: Colors.black,
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.error,
+                  side: BorderSide(
+                    color: AppColors.error.withValues(alpha: 0.4),
+                  ),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  elevation: 0,
                 ),
               ),
             ),
@@ -2507,49 +2892,61 @@ class _FundEscrowButtonState extends ConsumerState<_FundEscrowButton> {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
-      child: SizedBox(
+      child: Container(
         width: double.infinity,
-        height: 50,
-        child: ElevatedButton.icon(
-          onPressed: _loading ? null : _startFunding,
-          icon: _loading
-              ? const SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(
-                    color: Colors.black,
-                    strokeWidth: 2,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(14),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.neonOrange.withValues(alpha: 0.3),
+              blurRadius: 20,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: SizedBox(
+          height: 52,
+          child: ElevatedButton.icon(
+            onPressed: _loading ? null : _startFunding,
+            icon: _loading
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      color: Colors.black,
+                      strokeWidth: 2,
+                    ),
+                  )
+                : const Icon(Icons.account_balance_wallet, size: 18),
+            label: Consumer(
+              builder: (context, cRef, _) {
+                final inrRate = cRef.watch(algoInrRateProvider).valueOrNull;
+                final algoStr = formatAlgo(widget.bounty.algoAmount);
+                final label =
+                    _step ??
+                    (inrRate != null
+                        ? 'Fund Escrow ($algoStr · ${algoToInrString(widget.bounty.algoAmount, inrRate)})'
+                        : 'Fund Escrow ($algoStr)');
+                return Text(
+                  label,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
                   ),
-                )
-              : const Icon(Icons.account_balance_wallet, size: 18),
-          label: Consumer(
-            builder: (context, cRef, _) {
-              final inrRate = cRef.watch(algoInrRateProvider).valueOrNull;
-              final algoStr = formatAlgo(widget.bounty.algoAmount);
-              final label =
-                  _step ??
-                  (inrRate != null
-                      ? 'Fund Escrow ($algoStr · ${algoToInrString(widget.bounty.algoAmount, inrRate)})'
-                      : 'Fund Escrow ($algoStr)');
-              return Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                ),
-              );
-            },
-          ),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.neonOrange,
-            foregroundColor: Colors.black,
-            disabledBackgroundColor: AppColors.neonOrange.withValues(
-              alpha: 0.4,
+                );
+              },
             ),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.neonOrange,
+              foregroundColor: Colors.black,
+              disabledBackgroundColor: AppColors.neonOrange.withValues(
+                alpha: 0.4,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+              elevation: 0,
             ),
-            elevation: 0,
           ),
         ),
       ),

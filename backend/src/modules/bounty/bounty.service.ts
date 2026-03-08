@@ -2,6 +2,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "../../config/database";
 import { NotFoundError, UnauthorizedError, BadRequestError } from "../../shared/errors";
 import { algorandService } from "../algorand/algorand.service";
+import { gamificationService, XP } from "../gamification/gamification.service";
 
 // ── DTOs ────────────────────────────────────────────────────
 
@@ -71,7 +72,7 @@ export class BountyService {
    * Create a new bounty.
    */
   async create(creatorId: string, dto: CreateBountyDTO) {
-    return prisma.bounty.create({
+    const bounty = await prisma.bounty.create({
       data: {
         creatorId,
         title: dto.title,
@@ -87,6 +88,11 @@ export class BountyService {
       },
       select: bountySelect,
     });
+
+    // +20 XP for posting a bounty
+    await gamificationService.awardXP(creatorId, XP.POST_BOUNTY);
+
+    return bounty;
   }
 
   /**
@@ -360,6 +366,11 @@ export class BountyService {
 
     await prisma.$transaction(operations);
 
+    // -20 XP if cancelled after someone claimed
+    if (pendingClaims.length > 0) {
+      await gamificationService.awardXP(userId, XP.CANCEL_AFTER_CLAIM);
+    }
+
     return { refundTxId, refunded: !!refundTxId };
   }
 
@@ -369,12 +380,15 @@ export class BountyService {
   async claim(bountyId: string, claimerId: string) {
     const bounty = await prisma.bounty.findUnique({
       where: { id: bountyId },
-      select: { creatorId: true, status: true },
+      select: { creatorId: true, status: true, deadline: true },
     });
 
     if (!bounty) throw new NotFoundError("Bounty not found");
     if (bounty.status !== "OPEN") {
       throw new UnauthorizedError("Bounty is not open for claims");
+    }
+    if (bounty.deadline && new Date(bounty.deadline) < new Date()) {
+      throw new BadRequestError("This bounty has passed its deadline");
     }
     if (bounty.creatorId === claimerId) {
       throw new UnauthorizedError("Cannot claim your own bounty");
@@ -417,8 +431,8 @@ export class BountyService {
     if (claim.claimerId !== claimerId) {
       throw new UnauthorizedError("Not your claim");
     }
-    if (claim.status !== "ACTIVE") {
-      throw new UnauthorizedError("Claim is not active");
+    if (claim.status !== "ACTIVE" && claim.status !== "REJECTED") {
+      throw new UnauthorizedError("Claim cannot be resubmitted in its current state");
     }
 
     const updated = await prisma.bountyClaim.update({
@@ -436,6 +450,9 @@ export class BountyService {
       where: { id: updated.bountyId },
       data: { status: "IN_REVIEW" },
     });
+
+    // +10 XP for submitting proof
+    await gamificationService.awardXP(claimerId, XP.SUBMIT_PROOF);
 
     return updated;
   }
@@ -573,11 +590,17 @@ export class BountyService {
       },
     });
 
-    // If approved → complete the bounty; if rejected → re-open it
+    // If approved → complete the bounty; if rejected → re-open for resubmission
+    // When rejected, set bounty to CLAIMED (claimer still attached) so they can resubmit.
     await prisma.bounty.update({
       where: { id: claim.bountyId },
-      data: { status: action === "APPROVED" ? "COMPLETED" : "OPEN" },
+      data: { status: action === "APPROVED" ? "COMPLETED" : "CLAIMED" },
     });
+
+    // +100 XP for the claimer when their work is approved
+    if (action === "APPROVED") {
+      await gamificationService.awardXP(claim.claimerId, XP.COMPLETE_BOUNTY);
+    }
 
     return updated;
   }
@@ -606,6 +629,127 @@ export class BountyService {
             creator: { select: { id: true, name: true, avatarUrl: true } },
           },
         },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+  }
+
+  // ── Dispute Methods ─────────────────────────────────────────
+
+  /**
+   * Raise a dispute on a rejected claim.
+   */
+  async raiseDispute(claimId: string, userId: string, reason: string) {
+    const claim = await prisma.bountyClaim.findUnique({
+      where: { id: claimId },
+      select: { claimerId: true, status: true, bountyId: true },
+    });
+
+    if (!claim) throw new NotFoundError("Claim not found");
+    if (claim.claimerId !== userId) {
+      throw new UnauthorizedError("Only the claimer can raise a dispute");
+    }
+    if (claim.status !== "REJECTED") {
+      throw new BadRequestError("Can only dispute rejected claims");
+    }
+
+    // Check for existing open dispute
+    const existing = await prisma.dispute.findFirst({
+      where: { claimId, status: "OPEN" },
+    });
+    if (existing) throw new BadRequestError("An open dispute already exists for this claim");
+
+    return prisma.dispute.create({
+      data: {
+        claimId,
+        raisedById: userId,
+        reason,
+      },
+      select: {
+        id: true,
+        reason: true,
+        status: true,
+        createdAt: true,
+        claim: {
+          select: {
+            id: true,
+            bountyId: true,
+            bounty: { select: { id: true, title: true } },
+          },
+        },
+      },
+    });
+  }
+
+  /**
+   * Resolve a dispute (admin or bounty creator).
+   */
+  async resolveDispute(
+    disputeId: string,
+    userId: string,
+    action: "RESOLVED" | "DISMISSED",
+    resolution?: string
+  ) {
+    const dispute = await prisma.dispute.findUnique({
+      where: { id: disputeId },
+      include: {
+        claim: {
+          include: {
+            bounty: { select: { creatorId: true, id: true } },
+          },
+        },
+      },
+    });
+
+    if (!dispute) throw new NotFoundError("Dispute not found");
+    if (dispute.status !== "OPEN") {
+      throw new BadRequestError("Dispute is already resolved");
+    }
+
+    // Only bounty creator or admin can resolve
+    if (dispute.claim.bounty.creatorId !== userId) {
+      throw new UnauthorizedError("Only the bounty creator can resolve disputes");
+    }
+
+    const updated = await prisma.dispute.update({
+      where: { id: disputeId },
+      data: {
+        status: action,
+        resolution,
+        resolvedAt: new Date(),
+      },
+    });
+
+    // If resolved in favour of claimer → re-open claim for resubmission
+    if (action === "RESOLVED") {
+      await prisma.bountyClaim.update({
+        where: { id: dispute.claimId },
+        data: { status: "ACTIVE" },
+      });
+      await prisma.bounty.update({
+        where: { id: dispute.claim.bountyId },
+        data: { status: "CLAIMED" },
+      });
+    }
+
+    return updated;
+  }
+
+  /**
+   * Get disputes for a bounty (via its claims).
+   */
+  async getDisputes(bountyId: string) {
+    return prisma.dispute.findMany({
+      where: { claim: { bountyId } },
+      select: {
+        id: true,
+        reason: true,
+        status: true,
+        resolution: true,
+        resolvedAt: true,
+        createdAt: true,
+        raisedBy: { select: { id: true, name: true, avatarUrl: true } },
+        claim: { select: { id: true, status: true } },
       },
       orderBy: { createdAt: "desc" },
     });

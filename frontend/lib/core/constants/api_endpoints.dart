@@ -35,6 +35,24 @@ class ApiEndpoints {
       '/bounties/claims/$claimId/resolve';
   static String declaim(String claimId) => '/bounties/claims/$claimId';
 
+  // ── Disputes ──────────────────────────────────────────────
+  static String raiseDispute(String claimId) =>
+      '/bounties/claims/$claimId/dispute';
+  static String resolveDispute(String disputeId) =>
+      '/bounties/disputes/$disputeId/resolve';
+  static String bountyDisputes(String bountyId) =>
+      '/bounties/$bountyId/disputes';
+
+  // ── Reviews ───────────────────────────────────────────────
+  static const String reviews = '/reviews';
+  static String reviewsForUser(String userId) => '/reviews/user/$userId';
+  static String reviewsForBounty(String bountyId) =>
+      '/reviews/bounty/$bountyId';
+
+  // ── Gamification ──────────────────────────────────────────
+  static const String leaderboard = '/gamification/leaderboard';
+  static const String gamificationMe = '/gamification/me';
+
   // ── Algorand / Escrow ─────────────────────────────────────
   static String fundBounty(String bountyId) =>
       '/algorand/fund-bounty/$bountyId';

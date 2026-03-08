@@ -133,6 +133,37 @@ export class BountyController {
     const claims = await bountyService.myClaims(req.currentUser!.userId);
     sendSuccess({ res, data: claims });
   }
+
+  async raiseDispute(req: Request, res: Response) {
+    const { reason } = req.body;
+    const dispute = await bountyService.raiseDispute(
+      req.params.claimId as string,
+      req.currentUser!.userId,
+      reason
+    );
+    sendSuccess({
+      res,
+      data: dispute,
+      message: "Dispute raised",
+      statusCode: HTTP_STATUS.CREATED,
+    });
+  }
+
+  async resolveDispute(req: Request, res: Response) {
+    const { action, resolution } = req.body;
+    const dispute = await bountyService.resolveDispute(
+      req.params.disputeId as string,
+      req.currentUser!.userId,
+      action,
+      resolution
+    );
+    sendSuccess({ res, data: dispute, message: `Dispute ${action.toLowerCase()}` });
+  }
+
+  async getDisputes(req: Request, res: Response) {
+    const disputes = await bountyService.getDisputes(req.params.id as string);
+    sendSuccess({ res, data: disputes });
+  }
 }
 
 export const bountyController = new BountyController();

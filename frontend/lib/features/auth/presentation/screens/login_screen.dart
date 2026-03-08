@@ -125,50 +125,68 @@ class LoginScreen extends ConsumerWidget {
               ),
               const Spacer(flex: 3),
               // Google Sign In
-              SizedBox(
+              Container(
                 width: double.infinity,
-                height: 56,
-                child: ElevatedButton(
-                  onPressed: auth.isLoading
-                      ? null
-                      : () =>
-                            ref.read(authProvider.notifier).signInWithGoogle(),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.textPrimary,
-                    foregroundColor: Colors.black,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.textPrimary.withValues(alpha: 0.15),
+                      blurRadius: 24,
+                      offset: const Offset(0, 4),
                     ),
-                  ),
-                  child: auth.isLoading
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.black,
-                          ),
-                        )
-                      : Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Image.network(
-                              'https://www.google.com/favicon.ico',
-                              width: 20,
-                              height: 20,
-                              errorBuilder: (c, e, s) =>
-                                  const Icon(Icons.g_mobiledata, size: 24),
+                  ],
+                ),
+                child: SizedBox(
+                  height: 56,
+                  child: ElevatedButton(
+                    onPressed: auth.isLoading
+                        ? null
+                        : () => ref
+                              .read(authProvider.notifier)
+                              .signInWithGoogle(),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.textPrimary,
+                      foregroundColor: Colors.black,
+                      disabledBackgroundColor: AppColors.textPrimary.withValues(
+                        alpha: 0.5,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      elevation: 0,
+                    ),
+                    child: auth.isLoading
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.black,
                             ),
-                            const SizedBox(width: 12),
-                            const Text(
-                              'Continue with Google',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
+                          )
+                        : Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Image.network(
+                                'https://www.google.com/favicon.ico',
+                                width: 20,
+                                height: 20,
+                                errorBuilder: (c, e, s) =>
+                                    const Icon(Icons.g_mobiledata, size: 24),
                               ),
-                            ),
-                          ],
-                        ),
+                              const SizedBox(width: 12),
+                              const Text(
+                                'Continue with Google',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: -0.2,
+                                ),
+                              ),
+                            ],
+                          ),
+                  ),
                 ),
               ),
               const SizedBox(height: 20),
