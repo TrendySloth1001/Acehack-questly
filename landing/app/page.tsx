@@ -7,12 +7,11 @@ import Link from "next/link";
 export default function Home() {
   return (
     <>
-      <Particles count={40} />
+      <Particles count={20} />
 
       {/* ── Navbar ──────────────────────────────────────────── */}
       <nav className="navbar">
         <div className="nav-logo">
-          <Image src="/questly_logo.svg" alt="Questly" width={36} height={36} />
           <span>questly</span>
         </div>
         <div className="nav-links">
@@ -22,7 +21,9 @@ export default function Home() {
           <a href="#tech">Tech Stack</a>
           <Link href="/docs">Docs</Link>
         </div>
-        <Link href="/docs" className="nav-cta">Documentation</Link>
+        <div style={{display: 'flex', gap: '10px', alignItems: 'center'}}>
+          <Link href="/download" className="nav-cta">Download</Link>
+        </div>
       </nav>
 
       {/* ── Hero ────────────────────────────────────────────── */}
@@ -194,7 +195,7 @@ export default function Home() {
 
         <div className="xp-grid">
           <div className="xp-card">
-            <h4>⚡ Earn XP</h4>
+            <h4><svg className="inline-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" /></svg> Earn XP</h4>
             <table className="xp-table">
               <tbody>
                 <tr><td>Complete a bounty</td><td className="xp-positive">+100 XP</td></tr>
@@ -208,7 +209,7 @@ export default function Home() {
           </div>
 
           <div className="xp-card">
-            <h4>💀 Lose XP</h4>
+            <h4><svg className="inline-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ff5c5c" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Lose XP</h4>
             <table className="xp-table">
               <tbody>
                 <tr><td>Receive 1-star review</td><td className="xp-negative">-30 XP</td></tr>
@@ -227,32 +228,32 @@ export default function Home() {
         </h3>
         <div className="rank-grid">
           <div className="rank-item">
-            <span className="rank-emoji">🪵</span>
+            <span className="rank-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 19V5h2l4 5 4-5h2v14"/></svg></span>
             <div className="rank-name">Wood</div>
             <div className="rank-xp">0 XP</div>
           </div>
           <div className="rank-item">
-            <span className="rank-emoji">🪨</span>
+            <span className="rank-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="8" width="18" height="12" rx="2"/><path d="M7 8V6a5 5 0 0 1 10 0v2"/></svg></span>
             <div className="rank-name">Stone</div>
             <div className="rank-xp">500 XP</div>
           </div>
           <div className="rank-item">
-            <span className="rank-emoji">⚙️</span>
+            <span className="rank-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>
             <div className="rank-name">Iron</div>
             <div className="rank-xp">1,500 XP</div>
           </div>
           <div className="rank-item">
-            <span className="rank-emoji">🥇</span>
+            <span className="rank-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg></span>
             <div className="rank-name">Gold</div>
             <div className="rank-xp">4,000 XP</div>
           </div>
           <div className="rank-item">
-            <span className="rank-emoji">💎</span>
+            <span className="rank-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></span>
             <div className="rank-name">Diamond</div>
             <div className="rank-xp">10,000 XP</div>
           </div>
           <div className="rank-item">
-            <span className="rank-emoji">🔥</span>
+            <span className="rank-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg></span>
             <div className="rank-name">Netherite</div>
             <div className="rank-xp">25,000 XP</div>
           </div>
@@ -274,42 +275,42 @@ export default function Home() {
 
         <div className="tech-grid">
           <div className="tech-card">
-            <span className="tech-emoji">📱</span>
+            <span className="tech-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg></span>
             <h4>Flutter 3+</h4>
             <p>Cross-platform mobile app with Riverpod state management</p>
           </div>
           <div className="tech-card">
-            <span className="tech-emoji">⚡</span>
+            <span className="tech-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></span>
             <h4>Node.js + Express</h4>
             <p>TypeScript REST API with modular service architecture</p>
           </div>
           <div className="tech-card">
-            <span className="tech-emoji">🗄️</span>
+            <span className="tech-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg></span>
             <h4>PostgreSQL + Prisma</h4>
             <p>Type-safe ORM with migrations and composite indexes</p>
           </div>
           <div className="tech-card">
-            <span className="tech-emoji">⛓️</span>
+            <span className="tech-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></span>
             <h4>Algorand SDK</h4>
             <p>On-chain escrow, wallets, and payment verification</p>
           </div>
           <div className="tech-card">
-            <span className="tech-emoji">🔐</span>
+            <span className="tech-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
             <h4>Google OAuth 2.0</h4>
             <p>Firebase Auth + Passport.js with JWT sessions</p>
           </div>
           <div className="tech-card">
-            <span className="tech-emoji">📦</span>
+            <span className="tech-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg></span>
             <h4>MinIO</h4>
             <p>S3-compatible object storage for image uploads</p>
           </div>
           <div className="tech-card">
-            <span className="tech-emoji">🐳</span>
+            <span className="tech-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12H2"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/><line x1="6" y1="16" x2="6.01" y2="16"/><line x1="10" y1="16" x2="10.01" y2="16"/></svg></span>
             <h4>Docker Compose</h4>
             <p>Full dev environment with algod, KMD, PostgreSQL, MinIO</p>
           </div>
           <div className="tech-card">
-            <span className="tech-emoji">🌐</span>
+            <span className="tech-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></span>
             <h4>Next.js 16</h4>
             <p>Landing page & docs with React Compiler</p>
           </div>
@@ -397,11 +398,21 @@ export default function Home() {
             Download Questly, fund your wallet, and start earning real 
             ALGO for real-world tasks. The future of gig economy is decentralized.
           </p>
-          <div style={{display: 'flex', gap: '12px', justifyContent: 'center'}}>
-            <button className="btn-primary">Get Questly Now</button>
+          <div style={{display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap'}}>
+            <Link href="/download" className="btn-primary" style={{textDecoration: 'none'}}>Download APK</Link>
             <Link href="/docs" className="btn-ghost">Read the Docs</Link>
+            <a href="https://github.com/TrendySloth1001/Acehack-questly" target="_blank" rel="noopener noreferrer" className="btn-ghost">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+              GitHub
+            </a>
           </div>
         </div>
+      </section>
+
+      {/* ── Team Credit ─────────────────────────────────────── */}
+      <section className="team-credit">
+        <p>Built by <strong>Abhinand Ajaya</strong> and <strong>Nikhil Kumawat</strong></p>
+        <p className="team-name">Team Diamonds</p>
       </section>
 
       {/* ── Footer ──────────────────────────────────────────── */}
@@ -411,11 +422,11 @@ export default function Home() {
             <Image src="/questly_logo.svg" alt="Questly" width={24} height={24} />
             <span>questly</span>
           </div>
-          <p>© 2026 Questly. Built with ❤️ on Algorand.</p>
+          <p>© 2026 Questly. Built on Algorand.</p>
           <div className="footer-links">
             <Link href="/docs">Documentation</Link>
-            <a href="#features">Features</a>
-            <a href="#xp">XP System</a>
+            <Link href="/download">Download</Link>
+            <a href="https://github.com/TrendySloth1001/Acehack-questly" target="_blank" rel="noopener noreferrer">GitHub</a>
           </div>
         </div>
       </footer>

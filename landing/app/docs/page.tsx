@@ -13,7 +13,6 @@ export default function DocsPage() {
       {/* ── Navbar ──────────────────────────────────────────── */}
       <nav className="navbar">
         <div className="nav-logo">
-          <Image src="/questly_logo.svg" alt="Questly" width={36} height={36} />
           <span>questly</span>
         </div>
         <div className="nav-links">
@@ -74,7 +73,7 @@ export default function DocsPage() {
 
           <div className="docs-grid-2">
             <div className="docs-card">
-              <h4>🎯 For Bounty Creators</h4>
+              <h4>For Bounty Creators</h4>
               <ul>
                 <li>Post tasks with ALGO rewards, deadlines, and locations</li>
                 <li>ALGO is locked in escrow until you approve the work</li>
@@ -83,7 +82,7 @@ export default function DocsPage() {
               </ul>
             </div>
             <div className="docs-card">
-              <h4>⚡ For Questers</h4>
+              <h4>For Questers</h4>
               <ul>
                 <li>Discover bounties on a map or browse the feed</li>
                 <li>Claim a bounty, complete the task, submit proof</li>
@@ -371,14 +370,14 @@ const MIN_BALANCE = 100_000;             `}<span className="comment">// 0.1 ALGO
               <div className="arch-layer">
                 <div className="arch-layer-label">Step 4a</div>
                 <div className="arch-layer-items">
-                  <span className="arch-chip">✅ Creator approves → ALGO released to quester → RELEASED</span>
+                  <span className="arch-chip">[approved] Creator approves &rarr; ALGO released to quester &rarr; RELEASED</span>
                 </div>
               </div>
               <div className="arch-arrow" style={{color: '#ff5c5c', opacity: 0.6}}>or</div>
               <div className="arch-layer">
                 <div className="arch-layer-label">Step 4b</div>
                 <div className="arch-layer-items">
-                  <span className="arch-chip">❌ Creator rejects / cancels → ALGO refunded to creator → REFUNDED</span>
+                  <span className="arch-chip">[rejected] Creator rejects / cancels &rarr; ALGO refunded to creator &rarr; REFUNDED</span>
                 </div>
               </div>
             </div>
@@ -633,12 +632,12 @@ netPayout = amountAlgo - MIN_TXN_FEE   `}<span className="comment">// subtract 0
                 <td className="mono">SUBMIT_PROOF</td>
               </tr>
               <tr>
-                <td>Receive 5★ review</td>
+                <td>Receive 5-star review</td>
                 <td className="mono positive">+50</td>
                 <td className="mono">REVIEW_5_STAR</td>
               </tr>
               <tr>
-                <td>Receive 4★ review</td>
+                <td>Receive 4-star review</td>
                 <td className="mono positive">+25</td>
                 <td className="mono">REVIEW_4_STAR</td>
               </tr>
@@ -648,17 +647,17 @@ netPayout = amountAlgo - MIN_TXN_FEE   `}<span className="comment">// subtract 0
                 <td className="mono">DAILY_STREAK</td>
               </tr>
               <tr>
-                <td>Receive 3★ review</td>
+                <td>Receive 3-star review</td>
                 <td className="mono">0</td>
                 <td className="mono">—</td>
               </tr>
               <tr>
-                <td>Receive 2★ review</td>
+                <td>Receive 2-star review</td>
                 <td className="mono negative">-15</td>
                 <td className="mono">REVIEW_2_STAR</td>
               </tr>
               <tr>
-                <td>Receive 1★ review</td>
+                <td>Receive 1-star review</td>
                 <td className="mono negative">-30</td>
                 <td className="mono">REVIEW_1_STAR</td>
               </tr>
@@ -697,12 +696,12 @@ netPayout = amountAlgo - MIN_TXN_FEE   `}<span className="comment">// subtract 0
               </tr>
             </thead>
             <tbody>
-              <tr><td>Wood</td><td className="mono">0</td><td className="mono">0</td><td>🪵</td></tr>
-              <tr><td>Stone</td><td className="mono">500</td><td className="mono">5</td><td>🪨</td></tr>
-              <tr><td>Iron</td><td className="mono">1,500</td><td className="mono">10</td><td>⚙️</td></tr>
-              <tr><td>Gold</td><td className="mono">4,000</td><td className="mono">20</td><td>🥇</td></tr>
-              <tr><td>Diamond</td><td className="mono">10,000</td><td className="mono">35</td><td>💎</td></tr>
-              <tr><td>Netherite</td><td className="mono">25,000</td><td className="mono">50</td><td>🔥</td></tr>
+              <tr><td>Wood</td><td className="mono">0</td><td className="mono">0</td><td>I</td></tr>
+              <tr><td>Stone</td><td className="mono">500</td><td className="mono">5</td><td>II</td></tr>
+              <tr><td>Iron</td><td className="mono">1,500</td><td className="mono">10</td><td>III</td></tr>
+              <tr><td>Gold</td><td className="mono">4,000</td><td className="mono">20</td><td>IV</td></tr>
+              <tr><td>Diamond</td><td className="mono">10,000</td><td className="mono">35</td><td>V</td></tr>
+              <tr><td>Netherite</td><td className="mono">25,000</td><td className="mono">50</td><td>VI</td></tr>
             </tbody>
           </table>
 
@@ -763,49 +762,49 @@ netPayout = amountAlgo - MIN_TXN_FEE   `}<span className="comment">// subtract 0
               <tr>
                 <td className="mono">0</td>
                 <td className="mono">0</td>
-                <td>🪵  Wood</td>
+                <td>Wood</td>
                 <td>—</td>
               </tr>
               <tr>
                 <td className="mono">25</td>
                 <td className="mono">1</td>
-                <td>🪵  Wood</td>
+                <td>Wood</td>
                 <td>~1 bounty</td>
               </tr>
               <tr>
                 <td className="mono">100</td>
                 <td className="mono">2</td>
-                <td>🪵  Wood</td>
+                <td>Wood</td>
                 <td>1 bounty</td>
               </tr>
               <tr>
                 <td className="mono">500</td>
                 <td className="mono">4</td>
-                <td>🪨  Stone</td>
+                <td>Stone</td>
                 <td>5 bounties</td>
               </tr>
               <tr>
                 <td className="mono">1,500</td>
                 <td className="mono">7</td>
-                <td>⚙️  Iron</td>
+                <td>Iron</td>
                 <td>15 bounties</td>
               </tr>
               <tr>
                 <td className="mono">4,000</td>
                 <td className="mono">12</td>
-                <td>🥇  Gold</td>
+                <td>Gold</td>
                 <td>40 bounties</td>
               </tr>
               <tr>
                 <td className="mono">10,000</td>
                 <td className="mono">20</td>
-                <td>💎  Diamond</td>
+                <td>Diamond</td>
                 <td>100 bounties</td>
               </tr>
               <tr>
                 <td className="mono">25,000</td>
                 <td className="mono">31</td>
-                <td>🔥  Netherite</td>
+                <td>Netherite</td>
                 <td>250 bounties</td>
               </tr>
             </tbody>
@@ -1029,7 +1028,7 @@ netPayout = amountAlgo - MIN_TXN_FEE   `}<span className="comment">// subtract 0
             <Image src="/questly_logo.svg" alt="Questly" width={24} height={24} />
             <span>questly</span>
           </div>
-          <p>© 2026 Questly. Built with ❤️ on Algorand.</p>
+          <p>© 2026 Questly. Built on Algorand.</p>
           <div className="footer-links">
             <Link href="/">Home</Link>
             <a href="#overview">Overview</a>
