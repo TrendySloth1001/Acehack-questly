@@ -346,47 +346,45 @@ class _UploadApkScreenState extends ConsumerState<UploadApkScreen> {
 
               // ── Upload button ─────────────────────────────
               ElevatedButton(
-                  onPressed: _pickedFile != null && !_uploading
-                      ? _upload
-                      : null,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.brand,
-                    foregroundColor: AppColors.surface,
-                    disabledBackgroundColor: AppColors.muted.withValues(
-                      alpha: 0.2,
-                    ),
-                    disabledForegroundColor: AppColors.muted.withValues(
-                      alpha: 0.5,
-                    ),
-                    minimumSize: const Size(double.infinity, 52),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
+                onPressed: _pickedFile != null && !_uploading ? _upload : null,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.brand,
+                  foregroundColor: AppColors.surface,
+                  disabledBackgroundColor: AppColors.muted.withValues(
+                    alpha: 0.2,
                   ),
-                  child: _uploading
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: AppColors.surface,
-                          ),
-                        )
-                      : const Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.cloud_upload_outlined, size: 20),
-                            SizedBox(width: 8),
-                            Text(
-                              'Upload to MinIO',
-                              style: TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ],
-                        ),
+                  disabledForegroundColor: AppColors.muted.withValues(
+                    alpha: 0.5,
+                  ),
+                  minimumSize: const Size(double.infinity, 52),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
                 ),
+                child: _uploading
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: AppColors.surface,
+                        ),
+                      )
+                    : const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.cloud_upload_outlined, size: 20),
+                          SizedBox(width: 8),
+                          Text(
+                            'Upload to MinIO',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
+              ),
 
               const SizedBox(height: 12),
 

@@ -27,15 +27,15 @@ class LeaderboardScreen extends ConsumerWidget {
     }
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: Colors.black,
+        backgroundColor: AppColors.background,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         title: const Text(
           'LEADERBOARD',
           style: TextStyle(
-            color: Colors.white,
+            color: AppColors.fore,
             fontSize: 13,
             fontWeight: FontWeight.w700,
             letterSpacing: 4,
@@ -88,14 +88,14 @@ class LeaderboardScreen extends ConsumerWidget {
           ? const Center(
               child: Text(
                 'Failed to load',
-                style: TextStyle(color: Color(0xFF555555), fontSize: 13),
+                style: TextStyle(color: AppColors.muted, fontSize: 13),
               ),
             )
           : state.entries.isEmpty
           ? const Center(
               child: Text(
                 'No rankings yet',
-                style: TextStyle(color: Color(0xFF555555), fontSize: 13),
+                style: TextStyle(color: AppColors.muted, fontSize: 13),
               ),
             )
           : Column(
@@ -104,14 +104,14 @@ class LeaderboardScreen extends ConsumerWidget {
                 Expanded(
                   child: RefreshIndicator(
                     color: AppColors.neonCyan,
-                    backgroundColor: Colors.black,
+                    backgroundColor: AppColors.background,
                     onRefresh: () =>
                         ref.read(leaderboardProvider.notifier).refresh(),
                     child: ListView.separated(
                       padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
                       itemCount: state.entries.length,
                       separatorBuilder: (context, index) =>
-                          Container(height: 1, color: const Color(0xFF1A1A1A)),
+                          Container(height: 1, color: AppColors.border),
                       itemBuilder: (context, i) {
                         return _Row(
                           entry: state.entries[i],
@@ -164,7 +164,7 @@ class _Row extends StatelessWidget {
                   style: TextStyle(
                     color: isTop3
                         ? AppColors.neonCyan
-                        : const Color(0xFF555555),
+                        : AppColors.muted,
                     fontSize: 13,
                     fontWeight: FontWeight.w800,
                   ),
@@ -182,7 +182,7 @@ class _Row extends StatelessWidget {
                         ? AppColors.neonGreen.withValues(alpha: 0.5)
                         : isTop3
                         ? AppColors.neonCyan.withValues(alpha: 0.3)
-                        : const Color(0xFF222222),
+                        : AppColors.border,
                     width: 1,
                   ),
                 ),
@@ -211,7 +211,7 @@ class _Row extends StatelessWidget {
                             style: TextStyle(
                               color: isCurrentUser
                                   ? AppColors.neonGreen
-                                  : Colors.white,
+                                  : AppColors.textPrimary,
                               fontSize: 15,
                               fontWeight: FontWeight.w600,
                             ),
@@ -255,7 +255,7 @@ class _Row extends StatelessWidget {
                       style: TextStyle(
                         color: isTop3
                             ? AppColors.neonCyan.withValues(alpha: 0.5)
-                            : const Color(0xFF444444),
+                            : AppColors.muted,
                         fontSize: 11,
                         fontWeight: FontWeight.w500,
                       ),
@@ -274,7 +274,7 @@ class _Row extends StatelessWidget {
                       Text(
                         _fmtXp(entry.xp),
                         style: TextStyle(
-                          color: isTop3 ? AppColors.neonGreen : Colors.white,
+                          color: isTop3 ? AppColors.neonGreen : AppColors.textPrimary,
                           fontSize: 15,
                           fontWeight: FontWeight.w800,
                         ),
@@ -285,7 +285,7 @@ class _Row extends StatelessWidget {
                         style: TextStyle(
                           color: isTop3
                               ? AppColors.neonGreen.withValues(alpha: 0.5)
-                              : const Color(0xFF444444),
+                              : AppColors.muted,
                           fontSize: 10,
                           fontWeight: FontWeight.w600,
                         ),
@@ -302,14 +302,14 @@ class _Row extends StatelessWidget {
                         size: 16,
                         color: entry.xp > 0
                             ? AppColors.neonGreen
-                            : const Color(0xFF333333),
+                            : AppColors.textHint,
                       ),
                       Text(
                         '+${entry.level}',
                         style: TextStyle(
                           color: entry.xp > 0
                               ? AppColors.neonGreen.withValues(alpha: 0.6)
-                              : const Color(0xFF333333),
+                              : AppColors.textHint,
                           fontSize: 9,
                           fontWeight: FontWeight.w700,
                         ),
@@ -318,12 +318,12 @@ class _Row extends StatelessWidget {
                       const Icon(
                         Icons.arrow_drop_down_rounded,
                         size: 16,
-                        color: Color(0xFF333333),
+                        color: AppColors.textHint,
                       ),
                       const Text(
                         '0',
                         style: TextStyle(
-                          color: Color(0xFF333333),
+                          color: AppColors.textHint,
                           fontSize: 9,
                           fontWeight: FontWeight.w700,
                         ),
@@ -347,7 +347,7 @@ class _Row extends StatelessWidget {
                       ? entry.avgRating!.toStringAsFixed(1)
                       : '—',
                   style: const TextStyle(
-                    color: Colors.white,
+                    color: AppColors.textPrimary,
                     fontSize: 10,
                     fontWeight: FontWeight.w700,
                   ),
@@ -357,7 +357,7 @@ class _Row extends StatelessWidget {
                   Text(
                     '(${entry.totalReviews})',
                     style: const TextStyle(
-                      color: Color(0xFF444444),
+                      color: AppColors.muted,
                       fontSize: 9,
                     ),
                   ),
@@ -375,12 +375,12 @@ class _Row extends StatelessWidget {
         ? entry.name![0].toUpperCase()
         : '?';
     return ColoredBox(
-      color: Colors.black,
+      color: AppColors.surfaceLight,
       child: Center(
         child: Text(
           ch,
           style: const TextStyle(
-            color: Color(0xFF555555),
+            color: AppColors.muted,
             fontSize: 14,
             fontWeight: FontWeight.w700,
           ),
@@ -397,7 +397,7 @@ class _Row extends StatelessWidget {
         child: Icon(
           filled ? Icons.star_rounded : Icons.star_outline_rounded,
           size: 12,
-          color: filled ? AppColors.neonCyan : const Color(0xFF2A2A2A),
+          color: filled ? AppColors.neonCyan : AppColors.border,
         ),
       );
     });
@@ -424,8 +424,8 @@ class _CurrentUserFooter extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: const BoxDecoration(
-        color: Colors.black,
-        border: Border(top: BorderSide(color: Color(0xFF1A1A1A), width: 1)),
+        color: AppColors.background,
+        border: Border(top: BorderSide(color: AppColors.border, width: 1)),
       ),
       padding: const EdgeInsets.fromLTRB(20, 14, 20, 28),
       child: Row(
@@ -461,7 +461,7 @@ class _CurrentUserFooter extends StatelessWidget {
                 Text(
                   'Your Ranking',
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.5),
+                    color: AppColors.muted,
                     fontSize: 10,
                     fontWeight: FontWeight.w600,
                     letterSpacing: 1.5,
@@ -515,7 +515,7 @@ class _CurrentUserFooter extends StatelessWidget {
               Text(
                 'Lvl ${entry.level}',
                 style: const TextStyle(
-                  color: Color(0xFF444444),
+                  color: AppColors.muted,
                   fontSize: 10,
                   fontWeight: FontWeight.w600,
                 ),
@@ -535,7 +535,7 @@ class _CurrentUserFooter extends StatelessWidget {
         child: Icon(
           filled ? Icons.star_rounded : Icons.star_outline_rounded,
           size: 11,
-          color: filled ? AppColors.neonCyan : const Color(0xFF2A2A2A),
+          color: filled ? AppColors.neonCyan : AppColors.border,
         ),
       );
     });

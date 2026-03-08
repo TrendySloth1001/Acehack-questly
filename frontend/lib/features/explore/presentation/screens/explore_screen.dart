@@ -118,11 +118,11 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
     }
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: AppColors.background,
       body: SafeArea(
         child: RefreshIndicator(
           color: AppColors.neonCyan,
-          backgroundColor: const Color(0xFF0D0D0D),
+          backgroundColor: AppColors.card,
           onRefresh: () => ref.read(bountyListProvider.notifier).refresh(),
           child: CustomScrollView(
             slivers: [
@@ -135,7 +135,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
                       const Text(
                         'Explore',
                         style: TextStyle(
-                          color: Colors.white,
+                          color: AppColors.textPrimary,
                           fontSize: 26,
                           fontWeight: FontWeight.w800,
                           letterSpacing: -0.5,
@@ -145,7 +145,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
                       const Text(
                         'Find bounties and earn rewards.',
                         style: TextStyle(
-                          color: Color(0xFF3A3A3A),
+                          color: AppColors.textHint,
                           fontSize: 13,
                         ),
                       ),
@@ -155,10 +155,10 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
                       Container(
                         height: 42,
                         decoration: BoxDecoration(
-                          color: Colors.black,
+                          color: AppColors.card,
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: const Color(0xFF222222),
+                            color: AppColors.border,
                             width: 1,
                           ),
                         ),
@@ -226,12 +226,12 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
                                       ? AppColors.neonCyan.withValues(
                                           alpha: 0.1,
                                         )
-                                      : Colors.black,
+                                      : AppColors.card,
                                   borderRadius: BorderRadius.circular(18),
                                   border: Border.all(
                                     color: selected
                                         ? AppColors.neonCyan
-                                        : const Color(0xFF222222),
+                                        : AppColors.border,
                                     width: selected ? 1 : 1,
                                   ),
                                 ),
@@ -240,7 +240,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
                                   style: TextStyle(
                                     color: selected
                                         ? AppColors.neonCyan
-                                        : const Color(0xFF555555),
+                                        : AppColors.muted,
                                     fontSize: 13,
                                     fontWeight: selected
                                         ? FontWeight.w600
@@ -277,14 +277,14 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
                           decoration: BoxDecoration(
                             color: _mapExpanded
                                 ? AppColors.primary.withValues(alpha: 0.08)
-                                : const Color(0xFF0D0D0D),
+                                : AppColors.surfaceLight,
                             borderRadius: BorderRadius.circular(
                               _mapExpanded ? 12 : 12,
                             ),
                             border: Border.all(
                               color: _mapExpanded
                                   ? AppColors.primary.withValues(alpha: 0.3)
-                                  : const Color(0xFF1E1E1E),
+                                  : AppColors.border,
                               width: 0.5,
                             ),
                           ),
@@ -482,7 +482,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
         ),
         children: [
           TileLayer(
-            urlTemplate: MapConstants.darkTileUrl,
+            urlTemplate: MapConstants.lightTileUrl,
             subdomains: MapConstants.subdomains,
             userAgentPackageName: 'com.questly.questly',
           ),
@@ -515,12 +515,6 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
                       color: AppColors.neonCyan,
                       shape: BoxShape.circle,
                       border: Border.all(color: Colors.white, width: 2),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.neonCyan.withValues(alpha: 0.5),
-                          blurRadius: 8,
-                        ),
-                      ],
                     ),
                   ),
                 ),
@@ -542,12 +536,6 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       border: Border.all(color: AppColors.primary, width: 2),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.primary.withValues(alpha: 0.4),
-                          blurRadius: 6,
-                        ),
-                      ],
                     ),
                     child: ClipOval(
                       child: hasImage
@@ -604,7 +592,7 @@ class _BountyCard extends StatelessWidget {
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.black,
+          color: AppColors.card,
           borderRadius: BorderRadius.circular(12),
         ),
         clipBehavior: Clip.antiAlias,
@@ -623,10 +611,10 @@ class _BountyCard extends StatelessWidget {
                       bounty.imageUrls.first,
                       fit: BoxFit.cover,
                       errorBuilder: (_, e, s) => Container(
-                        color: const Color(0xFF0D0D0D),
+                        color: AppColors.card,
                         child: const Icon(
                           Icons.image_outlined,
-                          color: Color(0xFF2A2A2A),
+                          color: AppColors.textHint,
                           size: 32,
                         ),
                       ),
@@ -693,7 +681,7 @@ class _BountyCard extends StatelessWidget {
                   Text(
                     bounty.title,
                     style: const TextStyle(
-                      color: Colors.white,
+                      color: AppColors.textPrimary,
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
                       height: 1.3,
@@ -708,7 +696,7 @@ class _BountyCard extends StatelessWidget {
                   Text(
                     bounty.description,
                     style: const TextStyle(
-                      color: Color(0xFF505050),
+                      color: AppColors.textSecondary,
                       fontSize: 13,
                       height: 1.4,
                     ),
@@ -740,7 +728,7 @@ class _BountyCard extends StatelessWidget {
                         child: Text(
                           bounty.creator.name ?? 'anonymous',
                           style: const TextStyle(
-                            color: Color(0xFF3A3A3A),
+                            color: AppColors.textHint,
                             fontSize: 12,
                           ),
                           maxLines: 1,
@@ -798,7 +786,7 @@ class _BountyCard extends StatelessWidget {
                           size: 12,
                           color: isExpired
                               ? AppColors.error
-                              : const Color(0xFF333333),
+                              : AppColors.textHint,
                         ),
                         const SizedBox(width: 3),
                         Text(
@@ -806,7 +794,7 @@ class _BountyCard extends StatelessWidget {
                           style: TextStyle(
                             color: isExpired
                                 ? AppColors.error
-                                : const Color(0xFF333333),
+                                : AppColors.textHint,
                             fontSize: 11,
                           ),
                         ),
@@ -821,7 +809,7 @@ class _BountyCard extends StatelessWidget {
                       children: [
                         const Icon(
                           Icons.location_on_outlined,
-                          color: Color(0xFF333333),
+                          color: AppColors.textHint,
                           size: 13,
                         ),
                         const SizedBox(width: 4),
@@ -829,7 +817,7 @@ class _BountyCard extends StatelessWidget {
                           child: Text(
                             bounty.location!,
                             style: const TextStyle(
-                              color: Color(0xFF333333),
+                              color: AppColors.textHint,
                               fontSize: 12,
                             ),
                             maxLines: 1,

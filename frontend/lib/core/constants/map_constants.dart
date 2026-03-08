@@ -1,12 +1,16 @@
 import 'dart:math';
 
-/// Centralized map configuration — dark CartoDB tiles.
+/// Centralized map configuration — CartoDB tiles.
 class MapConstants {
   MapConstants._();
 
   /// Dark tile provider (CartoDB Dark Matter) — free, no API key.
   static const String darkTileUrl =
       'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+
+  /// Light tile provider (CartoDB Positron) — free, no API key.
+  static const String lightTileUrl =
+      'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
 
   static const List<String> subdomains = ['a', 'b', 'c', 'd'];
 

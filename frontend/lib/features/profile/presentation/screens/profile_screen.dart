@@ -212,6 +212,11 @@ class ProfileScreen extends ConsumerWidget {
               label: 'Wallet',
               onTap: () => context.go('/wallet'),
             ),
+            _MenuItem(
+              icon: Icons.settings_outlined,
+              label: 'Settings',
+              onTap: () => context.push(AppRoutes.settings),
+            ),
 
             const SizedBox(height: 24),
             const Divider(color: AppColors.divider, height: 1),

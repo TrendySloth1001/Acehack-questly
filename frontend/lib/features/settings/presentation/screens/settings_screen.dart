@@ -96,7 +96,6 @@ class _SettingsTile extends StatelessWidget {
           color: AppColors.card,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(color: AppColors.muted.withValues(alpha: 0.15)),
-
         ),
         child: Row(
           children: [

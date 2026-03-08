@@ -43,11 +43,11 @@ class HomeDashboardScreen extends ConsumerWidget {
         .toList();
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: AppColors.background,
       body: SafeArea(
         child: RefreshIndicator(
           color: AppColors.neonCyan,
-          backgroundColor: const Color(0xFF0D0D0D),
+          backgroundColor: AppColors.surfaceLight,
           onRefresh: () async {
             await Future.wait([
               ref.read(bountyListProvider.notifier).refresh(),
@@ -95,7 +95,7 @@ class HomeDashboardScreen extends ConsumerWidget {
                       const Text(
                         'Joined Bounties',
                         style: TextStyle(
-                          color: Color(0xFF444444),
+                          color: AppColors.muted,
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
                           letterSpacing: 1.5,
@@ -143,7 +143,7 @@ class HomeDashboardScreen extends ConsumerWidget {
                     padding: EdgeInsets.symmetric(horizontal: 20, vertical: 20),
                     child: Text(
                       'no joined bounties yet — claim one below ↓',
-                      style: TextStyle(color: Color(0xFF363636), fontSize: 13),
+                      style: TextStyle(color: AppColors.textHint, fontSize: 13),
                     ),
                   ),
                 )
@@ -174,7 +174,7 @@ class HomeDashboardScreen extends ConsumerWidget {
                       const Text(
                         'Latest Drops',
                         style: TextStyle(
-                          color: Color(0xFF444444),
+                          color: AppColors.muted,
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
                           letterSpacing: 1.5,
@@ -215,7 +215,7 @@ class HomeDashboardScreen extends ConsumerWidget {
                       child: Text(
                         'nothing here yet — go post something 🚀',
                         style: TextStyle(
-                          color: Color(0xFF363636),
+                          color: AppColors.textHint,
                           fontSize: 13,
                         ),
                       ),
@@ -277,12 +277,12 @@ class _Header extends StatelessWidget {
         // Avatar
         CircleAvatar(
           radius: 22,
-          backgroundColor: const Color(0xFF0D0D0D),
+          backgroundColor: AppColors.surfaceLight,
           backgroundImage: user?.avatarUrl != null
               ? NetworkImage(user!.avatarUrl!)
               : null,
           child: user?.avatarUrl == null
-              ? const Icon(Icons.person, color: Color(0xFF333333), size: 20)
+              ? const Icon(Icons.person, color: AppColors.textHint, size: 20)
               : null,
         ),
         const SizedBox(width: 14),
@@ -291,7 +291,7 @@ class _Header extends StatelessWidget {
           child: Text(
             greeting,
             style: const TextStyle(
-              color: Colors.white,
+              color: AppColors.textPrimary,
               fontSize: 20,
               fontWeight: FontWeight.w800,
               letterSpacing: -0.5,
@@ -303,9 +303,9 @@ class _Header extends StatelessWidget {
           width: 38,
           height: 38,
           decoration: BoxDecoration(
-            color: Colors.black,
+            color: AppColors.card,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFF1E1E1E), width: 1),
+            border: Border.all(color: AppColors.border, width: 1),
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(11),
@@ -325,9 +325,9 @@ class _Header extends StatelessWidget {
             width: 38,
             height: 38,
             decoration: BoxDecoration(
-              color: Colors.black,
+              color: AppColors.card,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFF1E1E1E), width: 1),
+              border: Border.all(color: AppColors.border, width: 1),
             ),
             child: Icon(
               Icons.emoji_events_outlined,
@@ -342,13 +342,13 @@ class _Header extends StatelessWidget {
           width: 38,
           height: 38,
           decoration: BoxDecoration(
-            color: Colors.black,
+            color: AppColors.card,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFF1E1E1E), width: 1),
+            border: Border.all(color: AppColors.border, width: 1),
           ),
           child: const Icon(
             Icons.notifications_none_rounded,
-            color: Color(0xFF404040),
+            color: AppColors.textHint,
             size: 18,
           ),
         ),
@@ -383,12 +383,12 @@ class _BalanceBanner extends ConsumerWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
         decoration: BoxDecoration(
-          color: Colors.black,
+          color: AppColors.card,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: hasWallet
                 ? AppColors.neonCyan.withValues(alpha: 0.15)
-                : const Color(0xFF1A1A1A),
+                : AppColors.border,
             width: 1,
           ),
         ),
@@ -525,7 +525,7 @@ class _PostCTA extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          color: Colors.black,
+          color: AppColors.card,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: AppColors.neonCyan.withValues(alpha: 0.18),
@@ -552,7 +552,7 @@ class _PostCTA extends StatelessWidget {
               child: Text(
                 'Post a bounty',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: AppColors.textPrimary,
                   fontSize: 15,
                   fontWeight: FontWeight.w700,
                 ),
@@ -560,7 +560,7 @@ class _PostCTA extends StatelessWidget {
             ),
             Icon(
               Icons.arrow_forward_ios_rounded,
-              color: const Color(0xFF1E1E1E),
+              color: AppColors.border,
               size: 14,
             ),
           ],
@@ -639,7 +639,7 @@ class _ClaimCard extends StatelessWidget {
       child: Container(
         margin: const EdgeInsets.only(bottom: 14),
         decoration: BoxDecoration(
-          color: Colors.black,
+          color: AppColors.card,
           borderRadius: BorderRadius.circular(12),
         ),
         clipBehavior: Clip.antiAlias,
@@ -658,10 +658,10 @@ class _ClaimCard extends StatelessWidget {
                       bounty!.imageUrls.first,
                       fit: BoxFit.cover,
                       errorBuilder: (_, e, s) => Container(
-                        color: const Color(0xFF0D0D0D),
+                        color: AppColors.surfaceLight,
                         child: const Icon(
                           Icons.image_outlined,
-                          color: Color(0xFF2A2A2A),
+                          color: AppColors.textHint,
                           size: 32,
                         ),
                       ),
@@ -728,7 +728,7 @@ class _ClaimCard extends StatelessWidget {
                   Text(
                     bounty?.title ?? 'Bounty',
                     style: const TextStyle(
-                      color: Colors.white,
+                      color: AppColors.textPrimary,
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
                       height: 1.3,
@@ -744,7 +744,7 @@ class _ClaimCard extends StatelessWidget {
                     Text(
                       bounty.description,
                       style: const TextStyle(
-                        color: Color(0xFF505050),
+                        color: AppColors.textSecondary,
                         fontSize: 13,
                         height: 1.4,
                       ),
@@ -776,7 +776,7 @@ class _ClaimCard extends StatelessWidget {
                         child: Text(
                           bounty?.creator?.name ?? 'anonymous',
                           style: const TextStyle(
-                            color: Color(0xFF3A3A3A),
+                            color: AppColors.textHint,
                             fontSize: 12,
                           ),
                           maxLines: 1,
@@ -820,7 +820,7 @@ class _ClaimCard extends StatelessWidget {
                           size: 12,
                           color: isExpired
                               ? AppColors.error
-                              : const Color(0xFF333333),
+                              : AppColors.textHint,
                         ),
                         const SizedBox(width: 3),
                         Text(
@@ -828,7 +828,7 @@ class _ClaimCard extends StatelessWidget {
                           style: TextStyle(
                             color: isExpired
                                 ? AppColors.error
-                                : const Color(0xFF333333),
+                                : AppColors.textHint,
                             fontSize: 11,
                           ),
                         ),
@@ -843,7 +843,7 @@ class _ClaimCard extends StatelessWidget {
                       children: [
                         const Icon(
                           Icons.location_on_outlined,
-                          color: Color(0xFF333333),
+                          color: AppColors.textHint,
                           size: 13,
                         ),
                         const SizedBox(width: 4),
@@ -851,7 +851,7 @@ class _ClaimCard extends StatelessWidget {
                           child: Text(
                             bounty!.location!,
                             style: const TextStyle(
-                              color: Color(0xFF333333),
+                              color: AppColors.textHint,
                               fontSize: 12,
                             ),
                             maxLines: 1,
@@ -1018,12 +1018,12 @@ class _BountyCard extends StatelessWidget {
                   ),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(5),
-                    border: Border.all(color: const Color(0xFF222222)),
+                    border: Border.all(color: AppColors.border),
                   ),
                   child: Text(
                     bounty.category.toLowerCase(),
                     style: const TextStyle(
-                      color: Color(0xFF404040),
+                      color: AppColors.textHint,
                       fontSize: 11,
                       fontWeight: FontWeight.w500,
                     ),
@@ -1034,7 +1034,7 @@ class _BountyCard extends StatelessWidget {
                 Icon(
                   Icons.schedule_rounded,
                   size: 12,
-                  color: isExpired ? AppColors.error : const Color(0xFF333333),
+                  color: isExpired ? AppColors.error : AppColors.textHint,
                 ),
                 const SizedBox(width: 3),
                 Text(
@@ -1042,7 +1042,7 @@ class _BountyCard extends StatelessWidget {
                   style: TextStyle(
                     color: isExpired
                         ? AppColors.error
-                        : const Color(0xFF444444),
+                        : AppColors.muted,
                     fontSize: 12,
                   ),
                 ),
@@ -1051,13 +1051,13 @@ class _BountyCard extends StatelessWidget {
                 const Icon(
                   Icons.people_alt_outlined,
                   size: 12,
-                  color: Color(0xFF333333),
+                  color: AppColors.textHint,
                 ),
                 const SizedBox(width: 3),
                 Text(
                   '${bounty.claimCount}',
                   style: const TextStyle(
-                    color: Color(0xFF444444),
+                    color: AppColors.muted,
                     fontSize: 12,
                   ),
                 ),
