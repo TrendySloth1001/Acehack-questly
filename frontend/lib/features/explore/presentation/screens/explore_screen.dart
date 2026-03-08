@@ -61,11 +61,11 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
     }
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Colors.black,
       body: SafeArea(
         child: RefreshIndicator(
-          color: AppColors.primary,
-          backgroundColor: AppColors.surface,
+          color: AppColors.neonCyan,
+          backgroundColor: const Color(0xFF0D0D0D),
           onRefresh: () => ref.read(bountyListProvider.notifier).refresh(),
           child: CustomScrollView(
             slivers: [
@@ -78,16 +78,17 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
                       const Text(
                         'explore',
                         style: TextStyle(
-                          color: AppColors.textPrimary,
+                          color: Colors.white,
                           fontSize: 26,
                           fontWeight: FontWeight.w800,
+                          letterSpacing: -0.5,
                         ),
                       ),
                       const SizedBox(height: 4),
                       const Text(
                         'find bounties and earn rewards',
                         style: TextStyle(
-                          color: AppColors.textHint,
+                          color: Color(0xFF3A3A3A),
                           fontSize: 13,
                         ),
                       ),
@@ -97,11 +98,11 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
                       Container(
                         height: 42,
                         decoration: BoxDecoration(
-                          color: AppColors.surface,
+                          color: Colors.black,
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: AppColors.border,
-                            width: 0.5,
+                            color: const Color(0xFF222222),
+                            width: 1,
                           ),
                         ),
                         child: TextField(
@@ -165,24 +166,24 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
                                 alignment: Alignment.center,
                                 decoration: BoxDecoration(
                                   color: selected
-                                      ? AppColors.primary.withValues(
-                                          alpha: 0.15,
+                                      ? AppColors.neonCyan.withValues(
+                                          alpha: 0.1,
                                         )
-                                      : AppColors.surface,
+                                      : Colors.black,
                                   borderRadius: BorderRadius.circular(18),
                                   border: Border.all(
                                     color: selected
-                                        ? AppColors.primary
-                                        : AppColors.border,
-                                    width: selected ? 1.5 : 0.5,
+                                        ? AppColors.neonCyan
+                                        : const Color(0xFF222222),
+                                    width: selected ? 1 : 1,
                                   ),
                                 ),
                                 child: Text(
                                   cat,
                                   style: TextStyle(
                                     color: selected
-                                        ? AppColors.primary
-                                        : AppColors.textSecondary,
+                                        ? AppColors.neonCyan
+                                        : const Color(0xFF555555),
                                     fontSize: 13,
                                     fontWeight: selected
                                         ? FontWeight.w600
@@ -320,9 +321,9 @@ class _BountyCard extends StatelessWidget {
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.border, width: 0.5),
+          color: Colors.black,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFF1E1E1E), width: 1),
         ),
         clipBehavior: Clip.antiAlias,
         child: Column(
@@ -339,11 +340,11 @@ class _BountyCard extends StatelessWidget {
                     Image.network(
                       bounty.imageUrls.first,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, _, _) => Container(
-                        color: AppColors.surfaceLight,
+                      errorBuilder: (_, e, s) => Container(
+                        color: const Color(0xFF0D0D0D),
                         child: const Icon(
                           Icons.image_outlined,
-                          color: AppColors.textHint,
+                          color: Color(0xFF2A2A2A),
                           size: 32,
                         ),
                       ),
@@ -410,21 +411,22 @@ class _BountyCard extends StatelessWidget {
                   Text(
                     bounty.title,
                     style: const TextStyle(
-                      color: AppColors.textPrimary,
+                      color: Colors.white,
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
                       height: 1.3,
+                      letterSpacing: -0.2,
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 5),
 
                   // Description preview
                   Text(
                     bounty.description,
                     style: const TextStyle(
-                      color: AppColors.textHint,
+                      color: Color(0xFF505050),
                       fontSize: 13,
                       height: 1.4,
                     ),
@@ -456,7 +458,7 @@ class _BountyCard extends StatelessWidget {
                         child: Text(
                           bounty.creator.name ?? 'anonymous',
                           style: const TextStyle(
-                            color: AppColors.textHint,
+                            color: Color(0xFF3A3A3A),
                             fontSize: 12,
                           ),
                           maxLines: 1,
@@ -472,39 +474,61 @@ class _BountyCard extends StatelessWidget {
                           vertical: 3,
                         ),
                         decoration: BoxDecoration(
-                          color: _categoryColor(
-                            bounty.category,
-                          ).withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
+                            color: _categoryColor(
+                              bounty.category,
+                            ).withValues(alpha: 0.3),
+                          ),
+                          borderRadius: BorderRadius.circular(5),
                         ),
                         child: Text(
-                          bounty.category,
+                          bounty.category.toLowerCase(),
                           style: TextStyle(
                             color: _categoryColor(bounty.category),
                             fontSize: 10,
                             fontWeight: FontWeight.w600,
+                            letterSpacing: 0.3,
                           ),
                         ),
                       ),
 
                       const Spacer(),
 
-                      // Time
-                      Icon(
-                        Icons.schedule_outlined,
-                        size: 12,
-                        color: isExpired ? AppColors.error : AppColors.textHint,
-                      ),
-                      const SizedBox(width: 3),
-                      Text(
-                        isExpired ? 'expired' : timeLeft,
-                        style: TextStyle(
+                      // Requested count
+                      if (bounty.claimCount > 0) ...[
+                        Icon(
+                          Icons.people_outline_rounded,
+                          size: 13,
+                          color: AppColors.neonCyan.withValues(alpha: 0.6),
+                        ),
+                        const SizedBox(width: 3),
+                        Text(
+                          '${bounty.claimCount} requested',
+                          style: TextStyle(
+                            color: AppColors.neonCyan.withValues(alpha: 0.6),
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ] else ...[
+                        Icon(
+                          Icons.schedule_outlined,
+                          size: 12,
                           color: isExpired
                               ? AppColors.error
-                              : AppColors.textHint,
-                          fontSize: 11,
+                              : const Color(0xFF333333),
                         ),
-                      ),
+                        const SizedBox(width: 3),
+                        Text(
+                          isExpired ? 'expired' : timeLeft,
+                          style: TextStyle(
+                            color: isExpired
+                                ? AppColors.error
+                                : const Color(0xFF333333),
+                            fontSize: 11,
+                          ),
+                        ),
+                      ],
                     ],
                   ),
 
@@ -515,7 +539,7 @@ class _BountyCard extends StatelessWidget {
                       children: [
                         const Icon(
                           Icons.location_on_outlined,
-                          color: AppColors.textHint,
+                          color: Color(0xFF333333),
                           size: 13,
                         ),
                         const SizedBox(width: 4),
@@ -523,7 +547,7 @@ class _BountyCard extends StatelessWidget {
                           child: Text(
                             bounty.location!,
                             style: const TextStyle(
-                              color: AppColors.textHint,
+                              color: Color(0xFF333333),
                               fontSize: 12,
                             ),
                             maxLines: 1,

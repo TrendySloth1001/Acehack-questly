@@ -43,11 +43,11 @@ class HomeDashboardScreen extends ConsumerWidget {
         .toList();
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Colors.black,
       body: SafeArea(
         child: RefreshIndicator(
-          color: AppColors.primary,
-          backgroundColor: AppColors.surface,
+          color: AppColors.neonCyan,
+          backgroundColor: const Color(0xFF0D0D0D),
           onRefresh: () async {
             await Future.wait([
               ref.read(bountyListProvider.notifier).refresh(),
@@ -95,10 +95,10 @@ class HomeDashboardScreen extends ConsumerWidget {
                       const Text(
                         'joined bounties',
                         style: TextStyle(
-                          color: AppColors.textSecondary,
-                          fontSize: 13,
+                          color: Color(0xFF444444),
+                          fontSize: 12,
                           fontWeight: FontWeight.w600,
-                          letterSpacing: 1.2,
+                          letterSpacing: 1.5,
                         ),
                       ),
                       const Spacer(),
@@ -109,8 +109,11 @@ class HomeDashboardScreen extends ConsumerWidget {
                             vertical: 3,
                           ),
                           decoration: BoxDecoration(
-                            color: AppColors.neonGreen.withValues(alpha: 0.1),
+                            color: AppColors.neonGreen.withValues(alpha: 0.06),
                             borderRadius: BorderRadius.circular(6),
+                            border: Border.all(
+                              color: AppColors.neonGreen.withValues(alpha: 0.2),
+                            ),
                           ),
                           child: Text(
                             '${myClaims.claims.length}',
@@ -140,7 +143,7 @@ class HomeDashboardScreen extends ConsumerWidget {
                     padding: EdgeInsets.symmetric(horizontal: 20, vertical: 20),
                     child: Text(
                       'no joined bounties yet — claim one below ↓',
-                      style: TextStyle(color: AppColors.textHint, fontSize: 13),
+                      style: TextStyle(color: Color(0xFF363636), fontSize: 13),
                     ),
                   ),
                 )
@@ -171,10 +174,10 @@ class HomeDashboardScreen extends ConsumerWidget {
                       const Text(
                         'latest drops',
                         style: TextStyle(
-                          color: AppColors.textSecondary,
-                          fontSize: 13,
+                          color: Color(0xFF444444),
+                          fontSize: 12,
                           fontWeight: FontWeight.w600,
-                          letterSpacing: 1.2,
+                          letterSpacing: 1.5,
                         ),
                       ),
                       const Spacer(),
@@ -183,7 +186,7 @@ class HomeDashboardScreen extends ConsumerWidget {
                         child: const Text(
                           'see all →',
                           style: TextStyle(
-                            color: AppColors.primary,
+                            color: AppColors.neonCyan,
                             fontSize: 12,
                             fontWeight: FontWeight.w500,
                           ),
@@ -212,7 +215,7 @@ class HomeDashboardScreen extends ConsumerWidget {
                       child: Text(
                         'nothing here yet — go post something 🚀',
                         style: TextStyle(
-                          color: AppColors.textHint,
+                          color: Color(0xFF363636),
                           fontSize: 13,
                         ),
                       ),
@@ -271,27 +274,16 @@ class _Header extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        // Avatar with subtle glow
-        Container(
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.primary.withValues(alpha: 0.2),
-                blurRadius: 20,
-              ),
-            ],
-          ),
-          child: CircleAvatar(
-            radius: 22,
-            backgroundColor: AppColors.primaryDim,
-            backgroundImage: user?.avatarUrl != null
-                ? NetworkImage(user!.avatarUrl!)
-                : null,
-            child: user?.avatarUrl == null
-                ? const Icon(Icons.person, color: AppColors.primary, size: 20)
-                : null,
-          ),
+        // Avatar
+        CircleAvatar(
+          radius: 22,
+          backgroundColor: const Color(0xFF0D0D0D),
+          backgroundImage: user?.avatarUrl != null
+              ? NetworkImage(user!.avatarUrl!)
+              : null,
+          child: user?.avatarUrl == null
+              ? const Icon(Icons.person, color: Color(0xFF333333), size: 20)
+              : null,
         ),
         const SizedBox(width: 14),
         // Greeting
@@ -299,7 +291,7 @@ class _Header extends StatelessWidget {
           child: Text(
             greeting,
             style: const TextStyle(
-              color: AppColors.textPrimary,
+              color: Colors.white,
               fontSize: 20,
               fontWeight: FontWeight.w800,
               letterSpacing: -0.5,
@@ -311,9 +303,9 @@ class _Header extends StatelessWidget {
           width: 38,
           height: 38,
           decoration: BoxDecoration(
-            color: AppColors.surface,
+            color: Colors.black,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.border, width: 0.5),
+            border: Border.all(color: const Color(0xFF1E1E1E), width: 1),
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(11),
@@ -331,13 +323,13 @@ class _Header extends StatelessWidget {
           width: 38,
           height: 38,
           decoration: BoxDecoration(
-            color: AppColors.surface,
+            color: Colors.black,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.border, width: 0.5),
+            border: Border.all(color: const Color(0xFF1E1E1E), width: 1),
           ),
           child: const Icon(
             Icons.notifications_none_rounded,
-            color: AppColors.textSecondary,
+            color: Color(0xFF404040),
             size: 18,
           ),
         ),
@@ -372,13 +364,13 @@ class _BalanceBanner extends ConsumerWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
         decoration: BoxDecoration(
-          color: AppColors.card,
-          borderRadius: BorderRadius.circular(16),
+          color: Colors.black,
+          borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: hasWallet
-                ? AppColors.neonCyan.withValues(alpha: 0.12)
-                : AppColors.border,
-            width: 0.5,
+                ? AppColors.neonCyan.withValues(alpha: 0.15)
+                : const Color(0xFF1A1A1A),
+            width: 1,
           ),
         ),
         child: hasWallet
@@ -514,9 +506,10 @@ class _PostCTA extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(14),
+          color: Colors.black,
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: AppColors.primary.withValues(alpha: 0.2),
+            color: AppColors.neonCyan.withValues(alpha: 0.18),
             width: 1,
           ),
         ),
@@ -526,12 +519,12 @@ class _PostCTA extends StatelessWidget {
               width: 36,
               height: 36,
               decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.08),
+                color: AppColors.neonCyan.withValues(alpha: 0.06),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: const Icon(
                 Icons.add_rounded,
-                color: AppColors.primary,
+                color: AppColors.neonCyan,
                 size: 20,
               ),
             ),
@@ -540,7 +533,7 @@ class _PostCTA extends StatelessWidget {
               child: Text(
                 'post a bounty',
                 style: TextStyle(
-                  color: AppColors.textPrimary,
+                  color: Colors.white,
                   fontSize: 15,
                   fontWeight: FontWeight.w700,
                 ),
@@ -548,7 +541,7 @@ class _PostCTA extends StatelessWidget {
             ),
             Icon(
               Icons.arrow_forward_ios_rounded,
-              color: AppColors.textHint.withValues(alpha: 0.4),
+              color: const Color(0xFF1E1E1E),
               size: 14,
             ),
           ],
@@ -626,7 +619,7 @@ class _ClaimCard extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(0, 16, 0, 16),
         decoration: const BoxDecoration(
           border: Border(
-            bottom: BorderSide(color: AppColors.divider, width: 0.5),
+            bottom: BorderSide(color: Color(0xFF1A1A1A), width: 1),
           ),
         ),
         child: Column(
@@ -637,14 +630,14 @@ class _ClaimCard extends StatelessWidget {
               children: [
                 CircleAvatar(
                   radius: 14,
-                  backgroundColor: AppColors.primaryDim,
+                  backgroundColor: const Color(0xFF0D0D0D),
                   backgroundImage: bounty?.creator?.avatarUrl != null
                       ? NetworkImage(bounty!.creator!.avatarUrl!)
                       : null,
                   child: bounty?.creator?.avatarUrl == null
                       ? const Icon(
                           Icons.person,
-                          color: AppColors.primary,
+                          color: Color(0xFF333333),
                           size: 14,
                         )
                       : null,
@@ -654,7 +647,7 @@ class _ClaimCard extends StatelessWidget {
                   child: Text(
                     bounty?.creator?.name ?? 'anonymous',
                     style: const TextStyle(
-                      color: AppColors.textSecondary,
+                      color: Color(0xFF444444),
                       fontSize: 13,
                       fontWeight: FontWeight.w500,
                     ),
@@ -665,7 +658,7 @@ class _ClaimCard extends StatelessWidget {
                 Text(
                   _timeAgo(claim.createdAt),
                   style: const TextStyle(
-                    color: AppColors.textHint,
+                    color: Color(0xFF333333),
                     fontSize: 11,
                   ),
                 ),
@@ -677,7 +670,7 @@ class _ClaimCard extends StatelessWidget {
             Text(
               bounty?.title ?? 'Bounty',
               style: const TextStyle(
-                color: AppColors.textPrimary,
+                color: Colors.white,
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
                 height: 1.3,
@@ -764,7 +757,7 @@ class _BountyCard extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(0, 16, 0, 16),
         decoration: const BoxDecoration(
           border: Border(
-            bottom: BorderSide(color: AppColors.divider, width: 0.5),
+            bottom: BorderSide(color: Color(0xFF1A1A1A), width: 1),
           ),
         ),
         child: Column(
@@ -866,18 +859,17 @@ class _BountyCard extends StatelessWidget {
                 // Category chip
                 Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
+                    horizontal: 7,
                     vertical: 3,
                   ),
                   decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: AppColors.border, width: 0.5),
+                    borderRadius: BorderRadius.circular(5),
+                    border: Border.all(color: const Color(0xFF222222)),
                   ),
                   child: Text(
                     bounty.category.toLowerCase(),
                     style: const TextStyle(
-                      color: AppColors.textSecondary,
+                      color: Color(0xFF404040),
                       fontSize: 11,
                       fontWeight: FontWeight.w500,
                     ),
@@ -888,13 +880,15 @@ class _BountyCard extends StatelessWidget {
                 Icon(
                   Icons.schedule_rounded,
                   size: 12,
-                  color: isExpired ? AppColors.error : AppColors.textHint,
+                  color: isExpired ? AppColors.error : const Color(0xFF333333),
                 ),
                 const SizedBox(width: 3),
                 Text(
                   isExpired ? 'expired' : timeLeft,
                   style: TextStyle(
-                    color: isExpired ? AppColors.error : AppColors.textHint,
+                    color: isExpired
+                        ? AppColors.error
+                        : const Color(0xFF444444),
                     fontSize: 12,
                   ),
                 ),
@@ -903,13 +897,13 @@ class _BountyCard extends StatelessWidget {
                 const Icon(
                   Icons.people_alt_outlined,
                   size: 12,
-                  color: AppColors.textHint,
+                  color: Color(0xFF333333),
                 ),
                 const SizedBox(width: 3),
                 Text(
                   '${bounty.claimCount}',
                   style: const TextStyle(
-                    color: AppColors.textHint,
+                    color: Color(0xFF444444),
                     fontSize: 12,
                   ),
                 ),
