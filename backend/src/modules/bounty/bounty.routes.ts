@@ -50,6 +50,16 @@ router.post("/:id/cancel", asyncHandler(bountyController.cancel));
 router.post("/:id/claim", asyncHandler(bountyController.claim));
 
 router.patch(
+  "/claims/:claimId/accept",
+  asyncHandler(bountyController.acceptRequest)
+);
+
+router.patch(
+  "/claims/:claimId/reject",
+  asyncHandler(bountyController.rejectRequest)
+);
+
+router.patch(
   "/claims/:claimId/proof",
   submitProofValidation,
   validate,

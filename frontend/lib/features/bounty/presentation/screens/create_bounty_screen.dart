@@ -10,6 +10,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:latlong2/latlong.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/algo_inr.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../gamification/presentation/widgets/xp_reward_popup.dart';
 import '../providers/bounty_provider.dart';
 
 const _categories = [
@@ -558,16 +560,26 @@ class _CreateBountyScreenState extends ConsumerState<CreateBountyScreen> {
         data['imageUrls'] = urls;
         if (mounted) setState(() => _uploadingImages = false);
       }
-      await repo.createBounty(data);
+      final response = await repo.createBounty(data);
       ref.read(bountyListProvider.notifier).refresh();
       if (mounted) {
+        final xpAwarded = response['xpAwarded'] as int? ?? 0;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Bounty posted!'),
             backgroundColor: AppColors.neonGreen,
           ),
         );
-        context.pop();
+        if (xpAwarded > 0) {
+          ref.read(authProvider.notifier).fetchUser();
+          showXpRewardPopup(
+            context,
+            xpGained: xpAwarded,
+            reason: 'Bounty Created',
+          );
+          await Future.delayed(const Duration(milliseconds: 2800));
+        }
+        if (mounted) context.pop();
       }
     } catch (e) {
       debugPrint('[CreateBounty] Error: $e');

@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../gamification/presentation/widgets/xp_reward_popup.dart';
 import '../providers/bounty_provider.dart';
 
 class SubmitProofScreen extends ConsumerStatefulWidget {
@@ -93,7 +95,7 @@ class _SubmitProofScreenState extends ConsumerState<SubmitProofScreen> {
 
       // Step 2: Submit proof
       final note = _noteController.text.trim();
-      await repo.submitProof(
+      final response = await repo.submitProof(
         widget.claimId,
         proofUrls: _uploadedUrls,
         note: note.isNotEmpty ? note : null,
@@ -103,13 +105,26 @@ class _SubmitProofScreenState extends ConsumerState<SubmitProofScreen> {
       ref.read(myClaimsProvider.notifier).load();
 
       if (mounted) {
+        final xpAwarded =
+            (response['data'] as Map<String, dynamic>?)?['xpAwarded'] as int? ??
+            response['xpAwarded'] as int? ??
+            0;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Work submitted successfully!'),
             backgroundColor: AppColors.neonGreen,
           ),
         );
-        context.pop(true);
+        if (xpAwarded > 0) {
+          ref.read(authProvider.notifier).fetchUser();
+          showXpRewardPopup(
+            context,
+            xpGained: xpAwarded,
+            reason: 'Proof Submitted',
+          );
+          await Future.delayed(const Duration(milliseconds: 2800));
+        }
+        if (mounted) context.pop(true);
       }
     } catch (e) {
       if (mounted) {

@@ -12,8 +12,8 @@ import '../../../../core/constants/api_endpoints.dart';
 import '../../../../core/network/dio_client.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../algorand/presentation/providers/wallet_provider.dart';
-import '../../../gamification/presentation/providers/review_provider.dart';
 import '../../../gamification/presentation/widgets/gamification_widgets.dart';
+import '../../../gamification/presentation/widgets/xp_reward_popup.dart';
 import '../../data/models/bounty_model.dart';
 import '../providers/bounty_provider.dart';
 
@@ -66,7 +66,9 @@ class _BountyDetailScreenState extends ConsumerState<BountyDetailScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Bounty claimed!'),
+            content: Text(
+              'Request submitted! The owner will review your profile.',
+            ),
             backgroundColor: AppColors.neonGreen,
           ),
         );
@@ -461,7 +463,7 @@ class _BountyDetailScreenState extends ConsumerState<BountyDetailScreen> {
     }
     try {
       final repo = ref.read(bountyRepositoryProvider);
-      await repo.resolveClaim(claimId, action: action);
+      final response = await repo.resolveClaim(claimId, action: action);
       ref.read(bountyListProvider.notifier).refresh();
       ref.read(myClaimsProvider.notifier).load();
       if (mounted) {
@@ -475,7 +477,26 @@ class _BountyDetailScreenState extends ConsumerState<BountyDetailScreen> {
                 : AppColors.error,
           ),
         );
+
+        // Show XP popup for the person approving
+        final xpAwarded =
+            (response['data'] as Map<String, dynamic>?)?['xpAwarded'] as int? ??
+            0;
+        if (action == 'APPROVED' && xpAwarded > 0 && mounted) {
+          final user = ref.read(authProvider).user;
+          await showXpRewardPopup(
+            context,
+            xpGained: xpAwarded,
+            reason: 'Bounty completed!',
+            newTotalXp: (user?.xp ?? 0) + xpAwarded,
+            newLevel: user?.level,
+            rankTier: user?.rankTier ?? 'WOOD',
+          );
+        }
+
         _load();
+        // Refresh auth to update XP in profile
+        ref.read(authProvider.notifier).fetchUser();
       }
     } catch (e) {
       if (mounted) {
@@ -498,7 +519,7 @@ class _BountyDetailScreenState extends ConsumerState<BountyDetailScreen> {
     int stars = 0;
     final commentCtrl = TextEditingController();
 
-    final submitted = await showModalBottomSheet<bool>(
+    final submitted = await showModalBottomSheet<Map<String, dynamic>>(
       context: context,
       backgroundColor: AppColors.surface,
       isScrollControlled: true,
@@ -569,16 +590,18 @@ class _BountyDetailScreenState extends ConsumerState<BountyDetailScreen> {
                       : () async {
                           try {
                             final dio = ref.read(dioProvider);
-                            await submitReview(
-                              dio,
-                              bountyId: bountyId,
-                              revieweeId: revieweeId,
-                              stars: stars,
-                              comment: commentCtrl.text.trim().isEmpty
-                                  ? null
-                                  : commentCtrl.text.trim(),
+                            final response = await dio.post(
+                              ApiEndpoints.reviews,
+                              data: {
+                                'bountyId': bountyId,
+                                'revieweeId': revieweeId,
+                                'stars': stars,
+                                if (commentCtrl.text.trim().isNotEmpty)
+                                  'comment': commentCtrl.text.trim(),
+                              },
                             );
-                            if (ctx.mounted) Navigator.of(ctx).pop(true);
+                            if (ctx.mounted)
+                              Navigator.of(ctx).pop(response.data);
                           } catch (e) {
                             if (ctx.mounted) {
                               ScaffoldMessenger.of(ctx).showSnackBar(
@@ -613,13 +636,29 @@ class _BountyDetailScreenState extends ConsumerState<BountyDetailScreen> {
       ),
     );
 
-    if (submitted == true && mounted) {
+    if (submitted != null && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Review submitted! 🌟'),
           backgroundColor: AppColors.neonGreen,
         ),
       );
+
+      // Show XP popup for the review XP awarded to the reviewee
+      final data = submitted['data'] as Map<String, dynamic>?;
+      final xpAwarded = data?['xpAwarded'] as int? ?? 0;
+      if (xpAwarded != 0 && mounted) {
+        await showXpRewardPopup(
+          context,
+          xpGained: xpAwarded,
+          reason: xpAwarded > 0
+              ? 'Great review received!'
+              : 'Poor review impact',
+        );
+      }
+
+      // Refresh auth user data
+      ref.read(authProvider.notifier).fetchUser();
     }
   }
 
@@ -1254,6 +1293,7 @@ class _BountyDetailScreenState extends ConsumerState<BountyDetailScreen> {
                     onResolve: (claimId, action) async {
                       await _resolveClaim(claimId, action);
                     },
+                    onReload: _load,
                   ),
                   const SizedBox(height: 16),
                 ],
@@ -1407,7 +1447,7 @@ class _BountyDetailScreenState extends ConsumerState<BountyDetailScreen> {
                               )
                             : const Icon(Icons.rocket_launch_rounded, size: 18),
                         label: Text(
-                          _claiming ? 'Claiming...' : 'Claim this bounty',
+                          _claiming ? 'Requesting...' : 'Request to work',
                           style: const TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w700,
@@ -1953,6 +1993,7 @@ class _MyClaimSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final isPending = claim.status == 'PENDING';
     final isActive = claim.status == 'ACTIVE';
     final isSubmitted = claim.status == 'SUBMITTED';
     final isApproved = claim.status == 'APPROVED';
@@ -1977,7 +2018,9 @@ class _MyClaimSection extends ConsumerWidget {
           Row(
             children: [
               Icon(
-                isActive
+                isPending
+                    ? Icons.hourglass_empty_rounded
+                    : isActive
                     ? Icons.assignment_outlined
                     : isSubmitted
                     ? Icons.hourglass_top_rounded
@@ -1990,10 +2033,12 @@ class _MyClaimSection extends ConsumerWidget {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  isActive
-                      ? 'You claimed this bounty'
+                  isPending
+                      ? 'Request pending — waiting for owner'
+                      : isActive
+                      ? 'Your request was accepted!'
                       : isSubmitted
-                      ? 'Work submitted \u2014 under review'
+                      ? 'Work submitted — under review'
                       : isApproved
                       ? 'Your work was approved!'
                       : 'Your submission was rejected',
@@ -2098,6 +2143,61 @@ class _MyClaimSection extends ConsumerWidget {
           ],
 
           const SizedBox(height: 14),
+
+          // Pending — waiting for owner to accept
+          if (isPending) ...[
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.warning.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.info_outline, color: AppColors.warning, size: 16),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'The bounty owner is reviewing your profile. You\'ll be notified when they decide.',
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              height: 42,
+              child: OutlinedButton.icon(
+                onPressed: isDeclaiming ? null : onDeclaim,
+                icon: isDeclaiming
+                    ? const SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(
+                          color: AppColors.warning,
+                          strokeWidth: 1.5,
+                        ),
+                      )
+                    : const Icon(Icons.undo_rounded, size: 16),
+                label: const Text('Withdraw Request'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.warning,
+                  side: BorderSide(
+                    color: AppColors.warning.withValues(alpha: 0.3),
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ),
+          ],
 
           // Action buttons
           if (isActive) ...[
@@ -2240,6 +2340,8 @@ class _MyClaimSection extends ConsumerWidget {
 
   Color _claimColor(String status) {
     switch (status) {
+      case 'PENDING':
+        return AppColors.warning;
       case 'ACTIVE':
         return AppColors.primary;
       case 'SUBMITTED':
@@ -2255,72 +2357,334 @@ class _MyClaimSection extends ConsumerWidget {
 }
 
 // ═════════════════════════════════════════════════════════════
-//  Owner Claims Section — see all claims + approve / reject
+//  Owner Claims Section — request-based + approve / reject
 // ═════════════════════════════════════════════════════════════
 
-class _OwnerClaimsSection extends StatefulWidget {
+class _OwnerClaimsSection extends ConsumerStatefulWidget {
   final List<BountyClaimModel> claims;
   final Future<void> Function(String claimId, String action) onResolve;
+  final VoidCallback onReload;
 
-  const _OwnerClaimsSection({required this.claims, required this.onResolve});
+  const _OwnerClaimsSection({
+    required this.claims,
+    required this.onResolve,
+    required this.onReload,
+  });
 
   @override
-  State<_OwnerClaimsSection> createState() => _OwnerClaimsSectionState();
+  ConsumerState<_OwnerClaimsSection> createState() =>
+      _OwnerClaimsSectionState();
 }
 
-class _OwnerClaimsSectionState extends State<_OwnerClaimsSection> {
+class _OwnerClaimsSectionState extends ConsumerState<_OwnerClaimsSection> {
   String? _resolvingClaimId;
+  String? _acceptingClaimId;
 
   @override
   Widget build(BuildContext context) {
+    final pendingClaims = widget.claims
+        .where((c) => c.status == 'PENDING')
+        .toList();
+    final otherClaims = widget.claims
+        .where((c) => c.status != 'PENDING')
+        .toList();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Section header
-        Row(
-          children: [
-            const Icon(
-              Icons.group_outlined,
-              color: AppColors.primary,
-              size: 18,
-            ),
-            const SizedBox(width: 8),
-            const Text(
-              'Claims & Submissions',
-              style: TextStyle(
-                color: AppColors.textPrimary,
-                fontSize: 15,
-                fontWeight: FontWeight.w700,
+        // ── Pending Requests section ──────────────────
+        if (pendingClaims.isNotEmpty) ...[
+          Row(
+            children: [
+              const Icon(
+                Icons.people_outline,
+                color: AppColors.warning,
+                size: 18,
               ),
-            ),
-            const SizedBox(width: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              decoration: BoxDecoration(
-                color: AppColors.primaryDim,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Text(
-                '${widget.claims.length}',
-                style: const TextStyle(
-                  color: AppColors.primary,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
+              const SizedBox(width: 8),
+              const Text(
+                'Requests',
+                style: TextStyle(
+                  color: AppColors.textPrimary,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: AppColors.warning.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  '${pendingClaims.length}',
+                  style: const TextStyle(
+                    color: AppColors.warning,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          ...pendingClaims.map((c) => _buildRequestCard(c)),
+          if (otherClaims.isNotEmpty) const SizedBox(height: 16),
+        ],
 
-        // Claim cards
-        ...widget.claims.map((claim) => _buildClaimCard(claim)),
+        // ── Active / Submitted claims section ─────────
+        if (otherClaims.isNotEmpty) ...[
+          Row(
+            children: [
+              const Icon(
+                Icons.assignment_outlined,
+                color: AppColors.primary,
+                size: 18,
+              ),
+              const SizedBox(width: 8),
+              const Text(
+                'Claims & Submissions',
+                style: TextStyle(
+                  color: AppColors.textPrimary,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: AppColors.primaryDim,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  '${otherClaims.length}',
+                  style: const TextStyle(
+                    color: AppColors.primary,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          ...otherClaims.map((claim) => _buildClaimCard(claim)),
+        ],
       ],
     );
   }
 
+  /// Request card — shows requester profile with XP/rank/rating + accept/reject
+  Widget _buildRequestCard(BountyClaimModel claim) {
+    final c = claim.claimer;
+    final rankColor = MinecraftRank.color(c.rankTier);
+    final isAccepting = _acceptingClaimId == claim.id;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.warning.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: AppColors.warning.withValues(alpha: 0.2),
+          width: 0.5,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ── Profile row ─────────────────────────────
+          Row(
+            children: [
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  CircleAvatar(
+                    radius: 22,
+                    backgroundColor: rankColor.withValues(alpha: 0.2),
+                    backgroundImage: c.avatarUrl != null
+                        ? NetworkImage(c.avatarUrl!)
+                        : null,
+                    child: c.avatarUrl == null
+                        ? Icon(Icons.person, color: rankColor, size: 20)
+                        : null,
+                  ),
+                  Positioned(
+                    bottom: -2,
+                    right: -2,
+                    child: RankBadge(tier: c.rankTier, size: 18),
+                  ),
+                ],
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      c.name ?? 'Anonymous',
+                      style: const TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    // Stats row: Level • XP • Rating
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 4,
+                      children: [
+                        _profileChip('LVL ${c.level}', rankColor),
+                        _profileChip('${c.xp} XP', AppColors.textSecondary),
+                        if (c.avgRating != null)
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              StarRating(
+                                rating: c.avgRating!,
+                                totalReviews: c.totalReviews,
+                                starSize: 12,
+                                showCount: true,
+                              ),
+                            ],
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'requested ${_timeAgo(claim.createdAt)}',
+            style: const TextStyle(color: AppColors.textHint, fontSize: 11),
+          ),
+          const SizedBox(height: 12),
+          // ── Accept / Reject buttons ─────────────────
+          Row(
+            children: [
+              Expanded(
+                child: SizedBox(
+                  height: 40,
+                  child: OutlinedButton.icon(
+                    onPressed: isAccepting
+                        ? null
+                        : () => _handleRequest(claim.id, false),
+                    icon: const Icon(Icons.close_rounded, size: 16),
+                    label: const Text('Decline'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.error,
+                      side: BorderSide(
+                        color: AppColors.error.withValues(alpha: 0.3),
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: SizedBox(
+                  height: 40,
+                  child: ElevatedButton.icon(
+                    onPressed: isAccepting
+                        ? null
+                        : () => _handleRequest(claim.id, true),
+                    icon: isAccepting
+                        ? const SizedBox(
+                            width: 14,
+                            height: 14,
+                            child: CircularProgressIndicator(
+                              color: Colors.black,
+                              strokeWidth: 1.5,
+                            ),
+                          )
+                        : const Icon(Icons.check_rounded, size: 18),
+                    label: const Text(
+                      'Accept',
+                      style: TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.neonGreen,
+                      foregroundColor: Colors.black,
+                      disabledBackgroundColor: AppColors.neonGreen.withValues(
+                        alpha: 0.3,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      elevation: 0,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _profileChip(String text, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(
+          color: color,
+          fontSize: 10,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _handleRequest(String claimId, bool accept) async {
+    setState(() => _acceptingClaimId = claimId);
+    try {
+      final dio = ref.read(dioProvider);
+      if (accept) {
+        await dio.patch(ApiEndpoints.acceptRequest(claimId));
+      } else {
+        await dio.patch(ApiEndpoints.rejectRequest(claimId));
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(accept ? 'Request accepted!' : 'Request declined'),
+            backgroundColor: accept ? AppColors.neonGreen : AppColors.error,
+          ),
+        );
+        widget.onReload();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString()),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _acceptingClaimId = null);
+    }
+  }
+
   Widget _buildClaimCard(BountyClaimModel claim) {
     final statusColor = _statusColor(claim.status);
+    final isPending = claim.status == 'PENDING';
     final isSubmitted = claim.status == 'SUBMITTED';
     final isApproved = claim.status == 'APPROVED';
     final isRejected = claim.status == 'REJECTED';
@@ -2403,6 +2767,8 @@ class _OwnerClaimsSectionState extends State<_OwnerClaimsSection> {
                           ? Icons.hourglass_top_rounded
                           : isRejected
                           ? Icons.cancel_outlined
+                          : isPending
+                          ? Icons.hourglass_empty_rounded
                           : Icons.assignment_outlined,
                       color: statusColor,
                       size: 12,
@@ -2628,6 +2994,8 @@ class _OwnerClaimsSectionState extends State<_OwnerClaimsSection> {
 
   Color _statusColor(String status) {
     switch (status) {
+      case 'PENDING':
+        return AppColors.warning;
       case 'ACTIVE':
         return AppColors.primary;
       case 'SUBMITTED':

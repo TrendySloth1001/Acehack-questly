@@ -95,9 +95,25 @@ export class BountyController {
     sendSuccess({
       res,
       data: claim,
-      message: "Bounty claimed",
+      message: "Request submitted",
       statusCode: HTTP_STATUS.CREATED,
     });
+  }
+
+  async acceptRequest(req: Request, res: Response) {
+    const result = await bountyService.acceptRequest(
+      req.params.claimId as string,
+      req.currentUser!.userId
+    );
+    sendSuccess({ res, data: result, message: "Request accepted" });
+  }
+
+  async rejectRequest(req: Request, res: Response) {
+    const result = await bountyService.rejectRequest(
+      req.params.claimId as string,
+      req.currentUser!.userId
+    );
+    sendSuccess({ res, data: result, message: "Request rejected" });
   }
 
   async submitProof(req: Request, res: Response) {

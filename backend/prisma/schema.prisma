@@ -179,6 +179,7 @@ enum BountyStatus {
 }
 
 enum ClaimStatus {
+  PENDING
   ACTIVE
   SUBMITTED
   APPROVED

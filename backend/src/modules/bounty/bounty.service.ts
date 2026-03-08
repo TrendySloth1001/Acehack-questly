@@ -92,7 +92,7 @@ export class BountyService {
     // +20 XP for posting a bounty
     await gamificationService.awardXP(creatorId, XP.POST_BOUNTY);
 
-    return bounty;
+    return { ...bounty, xpAwarded: XP.POST_BOUNTY };
   }
 
   /**
@@ -159,7 +159,8 @@ export class BountyService {
             resolvedAt: true,
             createdAt: true,
             claimer: {
-              select: { id: true, name: true, avatarUrl: true, walletAddress: true },
+              select: { id: true, name: true, avatarUrl: true, walletAddress: true,
+                xp: true, level: true, avgRating: true, totalReviews: true },
             },
           },
           orderBy: { createdAt: "desc" },
@@ -321,9 +322,9 @@ export class BountyService {
       }
     }
 
-    // Reject all pending claims
+    // Reject all pending/active claims
     const pendingClaims = bounty.claims.filter(
-      (c) => c.status === "ACTIVE" || c.status === "SUBMITTED"
+      (c) => c.status === "ACTIVE" || c.status === "SUBMITTED" || c.status === "PENDING"
     );
 
     const operations: any[] = [
@@ -375,7 +376,8 @@ export class BountyService {
   }
 
   /**
-   * Claim a bounty.
+   * Request to work on a bounty (creates PENDING claim).
+   * Bounty stays OPEN until owner accepts a request.
    */
   async claim(bountyId: string, claimerId: string) {
     const bounty = await prisma.bounty.findUnique({
@@ -385,32 +387,122 @@ export class BountyService {
 
     if (!bounty) throw new NotFoundError("Bounty not found");
     if (bounty.status !== "OPEN") {
-      throw new UnauthorizedError("Bounty is not open for claims");
+      throw new BadRequestError("Bounty is not open for requests");
     }
     if (bounty.deadline && new Date(bounty.deadline) < new Date()) {
       throw new BadRequestError("This bounty has passed its deadline");
     }
     if (bounty.creatorId === claimerId) {
-      throw new UnauthorizedError("Cannot claim your own bounty");
+      throw new BadRequestError("Cannot request your own bounty");
+    }
+
+    // Check if user already requested
+    const existing = await prisma.bountyClaim.findUnique({
+      where: { bountyId_claimerId: { bountyId, claimerId } },
+    });
+    if (existing) {
+      throw new BadRequestError("You have already requested this bounty");
     }
 
     const claim = await prisma.bountyClaim.create({
-      data: { bountyId, claimerId },
+      data: { bountyId, claimerId, status: "PENDING" },
       select: {
         id: true,
         status: true,
         createdAt: true,
-        claimer: { select: { id: true, name: true, avatarUrl: true } },
+        claimer: {
+          select: {
+            id: true, name: true, avatarUrl: true,
+            xp: true, level: true, avgRating: true, totalReviews: true,
+          },
+        },
       },
     });
 
-    // Update bounty status to CLAIMED
-    await prisma.bounty.update({
-      where: { id: bountyId },
-      data: { status: "CLAIMED" },
+    // Bounty stays OPEN — owner will accept a request
+    return claim;
+  }
+
+  /**
+   * Accept a pending request (bounty owner only).
+   * Sets the chosen claim to ACTIVE, rejects all other PENDING claims,
+   * and marks bounty as CLAIMED.
+   */
+  async acceptRequest(claimId: string, userId: string) {
+    const claim = await prisma.bountyClaim.findUnique({
+      where: { id: claimId },
+      include: {
+        bounty: { select: { creatorId: true, id: true, status: true } },
+      },
     });
 
-    return claim;
+    if (!claim) throw new NotFoundError("Claim not found");
+    if (claim.bounty.creatorId !== userId) {
+      throw new UnauthorizedError("Only the bounty creator can accept requests");
+    }
+    if (claim.status !== "PENDING") {
+      throw new BadRequestError("This request is not pending");
+    }
+    if (claim.bounty.status !== "OPEN") {
+      throw new BadRequestError("Bounty is no longer open");
+    }
+
+    // Reject all other PENDING claims for this bounty
+    const otherPending = await prisma.bountyClaim.findMany({
+      where: { bountyId: claim.bountyId, status: "PENDING", id: { not: claimId } },
+      select: { id: true },
+    });
+
+    const ops: any[] = [
+      // Accept this claim
+      prisma.bountyClaim.update({
+        where: { id: claimId },
+        data: { status: "ACTIVE" },
+      }),
+      // Reject others
+      ...otherPending.map((c) =>
+        prisma.bountyClaim.update({
+          where: { id: c.id },
+          data: { status: "REJECTED" },
+        })
+      ),
+      // Mark bounty CLAIMED
+      prisma.bounty.update({
+        where: { id: claim.bountyId },
+        data: { status: "CLAIMED" },
+      }),
+    ];
+
+    await prisma.$transaction(ops);
+
+    return { accepted: claimId, rejected: otherPending.length };
+  }
+
+  /**
+   * Reject a pending request (bounty owner only).
+   */
+  async rejectRequest(claimId: string, userId: string) {
+    const claim = await prisma.bountyClaim.findUnique({
+      where: { id: claimId },
+      include: {
+        bounty: { select: { creatorId: true } },
+      },
+    });
+
+    if (!claim) throw new NotFoundError("Claim not found");
+    if (claim.bounty.creatorId !== userId) {
+      throw new UnauthorizedError("Only the bounty creator can reject requests");
+    }
+    if (claim.status !== "PENDING") {
+      throw new BadRequestError("This request is not pending");
+    }
+
+    await prisma.bountyClaim.update({
+      where: { id: claimId },
+      data: { status: "REJECTED" },
+    });
+
+    return { rejected: claimId };
   }
 
   /**
@@ -454,7 +546,7 @@ export class BountyService {
     // +10 XP for submitting proof
     await gamificationService.awardXP(claimerId, XP.SUBMIT_PROOF);
 
-    return updated;
+    return { ...updated, xpAwarded: XP.SUBMIT_PROOF };
   }
 
   /**
@@ -470,8 +562,8 @@ export class BountyService {
     if (claim.claimerId !== claimerId) {
       throw new UnauthorizedError("Not your claim");
     }
-    if (claim.status !== "ACTIVE") {
-      throw new UnauthorizedError("Can only leave active claims");
+    if (claim.status !== "ACTIVE" && claim.status !== "PENDING") {
+      throw new UnauthorizedError("Can only leave active or pending claims");
     }
 
     // Delete the claim
@@ -602,7 +694,7 @@ export class BountyService {
       await gamificationService.awardXP(claim.claimerId, XP.COMPLETE_BOUNTY);
     }
 
-    return updated;
+    return { ...updated, xpAwarded: action === "APPROVED" ? XP.COMPLETE_BOUNTY : 0 };
   }
 
   /**

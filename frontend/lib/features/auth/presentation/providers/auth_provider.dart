@@ -217,6 +217,15 @@ class AuthNotifier extends StateNotifier<AuthState> {
     state = const AuthState(status: AuthStatus.unauthenticated);
   }
 
+  /// Re-fetch the current user from the server (e.g. after XP changes).
+  Future<void> fetchUser() async {
+    try {
+      final user = await _repo.me();
+      await _cacheUser(user);
+      state = state.copyWith(user: user);
+    } catch (_) {}
+  }
+
   Future<void> _cacheUser(UserModel user) async {
     await _storage.write(AppConstants.userKey, json.encode(user.toJson()));
   }

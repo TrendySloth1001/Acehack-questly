@@ -28,6 +28,10 @@ class ApiEndpoints {
   static String bountyById(String id) => '/bounties/$id';
   static String cancelBounty(String id) => '/bounties/$id/cancel';
   static String claimBounty(String id) => '/bounties/$id/claim';
+  static String acceptRequest(String claimId) =>
+      '/bounties/claims/$claimId/accept';
+  static String rejectRequest(String claimId) =>
+      '/bounties/claims/$claimId/reject';
   static const String myClaims = '/bounties/claims/mine';
   static String submitProof(String claimId) =>
       '/bounties/claims/$claimId/proof';

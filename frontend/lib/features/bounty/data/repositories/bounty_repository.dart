@@ -16,9 +16,9 @@ class BountyRepository {
         .toList();
   }
 
-  Future<BountyModel> createBounty(Map<String, dynamic> data) async {
+  Future<Map<String, dynamic>> createBounty(Map<String, dynamic> data) async {
     final response = await _remote.createBounty(data);
-    return BountyModel.fromJson(response['data'] as Map<String, dynamic>);
+    return response;
   }
 
   Future<({List<BountyModel> bounties, Map<String, dynamic> pagination})>
@@ -58,8 +58,9 @@ class BountyRepository {
     return response['data'] as Map<String, dynamic>;
   }
 
-  Future<void> claimBounty(String id) async {
-    await _remote.claimBounty(id);
+  Future<Map<String, dynamic>> claimBounty(String id) async {
+    final response = await _remote.claimBounty(id);
+    return response;
   }
 
   Future<List<BountyClaimModel>> getMyClaims() async {
@@ -70,12 +71,12 @@ class BountyRepository {
         .toList();
   }
 
-  Future<void> submitProof(
+  Future<Map<String, dynamic>> submitProof(
     String claimId, {
     required List<String> proofUrls,
     String? note,
   }) async {
-    await _remote.submitProof(claimId, proofUrls: proofUrls, note: note);
+    return await _remote.submitProof(claimId, proofUrls: proofUrls, note: note);
   }
 
   Future<void> declaim(String claimId) async {
@@ -83,7 +84,11 @@ class BountyRepository {
   }
 
   /// Approve or reject a claim.
-  Future<void> resolveClaim(String claimId, {required String action}) async {
-    await _remote.resolveClaim(claimId, action: action);
+  Future<Map<String, dynamic>> resolveClaim(
+    String claimId, {
+    required String action,
+  }) async {
+    final response = await _remote.resolveClaim(claimId, action: action);
+    return response;
   }
 }

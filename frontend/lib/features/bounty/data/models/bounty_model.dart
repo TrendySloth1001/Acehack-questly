@@ -82,12 +82,20 @@ class BountyCreator {
   final String? name;
   final String? avatarUrl;
   final String? walletAddress;
+  final int xp;
+  final int level;
+  final double? avgRating;
+  final int totalReviews;
 
   const BountyCreator({
     required this.id,
     this.name,
     this.avatarUrl,
     this.walletAddress,
+    this.xp = 0,
+    this.level = 0,
+    this.avgRating,
+    this.totalReviews = 0,
   });
 
   factory BountyCreator.fromJson(Map<String, dynamic> json) {
@@ -96,7 +104,20 @@ class BountyCreator {
       name: json['name'] as String?,
       avatarUrl: json['avatarUrl'] as String?,
       walletAddress: json['walletAddress'] as String?,
+      xp: json['xp'] as int? ?? 0,
+      level: json['level'] as int? ?? 0,
+      avgRating: (json['avgRating'] as num?)?.toDouble(),
+      totalReviews: json['totalReviews'] as int? ?? 0,
     );
+  }
+
+  String get rankTier {
+    if (xp >= 25000) return 'NETHERITE';
+    if (xp >= 10000) return 'DIAMOND';
+    if (xp >= 4000) return 'GOLD';
+    if (xp >= 1500) return 'IRON';
+    if (xp >= 500) return 'STONE';
+    return 'WOOD';
   }
 }
 

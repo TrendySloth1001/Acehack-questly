@@ -75,7 +75,7 @@ export class ReviewService {
     // Refresh reviewee's avg rating
     await gamificationService.refreshRating(dto.revieweeId);
 
-    return review;
+    return { ...review, xpAwarded: xpDelta };
   }
 
   /**
