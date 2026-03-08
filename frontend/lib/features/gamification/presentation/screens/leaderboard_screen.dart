@@ -47,8 +47,7 @@ class LeaderboardScreen extends ConsumerWidget {
             onTap: () => context.push('/home/xp-rules'),
             child: Container(
               margin: const EdgeInsets.only(right: 16),
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               decoration: BoxDecoration(
                 border: Border.all(
                   color: AppColors.neonCyan.withValues(alpha: 0.25),

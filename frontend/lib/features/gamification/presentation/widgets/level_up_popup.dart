@@ -21,10 +21,8 @@ Future<void> showLevelUpPopup(
         child: FadeTransition(opacity: anim, child: child),
       );
     },
-    pageBuilder: (ctx, anim1, anim2) => _LevelUpDialog(
-      newLevel: newLevel,
-      rankTier: rankTier ?? 'WOOD',
-    ),
+    pageBuilder: (ctx, anim1, anim2) =>
+        _LevelUpDialog(newLevel: newLevel, rankTier: rankTier ?? 'WOOD'),
   );
 }
 
@@ -63,9 +61,10 @@ class _LevelUpDialogState extends State<_LevelUpDialog>
       vsync: this,
       duration: const Duration(milliseconds: 1500),
     );
-    _pulse = Tween<double>(begin: 0.9, end: 1.0).animate(
-      CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut),
-    );
+    _pulse = Tween<double>(
+      begin: 0.9,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut));
     _ctrl.repeat(reverse: true);
 
     // Auto-dismiss after 3 seconds
@@ -127,11 +126,7 @@ class _LevelUpDialogState extends State<_LevelUpDialog>
                   ),
                 ),
                 const SizedBox(height: 20),
-                Container(
-                  width: 40,
-                  height: 1,
-                  color: const Color(0xFF1A1A1A),
-                ),
+                Container(width: 40, height: 1, color: const Color(0xFF1A1A1A)),
                 const SizedBox(height: 20),
                 // Cool message
                 Text(

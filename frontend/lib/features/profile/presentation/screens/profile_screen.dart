@@ -137,8 +137,10 @@ class ProfileScreen extends ConsumerWidget {
             GestureDetector(
               onTap: () => context.push(AppRoutes.xpRules),
               child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   border: Border.all(
                     color: AppColors.neonCyan.withValues(alpha: 0.2),
@@ -209,11 +211,6 @@ class ProfileScreen extends ConsumerWidget {
               icon: Icons.account_balance_wallet_outlined,
               label: 'Wallet',
               onTap: () => context.go('/wallet'),
-            ),
-            _MenuItem(
-              icon: Icons.settings_outlined,
-              label: 'Settings',
-              onTap: () => context.push('/settings'),
             ),
 
             const SizedBox(height: 24),

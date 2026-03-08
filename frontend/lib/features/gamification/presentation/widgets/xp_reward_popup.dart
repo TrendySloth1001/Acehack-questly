@@ -45,11 +45,7 @@ Future<void> showXpRewardPopup(
       newLevel != null &&
       newLevel > previousLevel &&
       context.mounted) {
-    await showLevelUpPopup(
-      context,
-      newLevel: newLevel,
-      rankTier: rankTier,
-    );
+    await showLevelUpPopup(context, newLevel: newLevel, rankTier: rankTier);
   }
 }
 

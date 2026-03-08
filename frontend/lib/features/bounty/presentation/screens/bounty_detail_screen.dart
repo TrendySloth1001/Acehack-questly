@@ -491,8 +491,9 @@ class _BountyDetailScreenState extends ConsumerState<BountyDetailScreen> {
             xpGained: xpAwarded,
             reason: 'Bounty completed!',
             newTotalXp: (user?.xp ?? 0) + xpAwarded,
-            newLevel: (response['data'] as Map<String, dynamic>?)?['newLevel']
-                as int? ??
+            newLevel:
+                (response['data'] as Map<String, dynamic>?)?['newLevel']
+                    as int? ??
                 user?.level,
             previousLevel: prevLevel,
             rankTier: user?.rankTier ?? 'WOOD',

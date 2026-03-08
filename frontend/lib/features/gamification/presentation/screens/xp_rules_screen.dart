@@ -14,8 +14,11 @@ class XpRulesScreen extends StatelessWidget {
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_rounded,
-              color: Colors.white, size: 18),
+          icon: const Icon(
+            Icons.arrow_back_ios_rounded,
+            color: Colors.white,
+            size: 18,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
@@ -183,16 +186,8 @@ class XpRulesScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          _TierRow(
-            tier: 'WOOD',
-            minXp: '0',
-            color: const Color(0xFF8B6914),
-          ),
-          _TierRow(
-            tier: 'STONE',
-            minXp: '500',
-            color: const Color(0xFF8E8E8E),
-          ),
+          _TierRow(tier: 'WOOD', minXp: '0', color: const Color(0xFF8B6914)),
+          _TierRow(tier: 'STONE', minXp: '500', color: const Color(0xFF8E8E8E)),
           _TierRow(
             tier: 'IRON',
             minXp: '1,500',
@@ -381,10 +376,7 @@ class _TierRow extends StatelessWidget {
               shape: BoxShape.circle,
               color: color,
               boxShadow: [
-                BoxShadow(
-                  color: color.withValues(alpha: 0.4),
-                  blurRadius: 6,
-                ),
+                BoxShadow(color: color.withValues(alpha: 0.4), blurRadius: 6),
               ],
             ),
           ),
