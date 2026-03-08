@@ -227,11 +227,7 @@ class AppTheme {
         fontSize: 14,
         height: 1.3,
       ),
-      bodyLarge: TextStyle(
-        color: AppColors.fore,
-        fontSize: 14,
-        height: 1.5,
-      ),
+      bodyLarge: TextStyle(color: AppColors.fore, fontSize: 14, height: 1.5),
       bodyMedium: TextStyle(
         color: AppColors.textSecondary,
         fontSize: 13,

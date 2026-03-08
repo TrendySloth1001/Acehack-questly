@@ -98,9 +98,7 @@ class _SettingsTile extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppColors.card,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: AppColors.muted.withValues(alpha: 0.15),
-          ),
+          border: Border.all(color: AppColors.muted.withValues(alpha: 0.15)),
           boxShadow: hasBloom
               ? [
                   BoxShadow(

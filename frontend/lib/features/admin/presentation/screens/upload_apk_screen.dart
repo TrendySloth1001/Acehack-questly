@@ -102,7 +102,8 @@ class _UploadApkScreenState extends ConsumerState<UploadApkScreen>
       });
     } on DioException catch (e) {
       setState(() {
-        _error = e.response?.data?['message']?.toString() ??
+        _error =
+            e.response?.data?['message']?.toString() ??
             e.message ??
             'Upload failed';
         _uploading = false;
@@ -306,8 +307,11 @@ class _UploadApkScreenState extends ConsumerState<UploadApkScreen>
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.error_outline,
-                          color: AppColors.error, size: 18),
+                      const Icon(
+                        Icons.error_outline,
+                        color: AppColors.error,
+                        size: 18,
+                      ),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
@@ -334,8 +338,11 @@ class _UploadApkScreenState extends ConsumerState<UploadApkScreen>
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.check_circle,
-                          color: AppColors.success, size: 18),
+                      const Icon(
+                        Icons.check_circle,
+                        color: AppColors.success,
+                        size: 18,
+                      ),
                       const SizedBox(width: 10),
                       const Expanded(
                         child: Text(
@@ -380,15 +387,18 @@ class _UploadApkScreenState extends ConsumerState<UploadApkScreen>
                   );
                 },
                 child: ElevatedButton(
-                  onPressed:
-                      _pickedFile != null && !_uploading ? _upload : null,
+                  onPressed: _pickedFile != null && !_uploading
+                      ? _upload
+                      : null,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.brand,
                     foregroundColor: AppColors.surface,
-                    disabledBackgroundColor:
-                        AppColors.muted.withValues(alpha: 0.2),
-                    disabledForegroundColor:
-                        AppColors.muted.withValues(alpha: 0.5),
+                    disabledBackgroundColor: AppColors.muted.withValues(
+                      alpha: 0.2,
+                    ),
+                    disabledForegroundColor: AppColors.muted.withValues(
+                      alpha: 0.5,
+                    ),
                     minimumSize: const Size(double.infinity, 52),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
@@ -429,10 +439,7 @@ class _UploadApkScreenState extends ConsumerState<UploadApkScreen>
                     onPressed: _pickFile,
                     child: const Text(
                       'Choose different file',
-                      style: TextStyle(
-                        color: AppColors.muted,
-                        fontSize: 13,
-                      ),
+                      style: TextStyle(color: AppColors.muted, fontSize: 13),
                     ),
                   ),
                 ),

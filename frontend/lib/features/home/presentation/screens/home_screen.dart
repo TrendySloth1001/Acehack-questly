@@ -33,26 +33,61 @@ class HomeScreen extends ConsumerWidget {
         destinations: [
           NavigationDestination(
             icon: const Icon(Icons.home_outlined, color: AppColors.muted),
-            selectedIcon: Icon(Icons.home, color: AppColors.brand,
-              shadows: [Shadow(color: AppColors.brand.withValues(alpha: 0.4), blurRadius: 12)]),
+            selectedIcon: Icon(
+              Icons.home,
+              color: AppColors.brand,
+              shadows: [
+                Shadow(
+                  color: AppColors.brand.withValues(alpha: 0.4),
+                  blurRadius: 12,
+                ),
+              ],
+            ),
             label: 'Home',
           ),
           NavigationDestination(
             icon: const Icon(Icons.explore_outlined, color: AppColors.muted),
-            selectedIcon: Icon(Icons.explore, color: AppColors.brand,
-              shadows: [Shadow(color: AppColors.brand.withValues(alpha: 0.4), blurRadius: 12)]),
+            selectedIcon: Icon(
+              Icons.explore,
+              color: AppColors.brand,
+              shadows: [
+                Shadow(
+                  color: AppColors.brand.withValues(alpha: 0.4),
+                  blurRadius: 12,
+                ),
+              ],
+            ),
             label: 'Explore',
           ),
           NavigationDestination(
-            icon: const Icon(Icons.account_balance_wallet_outlined, color: AppColors.muted),
-            selectedIcon: Icon(Icons.account_balance_wallet, color: AppColors.brand,
-              shadows: [Shadow(color: AppColors.brand.withValues(alpha: 0.4), blurRadius: 12)]),
+            icon: const Icon(
+              Icons.account_balance_wallet_outlined,
+              color: AppColors.muted,
+            ),
+            selectedIcon: Icon(
+              Icons.account_balance_wallet,
+              color: AppColors.brand,
+              shadows: [
+                Shadow(
+                  color: AppColors.brand.withValues(alpha: 0.4),
+                  blurRadius: 12,
+                ),
+              ],
+            ),
             label: 'Wallet',
           ),
           NavigationDestination(
             icon: const Icon(Icons.person_outline, color: AppColors.muted),
-            selectedIcon: Icon(Icons.person, color: AppColors.brand,
-              shadows: [Shadow(color: AppColors.brand.withValues(alpha: 0.4), blurRadius: 12)]),
+            selectedIcon: Icon(
+              Icons.person,
+              color: AppColors.brand,
+              shadows: [
+                Shadow(
+                  color: AppColors.brand.withValues(alpha: 0.4),
+                  blurRadius: 12,
+                ),
+              ],
+            ),
             label: 'Profile',
           ),
         ],

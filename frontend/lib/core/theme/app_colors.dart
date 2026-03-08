@@ -84,7 +84,8 @@ class AppColors {
   static const Color neonGreen = Color(0xFF7AC74F); // muted green for success
   static const Color neonGreenLight = Color(0xFF9FD87A);
   static const Color neonGreenDim = Color(0x337AC74F);
-  static const Color neonOrange = neonAmber; // warm amber instead of harsh orange
+  static const Color neonOrange =
+      neonAmber; // warm amber instead of harsh orange
   static const Color neonOrangeLight = Color(0xFFEED36B);
   static const Color neonOrangeDim = neonAmberDim;
 }
