@@ -15,6 +15,9 @@ class HomeScreen extends ConsumerWidget {
       body: child,
       bottomNavigationBar: NavigationBar(
         selectedIndex: _calculateIndex(context),
+        backgroundColor: AppColors.surface,
+        indicatorColor: AppColors.brand.withValues(alpha: 0.12),
+        surfaceTintColor: Colors.transparent,
         onDestinationSelected: (index) {
           switch (index) {
             case 0:
@@ -27,25 +30,29 @@ class HomeScreen extends ConsumerWidget {
               context.go('/profile');
           }
         },
-        destinations: const [
+        destinations: [
           NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home),
+            icon: const Icon(Icons.home_outlined, color: AppColors.muted),
+            selectedIcon: Icon(Icons.home, color: AppColors.brand,
+              shadows: [Shadow(color: AppColors.brand.withValues(alpha: 0.4), blurRadius: 12)]),
             label: 'Home',
           ),
           NavigationDestination(
-            icon: Icon(Icons.explore_outlined),
-            selectedIcon: Icon(Icons.explore),
+            icon: const Icon(Icons.explore_outlined, color: AppColors.muted),
+            selectedIcon: Icon(Icons.explore, color: AppColors.brand,
+              shadows: [Shadow(color: AppColors.brand.withValues(alpha: 0.4), blurRadius: 12)]),
             label: 'Explore',
           ),
           NavigationDestination(
-            icon: Icon(Icons.account_balance_wallet_outlined),
-            selectedIcon: Icon(Icons.account_balance_wallet),
+            icon: const Icon(Icons.account_balance_wallet_outlined, color: AppColors.muted),
+            selectedIcon: Icon(Icons.account_balance_wallet, color: AppColors.brand,
+              shadows: [Shadow(color: AppColors.brand.withValues(alpha: 0.4), blurRadius: 12)]),
             label: 'Wallet',
           ),
           NavigationDestination(
-            icon: Icon(Icons.person_outline),
-            selectedIcon: Icon(Icons.person),
+            icon: const Icon(Icons.person_outline, color: AppColors.muted),
+            selectedIcon: Icon(Icons.person, color: AppColors.brand,
+              shadows: [Shadow(color: AppColors.brand.withValues(alpha: 0.4), blurRadius: 12)]),
             label: 'Profile',
           ),
         ],

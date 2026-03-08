@@ -19,6 +19,7 @@ class ApiEndpoints {
 
   // ── Uploads ───────────────────────────────────────────────
   static const String uploads = '/uploads';
+  static const String uploadApk = '/uploads/apk';
   static String uploadPresigned(String id) => '/uploads/$id/presigned';
   static String uploadById(String id) => '/uploads/$id';
 

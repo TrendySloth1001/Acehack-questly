@@ -103,6 +103,31 @@ export class UploadService {
     await prisma.upload.delete({ where: { id: uploadId } });
   }
 
+  /**
+   * Upload APK to MinIO — stored at releases/questly.apk (overwrites).
+   */
+  async uploadApk(params: UploadFileParams) {
+    const { buffer, mimeType, size } = params;
+
+    if (size > UPLOAD.MAX_APK_SIZE) {
+      throw new BadRequestError("APK file too large (max 150 MB)");
+    }
+    if (!UPLOAD.APK_MIME_TYPES.includes(mimeType as any)) {
+      throw new BadRequestError("Invalid file type — only .apk files allowed");
+    }
+
+    const objectKey = "releases/questly.apk";
+
+    // Upload to MinIO (overwrite previous)
+    const stream = Readable.from(buffer);
+    await minioClient.putObject(env.MINIO_BUCKET, objectKey, stream, size, {
+      "Content-Type": "application/vnd.android.package-archive",
+    });
+
+    const url = this.buildUrl(objectKey);
+    return { url, size, objectKey };
+  }
+
   // ── Private ──────────────────────────────────────────────
 
   private buildUrl(objectKey: string): string {

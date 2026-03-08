@@ -51,6 +51,27 @@ export class UploadController {
     );
     sendSuccess({ res, message: SUCCESS_MESSAGES.UPLOAD_DELETED });
   }
+
+  async uploadApk(req: Request, res: Response) {
+    if (!req.file) {
+      throw new BadRequestError(ERROR_MESSAGES.UPLOAD_FAILED);
+    }
+
+    const result = await uploadService.uploadApk({
+      buffer: req.file.buffer,
+      originalName: req.file.originalname,
+      mimeType: req.file.mimetype,
+      size: req.file.size,
+      userId: req.currentUser!.userId,
+    });
+
+    sendSuccess({
+      res,
+      data: result,
+      message: "APK uploaded successfully",
+      statusCode: HTTP_STATUS.CREATED,
+    });
+  }
 }
 
 export const uploadController = new UploadController();

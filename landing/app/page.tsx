@@ -12,6 +12,7 @@ export default function Home() {
       {/* ── Navbar ──────────────────────────────────────────── */}
       <nav className="navbar">
         <div className="nav-logo">
+          <Image src="/questly_logo.svg" alt="Questly" width={36} height={36} />
           <span>questly</span>
         </div>
         <div className="nav-links">
@@ -30,11 +31,6 @@ export default function Home() {
       <section className="hero">
         <div className="hero-glow" />
         <div className="hero-glow-secondary" />
-
-        <div className="hero-logo-container">
-          <div className="hero-logo-ring" />
-          <Image src="/questly_logo.svg" alt="Questly" width={120} height={120} className="hero-logo" />
-        </div>
 
         <div className="hero-badge">
           <span className="dot" />

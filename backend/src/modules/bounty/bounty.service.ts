@@ -90,7 +90,7 @@ export class BountyService {
     });
 
     // +20 XP for posting a bounty (fire-and-forget — don't block response)
-    gamificationService.awardXP(creatorId, XP.POST_BOUNTY).catch(() => {});
+    gamificationService.awardXP(creatorId, XP.POST_BOUNTY).catch(() => { });
 
     return { ...bounty, xpAwarded: XP.POST_BOUNTY };
   }
@@ -159,8 +159,10 @@ export class BountyService {
             resolvedAt: true,
             createdAt: true,
             claimer: {
-              select: { id: true, name: true, avatarUrl: true, walletAddress: true,
-                xp: true, level: true, avgRating: true, totalReviews: true },
+              select: {
+                id: true, name: true, avatarUrl: true, walletAddress: true,
+                xp: true, level: true, avgRating: true, totalReviews: true
+              },
             },
           },
           orderBy: { createdAt: "desc" },
@@ -367,7 +369,7 @@ export class BountyService {
 
     // -20 XP if cancelled after someone had claimed (fire-and-forget)
     if (hasPending) {
-      gamificationService.awardXP(userId, XP.CANCEL_AFTER_CLAIM).catch(() => {});
+      gamificationService.awardXP(userId, XP.CANCEL_AFTER_CLAIM).catch(() => { });
     }
 
     return { refundTxId, refunded: !!refundTxId };
@@ -714,8 +716,13 @@ export class BountyService {
             select: {
               id: true,
               title: true,
+              description: true,
+              category: true,
               algoAmount: true,
+              deadline: true,
               status: true,
+              imageUrls: true,
+              location: true,
               creator: { select: { id: true, name: true, avatarUrl: true } },
             },
           },

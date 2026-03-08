@@ -44,6 +44,12 @@ export const UPLOAD = {
     "image/gif",
     "application/pdf",
   ],
+  // APK upload — separate limits
+  MAX_APK_SIZE: 150 * 1024 * 1024, // 150 MB
+  APK_MIME_TYPES: [
+    "application/vnd.android.package-archive",
+    "application/octet-stream",
+  ],
 } as const;
 
 export const ERROR_MESSAGES = {

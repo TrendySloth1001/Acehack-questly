@@ -176,15 +176,25 @@ class BountyClaimModel {
 class ClaimBountyInfo {
   final String id;
   final String title;
+  final String description;
+  final String category;
   final double algoAmount;
+  final DateTime deadline;
   final String status;
+  final List<String> imageUrls;
+  final String? location;
   final BountyCreator? creator;
 
   const ClaimBountyInfo({
     required this.id,
     required this.title,
+    required this.description,
+    required this.category,
     required this.algoAmount,
+    required this.deadline,
     required this.status,
+    this.imageUrls = const [],
+    this.location,
     this.creator,
   });
 
@@ -192,8 +202,13 @@ class ClaimBountyInfo {
     return ClaimBountyInfo(
       id: json['id'] as String,
       title: json['title'] as String,
+      description: json['description'] as String? ?? '',
+      category: json['category'] as String? ?? 'Other',
       algoAmount: (json['algoAmount'] as num).toDouble(),
+      deadline: DateTime.parse(json['deadline'] as String),
       status: json['status'] as String,
+      imageUrls: (json['imageUrls'] as List<dynamic>?)?.cast<String>() ?? [],
+      location: json['location'] as String?,
       creator: json['creator'] != null
           ? BountyCreator.fromJson(json['creator'] as Map<String, dynamic>)
           : null,

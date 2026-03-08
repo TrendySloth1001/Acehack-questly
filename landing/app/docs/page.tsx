@@ -13,6 +13,7 @@ export default function DocsPage() {
       {/* ── Navbar ──────────────────────────────────────────── */}
       <nav className="navbar">
         <div className="nav-logo">
+          <Image src="/questly_logo.svg" alt="Questly" width={36} height={36} />
           <span>questly</span>
         </div>
         <div className="nav-links">

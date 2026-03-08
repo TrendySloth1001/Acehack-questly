@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/router/app_router.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 
-/// Settings tab — minimal, features coming soon.
+/// Settings tab — upload APK, logout, app info.
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
@@ -12,56 +15,142 @@ class SettingsScreen extends ConsumerWidget {
       backgroundColor: AppColors.background,
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                'settings ⚙️',
+                'Settings',
                 style: TextStyle(
-                  color: AppColors.textPrimary,
+                  color: AppColors.fore,
                   fontSize: 26,
                   fontWeight: FontWeight.w800,
+                  letterSpacing: -0.5,
                 ),
               ),
-              const Spacer(),
-              Center(
-                child: Column(
-                  children: [
-                    Icon(
-                      Icons.construction_rounded,
-                      color: AppColors.neonCyan.withValues(alpha: 0.3),
-                      size: 48,
-                    ),
-                    const SizedBox(height: 16),
-                    const Text(
-                      'coming soon',
-                      style: TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    const Text(
-                      'settings will be available in a future update',
-                      style: TextStyle(color: AppColors.textHint, fontSize: 14),
-                    ),
-                  ],
-                ),
+              const SizedBox(height: 24),
+
+              // ── Upload APK ────────────────────────────────
+              _SettingsTile(
+                icon: Icons.cloud_upload_outlined,
+                title: 'Upload APK',
+                subtitle: 'Upload app release to MinIO',
+                accentColor: AppColors.brand,
+                hasBloom: true,
+                onTap: () => context.push(AppRoutes.uploadApk),
               ),
+
+              const SizedBox(height: 10),
+
+              // ── Logout ────────────────────────────────────
+              _SettingsTile(
+                icon: Icons.logout_rounded,
+                title: 'Logout',
+                subtitle: 'Sign out of your account',
+                accentColor: AppColors.error,
+                onTap: () {
+                  ref.read(authProvider.notifier).logout();
+                },
+              ),
+
               const Spacer(),
+
               Center(
                 child: Text(
                   'Questly v1.0.0',
                   style: TextStyle(
-                    color: AppColors.textHint.withValues(alpha: 0.5),
+                    color: AppColors.muted.withValues(alpha: 0.5),
                     fontSize: 12,
                   ),
                 ),
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SettingsTile extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final Color accentColor;
+  final bool hasBloom;
+  final VoidCallback onTap;
+
+  const _SettingsTile({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.accentColor,
+    this.hasBloom = false,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppColors.card,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: AppColors.muted.withValues(alpha: 0.15),
+          ),
+          boxShadow: hasBloom
+              ? [
+                  BoxShadow(
+                    color: accentColor.withValues(alpha: 0.08),
+                    blurRadius: 20,
+                    spreadRadius: 1,
+                  ),
+                ]
+              : null,
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: accentColor.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: accentColor, size: 20),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      color: AppColors.fore,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      color: AppColors.muted,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.chevron_right,
+              color: AppColors.muted.withValues(alpha: 0.5),
+              size: 20,
+            ),
+          ],
         ),
       ),
     );

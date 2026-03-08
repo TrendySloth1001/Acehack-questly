@@ -619,7 +619,7 @@ class _SectionBlock extends StatelessWidget {
   }
 }
 
-/// Joined bounty card — premium, visual, dark-themed.
+/// Joined bounty card — explore-style with image, description, time remaining.
 class _ClaimCard extends StatelessWidget {
   final BountyClaimModel claim;
   final VoidCallback? onTap;
@@ -630,45 +630,247 @@ class _ClaimCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final bounty = claim.bounty;
     final statusColor = _claimStatusColor(claim.status);
-    final isActive = claim.status == 'ACTIVE';
-    final isApproved = claim.status == 'APPROVED';
+    final hasImage = bounty != null && bounty.imageUrls.isNotEmpty;
+    final isExpired =
+        bounty != null && bounty.deadline.isBefore(DateTime.now());
+    final timeLeft = bounty != null ? _timeLeft(bounty.deadline) : '';
 
     return GestureDetector(
       onTap: onTap,
-      behavior: HitTestBehavior.opaque,
       child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
+        margin: const EdgeInsets.only(bottom: 14),
         decoration: BoxDecoration(
-          color: const Color(0xFF0A0A0A),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isActive
-                ? AppColors.primary.withValues(alpha: 0.25)
-                : isApproved
-                ? AppColors.neonGreen.withValues(alpha: 0.2)
-                : const Color(0xFF1A1A1A),
-            width: 1,
-          ),
-          boxShadow: isActive
-              ? [
-                  BoxShadow(
-                    color: AppColors.primary.withValues(alpha: 0.06),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
-                  ),
-                ]
-              : null,
+          color: Colors.black,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFF1E1E1E), width: 1),
         ),
+        clipBehavior: Clip.antiAlias,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── Status accent strip at top ──────────────────
+            // ── Image header ──────────────────────────────────
+            if (hasImage)
+              SizedBox(
+                height: 140,
+                width: double.infinity,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    Image.network(
+                      bounty!.imageUrls.first,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, e, s) => Container(
+                        color: const Color(0xFF0D0D0D),
+                        child: const Icon(
+                          Icons.image_outlined,
+                          color: Color(0xFF2A2A2A),
+                          size: 32,
+                        ),
+                      ),
+                    ),
+                    // Image count badge
+                    if (bounty.imageUrls.length > 1)
+                      Positioned(
+                        top: 8,
+                        right: 8,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withValues(alpha: 0.7),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.photo_library_outlined,
+                                color: Colors.white,
+                                size: 12,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                '${bounty.imageUrls.length}',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    // Reward overlay
+                    if (bounty.algoAmount > 0)
+                      Positioned(
+                        bottom: 8,
+                        left: 8,
+                        child: AlgoRewardChip(amount: bounty.algoAmount),
+                      ),
+                  ],
+                ),
+              ),
+
+            // ── Content ───────────────────────────────────────
+            Padding(
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // No-image reward badge
+                  if (!hasImage && bounty != null && bounty.algoAmount > 0) ...[
+                    AlgoRewardChip(amount: bounty.algoAmount),
+                    const SizedBox(height: 8),
+                  ],
+
+                  // Title
+                  Text(
+                    bounty?.title ?? 'Bounty',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      height: 1.3,
+                      letterSpacing: -0.2,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 5),
+
+                  // Description
+                  if (bounty != null && bounty.description.isNotEmpty)
+                    Text(
+                      bounty.description,
+                      style: const TextStyle(
+                        color: Color(0xFF505050),
+                        fontSize: 13,
+                        height: 1.4,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  const SizedBox(height: 10),
+
+                  // ── Meta row ────────────────────────────────
+                  Row(
+                    children: [
+                      // Creator avatar
+                      CircleAvatar(
+                        radius: 10,
+                        backgroundColor: AppColors.primaryDim,
+                        backgroundImage: bounty?.creator?.avatarUrl != null
+                            ? NetworkImage(bounty!.creator!.avatarUrl!)
+                            : null,
+                        child: bounty?.creator?.avatarUrl == null
+                            ? const Icon(
+                                Icons.person,
+                                color: AppColors.primary,
+                                size: 10,
+                              )
+                            : null,
+                      ),
+                      const SizedBox(width: 6),
+                      Flexible(
+                        child: Text(
+                          bounty?.creator?.name ?? 'anonymous',
+                          style: const TextStyle(
+                            color: Color(0xFF3A3A3A),
+                            fontSize: 12,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+
+                      // Category badge
+                      if (bounty != null)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 7,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            border: Border.all(
+                              color: _categoryColor(
+                                bounty.category,
+                              ).withValues(alpha: 0.3),
+                            ),
+                            borderRadius: BorderRadius.circular(5),
+                          ),
+                          child: Text(
+                            bounty.category.toLowerCase(),
+                            style: TextStyle(
+                              color: _categoryColor(bounty.category),
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 0.3,
+                            ),
+                          ),
+                        ),
+
+                      const Spacer(),
+
+                      // Time remaining
+                      if (bounty != null) ...[
+                        Icon(
+                          Icons.schedule_outlined,
+                          size: 12,
+                          color: isExpired
+                              ? AppColors.error
+                              : const Color(0xFF333333),
+                        ),
+                        const SizedBox(width: 3),
+                        Text(
+                          isExpired ? 'expired' : timeLeft,
+                          style: TextStyle(
+                            color: isExpired
+                                ? AppColors.error
+                                : const Color(0xFF333333),
+                            fontSize: 11,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+
+                  // Location
+                  if (bounty?.location != null) ...[
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.location_on_outlined,
+                          color: Color(0xFF333333),
+                          size: 13,
+                        ),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            bounty!.location!,
+                            style: const TextStyle(
+                              color: Color(0xFF333333),
+                              fontSize: 12,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ],
+              ),
+            ),
+
+            // ── Status accent strip at bottom ─────────────────
             Container(
               height: 3,
               decoration: BoxDecoration(
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(16),
-                ),
                 gradient: LinearGradient(
                   colors: [
                     statusColor.withValues(alpha: 0.7),
@@ -677,152 +879,33 @@ class _ClaimCard extends StatelessWidget {
                 ),
               ),
             ),
-
-            Padding(
-              padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // ── Creator row + status badge ───────────────
-                  Row(
-                    children: [
-                      CircleAvatar(
-                        radius: 14,
-                        backgroundColor: const Color(0xFF151515),
-                        backgroundImage: bounty?.creator?.avatarUrl != null
-                            ? NetworkImage(bounty!.creator!.avatarUrl!)
-                            : null,
-                        child: bounty?.creator?.avatarUrl == null
-                            ? const Icon(
-                                Icons.person,
-                                color: Color(0xFF444444),
-                                size: 14,
-                              )
-                            : null,
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              bounty?.creator?.name ?? 'anonymous',
-                              style: const TextStyle(
-                                color: Color(0xFF888888),
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            Text(
-                              'joined ${_timeAgo(claim.createdAt)}',
-                              style: const TextStyle(
-                                color: Color(0xFF3A3A3A),
-                                fontSize: 10,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      // Status badge
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 5,
-                        ),
-                        decoration: BoxDecoration(
-                          color: statusColor.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: statusColor.withValues(alpha: 0.2),
-                            width: 0.5,
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              claim.status == 'APPROVED'
-                                  ? Icons.check_circle_outline_rounded
-                                  : claim.status == 'SUBMITTED'
-                                  ? Icons.hourglass_top_rounded
-                                  : claim.status == 'REJECTED'
-                                  ? Icons.cancel_outlined
-                                  : claim.status == 'ACTIVE'
-                                  ? Icons.bolt_rounded
-                                  : Icons.assignment_outlined,
-                              color: statusColor,
-                              size: 12,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              claim.status.toLowerCase(),
-                              style: TextStyle(
-                                color: statusColor,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-
-                  // ── Bounty title ────────────────────────────
-                  Text(
-                    bounty?.title ?? 'Bounty',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      height: 1.3,
-                      letterSpacing: -0.3,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 10),
-
-                  // ── Reward row ──────────────────────────────
-                  Row(
-                    children: [
-                      // Bounty status
-                      if (bounty != null)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 7,
-                            vertical: 3,
-                          ),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(6),
-                            border: Border.all(color: const Color(0xFF1E1E1E)),
-                          ),
-                          child: Text(
-                            bounty.status.toLowerCase(),
-                            style: TextStyle(
-                              color: _bountyStatusColor(
-                                bounty.status,
-                              ).withValues(alpha: 0.8),
-                              fontSize: 10,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      const Spacer(),
-                      if (bounty != null && bounty.algoAmount > 0)
-                        AlgoRewardChip(amount: bounty.algoAmount),
-                    ],
-                  ),
-                ],
-              ),
-            ),
           ],
         ),
       ),
     );
+  }
+
+  Color _categoryColor(String category) {
+    switch (category.toLowerCase()) {
+      case 'delivery':
+        return AppColors.neonOrange;
+      case 'tutoring':
+        return AppColors.neonCyan;
+      case 'design':
+        return const Color(0xFFE040FB);
+      case 'coding':
+        return AppColors.neonGreen;
+      case 'writing':
+        return const Color(0xFFFFD600);
+      case 'research':
+        return const Color(0xFF448AFF);
+      case 'errands':
+        return AppColors.neonOrange;
+      case 'photography':
+        return const Color(0xFFFF80AB);
+      default:
+        return AppColors.textHint;
+    }
   }
 }
 

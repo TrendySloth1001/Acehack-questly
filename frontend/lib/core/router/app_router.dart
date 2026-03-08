@@ -23,6 +23,7 @@ import '../../features/bounty/presentation/screens/submit_proof_screen.dart';
 import '../../features/profile/presentation/screens/my_bounties_screen.dart';
 import '../../features/gamification/presentation/screens/leaderboard_screen.dart';
 import '../../features/gamification/presentation/screens/xp_rules_screen.dart';
+import '../../features/admin/presentation/screens/upload_apk_screen.dart';
 
 /// Route name constants.
 class AppRoutes {
@@ -48,6 +49,9 @@ class AppRoutes {
   // Leaderboard
   static const String leaderboard = '/home/leaderboard';
   static const String xpRules = '/home/xp-rules';
+
+  // Admin
+  static const String uploadApk = '/home/upload-apk';
 
   // Quests
   static const String quests = '/home/quests';
@@ -205,6 +209,11 @@ final routerProvider = Provider<GoRouter>((ref) {
                 path: 'xp-rules',
                 name: 'xpRules',
                 builder: (context, state) => const XpRulesScreen(),
+              ),
+              GoRoute(
+                path: 'upload-apk',
+                name: 'uploadApk',
+                builder: (context, state) => const UploadApkScreen(),
               ),
             ],
           ),

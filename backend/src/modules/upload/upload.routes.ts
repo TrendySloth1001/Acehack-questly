@@ -9,11 +9,17 @@ const upload = multer({
   limits: { fileSize: UPLOAD.MAX_FILE_SIZE },
 });
 
+const apkUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: UPLOAD.MAX_APK_SIZE },
+});
+
 const router = Router();
 
 router.use(authenticate);
 
 router.post("/", upload.single("file"), asyncHandler(uploadController.upload));
+router.post("/apk", apkUpload.single("file"), asyncHandler(uploadController.uploadApk));
 router.get("/", asyncHandler(uploadController.list));
 router.get("/:uploadId/presigned", asyncHandler(uploadController.getPresignedUrl));
 router.delete("/:uploadId", asyncHandler(uploadController.delete));
