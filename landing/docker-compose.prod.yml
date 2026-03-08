@@ -1,0 +1,34 @@
+services:
+  questly-landing:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: questly-landing
+    restart: unless-stopped
+    environment:
+      - PORT=3020
+      - HOSTNAME=0.0.0.0
+    expose:
+      - "3020"
+    networks:
+      - coolify
+    labels:
+      - "traefik.enable=true"
+      # HTTP → HTTPS redirect
+      - "traefik.http.routers.questly-landing-http.rule=Host(`questly.anskservices.com`)"
+      - "traefik.http.routers.questly-landing-http.entrypoints=http"
+      - "traefik.http.routers.questly-landing-http.middlewares=redirect-to-https"
+      # HTTPS
+      - "traefik.http.routers.questly-landing.rule=Host(`questly.anskservices.com`)"
+      - "traefik.http.routers.questly-landing.entrypoints=https"
+      - "traefik.http.routers.questly-landing.tls=true"
+      - "traefik.http.routers.questly-landing.tls.certresolver=letsencrypt"
+      # Service port
+      - "traefik.http.services.questly-landing.loadbalancer.server.port=3020"
+      # Redirect middleware
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.permanent=true"
+
+networks:
+  coolify:
+    external: true
