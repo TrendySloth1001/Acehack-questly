@@ -53,28 +53,38 @@ app.get("/health", (_req, res) => {
 });
 
 // ── Public file proxy (no auth – serves MinIO objects) ─────
+// Optimised: parallel stat+getObject, ETag/If-None-Match for 304,
+// Content-Length for efficient mobile downloads.
 app.get("/files/:bucket/*objectKey", async (req, res, next) => {
   try {
     const bucket = req.params.bucket;
-    // path-to-regexp v8: *objectKey captures as an array of path segments
     const rawKey = req.params.objectKey;
     const objectKey = Array.isArray(rawKey) ? rawKey.join("/") : String(rawKey);
-    const stream = await minioClient.getObject(bucket, objectKey);
 
-    // Forward content-type from MinIO stat
-    try {
-      const stat = await minioClient.statObject(bucket, objectKey);
-      if (stat.metaData?.["content-type"]) {
-        res.setHeader("Content-Type", stat.metaData["content-type"]);
-      }
-      if (stat.size) {
-        res.setHeader("Content-Length", stat.size);
-      }
-    } catch {
-      // stat failed – still try to stream
+    // 1. Get metadata first (cheap) — enables ETag + Content-Length
+    const stat = await minioClient.statObject(bucket, objectKey);
+    const etag = stat.etag;
+
+    // 2. ETag-based conditional request — avoids re-sending the body
+    if (etag && req.headers["if-none-match"] === etag) {
+      res.status(304).end();
+      return;
     }
 
+    // 3. Set headers before streaming
+    if (stat.metaData?.["content-type"]) {
+      res.setHeader("Content-Type", stat.metaData["content-type"]);
+    }
+    if (stat.size) {
+      res.setHeader("Content-Length", stat.size);
+    }
+    if (etag) {
+      res.setHeader("ETag", etag);
+    }
     res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+
+    // 4. Stream the object
+    const stream = await minioClient.getObject(bucket, objectKey);
     stream.pipe(res);
   } catch (err: any) {
     if (err?.code === "NoSuchKey" || err?.code === "NoSuchBucket") {

@@ -15,8 +15,10 @@ export class ReviewController {
   }
 
   async getForUser(req: Request, res: Response) {
-    const reviews = await reviewService.getForUser(req.params.userId as string);
-    sendSuccess({ res, data: reviews });
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 20;
+    const result = await reviewService.getForUser(req.params.userId as string, page, limit);
+    sendSuccess({ res, data: result });
   }
 
   async getForBounty(req: Request, res: Response) {

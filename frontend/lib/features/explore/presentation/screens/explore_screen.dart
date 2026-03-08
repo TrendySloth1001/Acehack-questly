@@ -95,11 +95,14 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
   Widget build(BuildContext context) {
     final bountyState = ref.watch(bountyListProvider);
 
+    // Only show open bounties publicly
+    final openBounties = bountyState.bounties
+        .where((b) => b.status == 'OPEN')
+        .toList();
+
     var bounties = _selectedCategory == 'All'
-        ? bountyState.bounties
-        : bountyState.bounties
-              .where((b) => b.category == _selectedCategory)
-              .toList();
+        ? openBounties
+        : openBounties.where((b) => b.category == _selectedCategory).toList();
 
     // Apply text search filter
     if (_searchQuery.isNotEmpty) {

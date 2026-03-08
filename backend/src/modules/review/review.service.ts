@@ -66,34 +66,48 @@ export class ReviewService {
       },
     });
 
-    // Award / deduct XP based on stars
+    // Parallelize: XP award + rating refresh (independent operations)
     const xpDelta = gamificationService.xpForStars(dto.stars);
+    const parallelOps: Promise<any>[] = [
+      gamificationService.refreshRating(dto.revieweeId),
+    ];
     if (xpDelta !== 0) {
-      await gamificationService.awardXP(dto.revieweeId, xpDelta);
+      parallelOps.push(gamificationService.awardXP(dto.revieweeId, xpDelta));
     }
-
-    // Refresh reviewee's avg rating
-    await gamificationService.refreshRating(dto.revieweeId);
+    await Promise.all(parallelOps);
 
     return { ...review, xpAwarded: xpDelta };
   }
 
   /**
-   * List reviews for a specific user (as reviewee).
+   * List reviews for a specific user (as reviewee) — paginated.
    */
-  async getForUser(userId: string) {
-    return prisma.review.findMany({
-      where: { revieweeId: userId },
-      select: {
-        id: true,
-        stars: true,
-        comment: true,
-        createdAt: true,
-        reviewer: { select: { id: true, name: true, avatarUrl: true } },
-        bounty: { select: { id: true, title: true } },
-      },
-      orderBy: { createdAt: "desc" },
-    });
+  async getForUser(userId: string, page = 1, limit = 20) {
+    const take = Math.min(limit, 100);
+    const skip = (page - 1) * take;
+
+    const [reviews, total] = await Promise.all([
+      prisma.review.findMany({
+        where: { revieweeId: userId },
+        select: {
+          id: true,
+          stars: true,
+          comment: true,
+          createdAt: true,
+          reviewer: { select: { id: true, name: true, avatarUrl: true } },
+          bounty: { select: { id: true, title: true } },
+        },
+        orderBy: { createdAt: "desc" },
+        skip,
+        take,
+      }),
+      prisma.review.count({ where: { revieweeId: userId } }),
+    ]);
+
+    return {
+      reviews,
+      pagination: { page, limit: take, total, totalPages: Math.ceil(total / take) },
+    };
   }
 
   /**

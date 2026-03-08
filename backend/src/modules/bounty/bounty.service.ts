@@ -89,8 +89,8 @@ export class BountyService {
       select: bountySelect,
     });
 
-    // +20 XP for posting a bounty
-    await gamificationService.awardXP(creatorId, XP.POST_BOUNTY);
+    // +20 XP for posting a bounty (fire-and-forget — don't block response)
+    gamificationService.awardXP(creatorId, XP.POST_BOUNTY).catch(() => {});
 
     return { ...bounty, xpAwarded: XP.POST_BOUNTY };
   }
@@ -323,7 +323,7 @@ export class BountyService {
     }
 
     // Reject all pending/active claims
-    const pendingClaims = bounty.claims.filter(
+    const hasPending = bounty.claims.some(
       (c) => c.status === "ACTIVE" || c.status === "SUBMITTED" || c.status === "PENDING"
     );
 
@@ -338,13 +338,11 @@ export class BountyService {
             : {}),
         },
       }),
-      // Reject all pending claims
-      ...pendingClaims.map((c) =>
-        prisma.bountyClaim.update({
-          where: { id: c.id },
-          data: { status: "REJECTED" },
-        })
-      ),
+      // Bulk reject all pending/active/submitted claims in one query
+      prisma.bountyClaim.updateMany({
+        where: { bountyId: id, status: { in: ["ACTIVE", "SUBMITTED", "PENDING"] } },
+        data: { status: "REJECTED" },
+      }),
     ];
 
     // Record refund transaction if applicable
@@ -367,9 +365,9 @@ export class BountyService {
 
     await prisma.$transaction(operations);
 
-    // -20 XP if cancelled after someone claimed
-    if (pendingClaims.length > 0) {
-      await gamificationService.awardXP(userId, XP.CANCEL_AFTER_CLAIM);
+    // -20 XP if cancelled after someone had claimed (fire-and-forget)
+    if (hasPending) {
+      gamificationService.awardXP(userId, XP.CANCEL_AFTER_CLAIM).catch(() => {});
     }
 
     return { refundTxId, refunded: !!refundTxId };
@@ -447,25 +445,19 @@ export class BountyService {
       throw new BadRequestError("Bounty is no longer open");
     }
 
-    // Reject all other PENDING claims for this bounty
-    const otherPending = await prisma.bountyClaim.findMany({
-      where: { bountyId: claim.bountyId, status: "PENDING", id: { not: claimId } },
-      select: { id: true },
-    });
-
+    // Reject all other PENDING claims + accept this one + mark bounty CLAIMED
+    // Uses updateMany for bulk reject instead of N individual updates
     const ops: any[] = [
       // Accept this claim
       prisma.bountyClaim.update({
         where: { id: claimId },
         data: { status: "ACTIVE" },
       }),
-      // Reject others
-      ...otherPending.map((c) =>
-        prisma.bountyClaim.update({
-          where: { id: c.id },
-          data: { status: "REJECTED" },
-        })
-      ),
+      // Bulk reject all other PENDING claims in one query
+      prisma.bountyClaim.updateMany({
+        where: { bountyId: claim.bountyId, status: "PENDING", id: { not: claimId } },
+        data: { status: "REJECTED" },
+      }),
       // Mark bounty CLAIMED
       prisma.bounty.update({
         where: { id: claim.bountyId },
@@ -475,7 +467,7 @@ export class BountyService {
 
     await prisma.$transaction(ops);
 
-    return { accepted: claimId, rejected: otherPending.length };
+    return { accepted: claimId, rejected: "all other pending" };
   }
 
   /**
@@ -537,14 +529,14 @@ export class BountyService {
       },
     });
 
-    // Update bounty to IN_REVIEW
-    await prisma.bounty.update({
-      where: { id: updated.bountyId },
-      data: { status: "IN_REVIEW" },
-    });
-
-    // +10 XP for submitting proof
-    await gamificationService.awardXP(claimerId, XP.SUBMIT_PROOF);
+    // Parallelize: bounty status update + XP award (independent operations)
+    await Promise.all([
+      prisma.bounty.update({
+        where: { id: updated.bountyId },
+        data: { status: "IN_REVIEW" },
+      }),
+      gamificationService.awardXP(claimerId, XP.SUBMIT_PROOF),
+    ]);
 
     return { ...updated, xpAwarded: XP.SUBMIT_PROOF };
   }
@@ -682,48 +674,63 @@ export class BountyService {
       },
     });
 
-    // If approved → complete the bounty; if rejected → re-open for resubmission
-    // When rejected, set bounty to CLAIMED (claimer still attached) so they can resubmit.
-    await prisma.bounty.update({
-      where: { id: claim.bountyId },
-      data: { status: action === "APPROVED" ? "COMPLETED" : "CLAIMED" },
-    });
-
-    // +100 XP for the claimer when their work is approved
+    // Parallelize: bounty status update + XP award (independent operations)
+    const parallelOps: Promise<any>[] = [
+      prisma.bounty.update({
+        where: { id: claim.bountyId },
+        data: { status: action === "APPROVED" ? "COMPLETED" : "CLAIMED" },
+      }),
+    ];
     if (action === "APPROVED") {
-      await gamificationService.awardXP(claim.claimerId, XP.COMPLETE_BOUNTY);
+      parallelOps.push(
+        gamificationService.awardXP(claim.claimerId, XP.COMPLETE_BOUNTY)
+      );
     }
+    await Promise.all(parallelOps);
 
     return { ...updated, xpAwarded: action === "APPROVED" ? XP.COMPLETE_BOUNTY : 0 };
   }
 
   /**
-   * Get claims for the current user (as claimer).
+   * Get claims for the current user (as claimer) — paginated.
    */
-  async myClaims(userId: string) {
-    return prisma.bountyClaim.findMany({
-      where: { claimerId: userId },
-      select: {
-        id: true,
-        status: true,
-        proofUrl: true,
-        note: true,
-        submittedAt: true,
-        resolvedAt: true,
-        createdAt: true,
-        claimer: { select: { id: true, name: true, avatarUrl: true } },
-        bounty: {
-          select: {
-            id: true,
-            title: true,
-            algoAmount: true,
-            status: true,
-            creator: { select: { id: true, name: true, avatarUrl: true } },
+  async myClaims(userId: string, page = 1, limit = 20) {
+    const take = Math.min(limit, 100);
+    const skip = (page - 1) * take;
+
+    const [claims, total] = await Promise.all([
+      prisma.bountyClaim.findMany({
+        where: { claimerId: userId },
+        select: {
+          id: true,
+          status: true,
+          proofUrl: true,
+          note: true,
+          submittedAt: true,
+          resolvedAt: true,
+          createdAt: true,
+          claimer: { select: { id: true, name: true, avatarUrl: true } },
+          bounty: {
+            select: {
+              id: true,
+              title: true,
+              algoAmount: true,
+              status: true,
+              creator: { select: { id: true, name: true, avatarUrl: true } },
+            },
           },
         },
-      },
-      orderBy: { createdAt: "desc" },
-    });
+        orderBy: { createdAt: "desc" },
+        skip,
+        take,
+      }),
+      prisma.bountyClaim.count({ where: { claimerId: userId } }),
+    ]);
+
+    return {
+      claims,
+      pagination: { page, limit: take, total, totalPages: Math.ceil(total / take) },
+    };
   }
 
   // ── Dispute Methods ─────────────────────────────────────────

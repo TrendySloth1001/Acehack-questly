@@ -146,8 +146,10 @@ export class BountyController {
   }
 
   async myClaims(req: Request, res: Response) {
-    const claims = await bountyService.myClaims(req.currentUser!.userId);
-    sendSuccess({ res, data: claims });
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 20;
+    const result = await bountyService.myClaims(req.currentUser!.userId, page, limit);
+    sendSuccess({ res, data: result });
   }
 
   async raiseDispute(req: Request, res: Response) {

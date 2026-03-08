@@ -98,6 +98,7 @@ model RefreshToken {
 
   @@index([userId])
   @@index([token])
+  @@index([expiresAt])                       // cleanup: find expired tokens
   @@map("refresh_tokens")
 }
 
@@ -227,6 +228,8 @@ model Bounty {
   @@index([creatorId])
   @@index([status])
   @@index([deadline])
+  @@index([status, createdAt(sort: Desc)])   // composite: list queries filter status + sort createdAt
+  @@index([creatorId, status])               // composite: "my bounties" filtered by status
   @@map("bounties")
 }
 
@@ -249,6 +252,8 @@ model BountyClaim {
   @@unique([bountyId, claimerId])
   @@index([bountyId])
   @@index([claimerId])
+  @@index([bountyId, status])                // composite: claims filtered by bounty + status
+  @@index([claimerId, createdAt(sort: Desc)])// composite: "my claims" sorted by date
   @@map("bounty_claims")
 }
 
@@ -277,6 +282,7 @@ model WalletTransaction {
 
   @@index([userId])
   @@index([createdAt])
+  @@index([userId, createdAt(sort: Desc)])   // composite: user tx history sorted
   @@map("wallet_transactions")
 }
 

@@ -39,7 +39,7 @@ class HomeDashboardScreen extends ConsumerWidget {
         .map((c) => c.bounty!.id)
         .toSet();
     final latestDrops = allBounties.bounties
-        .where((b) => !claimedBountyIds.contains(b.id))
+        .where((b) => b.status == 'OPEN' && !claimedBountyIds.contains(b.id))
         .toList();
 
     return Scaffold(
@@ -619,7 +619,7 @@ class _SectionBlock extends StatelessWidget {
   }
 }
 
-/// Joined bounty feed card — mirrors _BountyCard layout.
+/// Joined bounty card — premium, visual, dark-themed.
 class _ClaimCard extends StatelessWidget {
   final BountyClaimModel claim;
   final VoidCallback? onTap;
@@ -629,123 +629,195 @@ class _ClaimCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bounty = claim.bounty;
-    final claimStatusColor = _claimStatusColor(claim.status);
+    final statusColor = _claimStatusColor(claim.status);
+    final isActive = claim.status == 'ACTIVE';
+    final isApproved = claim.status == 'APPROVED';
 
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: Container(
-        padding: const EdgeInsets.fromLTRB(0, 16, 0, 16),
-        decoration: const BoxDecoration(
-          border: Border(
-            bottom: BorderSide(color: Color(0xFF1A1A1A), width: 1),
+        margin: const EdgeInsets.only(bottom: 12),
+        decoration: BoxDecoration(
+          color: const Color(0xFF0A0A0A),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isActive
+                ? AppColors.primary.withValues(alpha: 0.25)
+                : isApproved
+                ? AppColors.neonGreen.withValues(alpha: 0.2)
+                : const Color(0xFF1A1A1A),
+            width: 1,
           ),
+          boxShadow: isActive
+              ? [
+                  BoxShadow(
+                    color: AppColors.primary.withValues(alpha: 0.06),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ]
+              : null,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── Row 1: Creator avatar + name + joined time + claim status ──
-            Row(
-              children: [
-                CircleAvatar(
-                  radius: 14,
-                  backgroundColor: const Color(0xFF0D0D0D),
-                  backgroundImage: bounty?.creator?.avatarUrl != null
-                      ? NetworkImage(bounty!.creator!.avatarUrl!)
-                      : null,
-                  child: bounty?.creator?.avatarUrl == null
-                      ? const Icon(
-                          Icons.person,
-                          color: Color(0xFF333333),
-                          size: 14,
-                        )
-                      : null,
+            // ── Status accent strip at top ──────────────────
+            Container(
+              height: 3,
+              decoration: BoxDecoration(
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(16),
                 ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    bounty?.creator?.name ?? 'anonymous',
-                    style: const TextStyle(
-                      color: Color(0xFF444444),
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                gradient: LinearGradient(
+                  colors: [
+                    statusColor.withValues(alpha: 0.7),
+                    statusColor.withValues(alpha: 0.0),
+                  ],
                 ),
-                Text(
-                  _timeAgo(claim.createdAt),
-                  style: const TextStyle(
-                    color: Color(0xFF333333),
-                    fontSize: 11,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
-
-            // ── Row 2: Bounty title ───────────────────────────
-            Text(
-              bounty?.title ?? 'Bounty',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                height: 1.3,
-                letterSpacing: -0.2,
               ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
             ),
-            const SizedBox(height: 10),
 
-            // ── Row 3: Claim status + reward ──────────────────
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: claimStatusColor.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(6),
-                    border: Border.all(
-                      color: claimStatusColor.withValues(alpha: 0.25),
-                      width: 0.5,
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // ── Creator row + status badge ───────────────
+                  Row(
                     children: [
-                      Icon(
-                        claim.status == 'APPROVED'
-                            ? Icons.check_circle_outline_rounded
-                            : claim.status == 'SUBMITTED'
-                            ? Icons.hourglass_top_rounded
-                            : claim.status == 'REJECTED'
-                            ? Icons.cancel_outlined
-                            : Icons.assignment_outlined,
-                        color: claimStatusColor,
-                        size: 11,
+                      CircleAvatar(
+                        radius: 14,
+                        backgroundColor: const Color(0xFF151515),
+                        backgroundImage: bounty?.creator?.avatarUrl != null
+                            ? NetworkImage(bounty!.creator!.avatarUrl!)
+                            : null,
+                        child: bounty?.creator?.avatarUrl == null
+                            ? const Icon(
+                                Icons.person,
+                                color: Color(0xFF444444),
+                                size: 14,
+                              )
+                            : null,
                       ),
-                      const SizedBox(width: 5),
-                      Text(
-                        claim.status.toLowerCase(),
-                        style: TextStyle(
-                          color: claimStatusColor,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              bounty?.creator?.name ?? 'anonymous',
+                              style: const TextStyle(
+                                color: Color(0xFF888888),
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            Text(
+                              'joined ${_timeAgo(claim.createdAt)}',
+                              style: const TextStyle(
+                                color: Color(0xFF3A3A3A),
+                                fontSize: 10,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      // Status badge
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 5,
+                        ),
+                        decoration: BoxDecoration(
+                          color: statusColor.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: statusColor.withValues(alpha: 0.2),
+                            width: 0.5,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              claim.status == 'APPROVED'
+                                  ? Icons.check_circle_outline_rounded
+                                  : claim.status == 'SUBMITTED'
+                                  ? Icons.hourglass_top_rounded
+                                  : claim.status == 'REJECTED'
+                                  ? Icons.cancel_outlined
+                                  : claim.status == 'ACTIVE'
+                                  ? Icons.bolt_rounded
+                                  : Icons.assignment_outlined,
+                              color: statusColor,
+                              size: 12,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              claim.status.toLowerCase(),
+                              style: TextStyle(
+                                color: statusColor,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
                   ),
-                ),
-                const Spacer(),
-                if (bounty != null && bounty.algoAmount > 0)
-                  AlgoRewardChip(amount: bounty.algoAmount),
-              ],
+                  const SizedBox(height: 12),
+
+                  // ── Bounty title ────────────────────────────
+                  Text(
+                    bounty?.title ?? 'Bounty',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      height: 1.3,
+                      letterSpacing: -0.3,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 10),
+
+                  // ── Reward row ──────────────────────────────
+                  Row(
+                    children: [
+                      // Bounty status
+                      if (bounty != null)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 7,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(color: const Color(0xFF1E1E1E)),
+                          ),
+                          child: Text(
+                            bounty.status.toLowerCase(),
+                            style: TextStyle(
+                              color: _bountyStatusColor(
+                                bounty.status,
+                              ).withValues(alpha: 0.8),
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      const Spacer(),
+                      if (bounty != null && bounty.algoAmount > 0)
+                        AlgoRewardChip(amount: bounty.algoAmount),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ],
         ),

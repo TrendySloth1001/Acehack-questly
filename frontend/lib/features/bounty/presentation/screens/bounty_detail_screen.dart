@@ -2703,317 +2703,361 @@ class _OwnerClaimsSectionState extends ConsumerState<_OwnerClaimsSection> {
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.border, width: 0.5),
+        color: const Color(0xFF0A0A0A),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isSubmitted
+              ? AppColors.warning.withValues(alpha: 0.25)
+              : isApproved
+              ? AppColors.neonGreen.withValues(alpha: 0.2)
+              : const Color(0xFF1A1A1A),
+          width: 1,
+        ),
+        boxShadow: isSubmitted
+            ? [
+                BoxShadow(
+                  color: AppColors.warning.withValues(alpha: 0.06),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ]
+            : null,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Claimer row ─────────────────────────────
-          Row(
-            children: [
-              CircleAvatar(
-                radius: 16,
-                backgroundColor: AppColors.primaryDim,
-                backgroundImage: claim.claimer.avatarUrl != null
-                    ? NetworkImage(claim.claimer.avatarUrl!)
-                    : null,
-                child: claim.claimer.avatarUrl == null
-                    ? const Icon(
-                        Icons.person,
-                        color: AppColors.primary,
-                        size: 16,
-                      )
-                    : null,
+          // Status accent gradient strip
+          Container(
+            height: 3,
+            decoration: BoxDecoration(
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(16),
               ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      claim.claimer.name ?? 'anonymous',
-                      style: const TextStyle(
-                        color: AppColors.textPrimary,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'claimed ${_timeAgo(claim.createdAt)}',
-                      style: const TextStyle(
-                        color: AppColors.textHint,
-                        fontSize: 11,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              // Status badge
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color: statusColor.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: statusColor.withValues(alpha: 0.25),
-                    width: 0.5,
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      isApproved
-                          ? Icons.check_circle_outline_rounded
-                          : isSubmitted
-                          ? Icons.hourglass_top_rounded
-                          : isRejected
-                          ? Icons.cancel_outlined
-                          : isPending
-                          ? Icons.hourglass_empty_rounded
-                          : Icons.assignment_outlined,
-                      color: statusColor,
-                      size: 12,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      claim.status.toLowerCase(),
-                      style: TextStyle(
-                        color: statusColor,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-
-          // ── Proof thumbnails (restricted preview) ──────
-          if (hasProof && claim.proofUrls.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            const Text(
-              'Submitted work',
-              style: TextStyle(
-                color: AppColors.textHint,
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
+              gradient: LinearGradient(
+                colors: [
+                  statusColor.withValues(alpha: 0.7),
+                  statusColor.withValues(alpha: 0.0),
+                ],
               ),
             ),
-            const SizedBox(height: 8),
-            SizedBox(
-              height: 80,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                // Show max 2 thumbnails
-                itemCount: claim.proofUrls.length.clamp(0, 2),
-                separatorBuilder: (_, __) => const SizedBox(width: 8),
-                itemBuilder: (_, i) {
-                  final url = claim.proofUrls[i];
-                  final isPdf = url.toLowerCase().endsWith('.pdf');
-                  final hiddenCount = claim.proofUrls.length - 2;
-                  final showOverlay = i == 1 && hiddenCount > 0;
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // ── Claimer row ─────────────────────────────
+                Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 16,
+                      backgroundColor: AppColors.primaryDim,
+                      backgroundImage: claim.claimer.avatarUrl != null
+                          ? NetworkImage(claim.claimer.avatarUrl!)
+                          : null,
+                      child: claim.claimer.avatarUrl == null
+                          ? const Icon(
+                              Icons.person,
+                              color: AppColors.primary,
+                              size: 16,
+                            )
+                          : null,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            claim.claimer.name ?? 'anonymous',
+                            style: const TextStyle(
+                              color: AppColors.textPrimary,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'claimed ${_timeAgo(claim.createdAt)}',
+                            style: const TextStyle(
+                              color: AppColors.textHint,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    // Status badge
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: statusColor.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: statusColor.withValues(alpha: 0.25),
+                          width: 0.5,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            isApproved
+                                ? Icons.check_circle_outline_rounded
+                                : isSubmitted
+                                ? Icons.hourglass_top_rounded
+                                : isRejected
+                                ? Icons.cancel_outlined
+                                : isPending
+                                ? Icons.hourglass_empty_rounded
+                                : Icons.assignment_outlined,
+                            color: statusColor,
+                            size: 12,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            claim.status.toLowerCase(),
+                            style: TextStyle(
+                              color: statusColor,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
 
-                  return GestureDetector(
-                    onTap: () =>
-                        _showFullScreenProof(context, claim.proofUrls, i),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(10),
-                      child: SizedBox(
-                        width: 80,
-                        height: 80,
-                        child: Stack(
-                          fit: StackFit.expand,
-                          children: [
-                            // Base content
-                            isPdf
-                                ? Container(
-                                    color: AppColors.card,
-                                    child: const Column(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        Icon(
-                                          Icons.picture_as_pdf_outlined,
-                                          color: AppColors.error,
-                                          size: 28,
-                                        ),
-                                        SizedBox(height: 4),
-                                        Text(
-                                          'PDF',
-                                          style: TextStyle(
-                                            color: AppColors.textHint,
-                                            fontSize: 10,
+                // ── Proof thumbnails (restricted preview) ──────
+                if (hasProof && claim.proofUrls.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  const Text(
+                    'Submitted work',
+                    style: TextStyle(
+                      color: AppColors.textHint,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    height: 80,
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      // Show max 2 thumbnails
+                      itemCount: claim.proofUrls.length.clamp(0, 2),
+                      separatorBuilder: (_, __) => const SizedBox(width: 8),
+                      itemBuilder: (_, i) {
+                        final url = claim.proofUrls[i];
+                        final isPdf = url.toLowerCase().endsWith('.pdf');
+                        final hiddenCount = claim.proofUrls.length - 2;
+                        final showOverlay = i == 1 && hiddenCount > 0;
+
+                        return GestureDetector(
+                          onTap: () =>
+                              _showFullScreenProof(context, claim.proofUrls, i),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(10),
+                            child: SizedBox(
+                              width: 80,
+                              height: 80,
+                              child: Stack(
+                                fit: StackFit.expand,
+                                children: [
+                                  // Base content
+                                  isPdf
+                                      ? Container(
+                                          color: AppColors.card,
+                                          child: const Column(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            children: [
+                                              Icon(
+                                                Icons.picture_as_pdf_outlined,
+                                                color: AppColors.error,
+                                                size: 28,
+                                              ),
+                                              SizedBox(height: 4),
+                                              Text(
+                                                'PDF',
+                                                style: TextStyle(
+                                                  color: AppColors.textHint,
+                                                  fontSize: 10,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        )
+                                      : Image.network(
+                                          url,
+                                          width: 80,
+                                          height: 80,
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (_, e, s) => Container(
+                                            color: AppColors.card,
+                                            child: const Icon(
+                                              Icons.broken_image_outlined,
+                                              color: AppColors.textHint,
+                                              size: 24,
+                                            ),
                                           ),
                                         ),
-                                      ],
-                                    ),
-                                  )
-                                : Image.network(
-                                    url,
-                                    width: 80,
-                                    height: 80,
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (_, e, s) => Container(
-                                      color: AppColors.card,
-                                      child: const Icon(
-                                        Icons.broken_image_outlined,
-                                        color: AppColors.textHint,
-                                        size: 24,
-                                      ),
-                                    ),
-                                  ),
-                            // Blur overlay on 2nd item when more exist
-                            if (showOverlay)
-                              Container(
-                                decoration: BoxDecoration(
-                                  color: Colors.black.withValues(alpha: 0.7),
-                                ),
-                                child: Center(
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      const Icon(
-                                        Icons.visibility_outlined,
-                                        color: AppColors.primary,
-                                        size: 20,
-                                      ),
-                                      const SizedBox(height: 2),
-                                      Text(
-                                        '+$hiddenCount more',
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.w700,
+                                  // Blur overlay on 2nd item when more exist
+                                  if (showOverlay)
+                                    Container(
+                                      decoration: BoxDecoration(
+                                        color: Colors.black.withValues(
+                                          alpha: 0.7,
                                         ),
                                       ),
-                                    ],
-                                  ),
-                                ),
+                                      child: Center(
+                                        child: Column(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            const Icon(
+                                              Icons.visibility_outlined,
+                                              color: AppColors.primary,
+                                              size: 20,
+                                            ),
+                                            const SizedBox(height: 2),
+                                            Text(
+                                              '+$hiddenCount more',
+                                              style: const TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.w700,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                ],
                               ),
-                          ],
-                        ),
-                      ),
+                            ),
+                          ),
+                        );
+                      },
                     ),
-                  );
-                },
-              ),
-            ),
-          ],
+                  ),
+                ],
 
-          // ── Note ────────────────────────────────────
-          if (hasProof && claim.note != null && claim.note!.isNotEmpty) ...[
-            const SizedBox(height: 10),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: AppColors.card,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                claim.note!,
-                style: const TextStyle(
-                  color: AppColors.textSecondary,
-                  fontSize: 13,
-                  fontStyle: FontStyle.italic,
-                ),
-              ),
-            ),
-          ],
-
-          // ── Submitted at ────────────────────────────
-          if (hasProof && claim.submittedAt != null) ...[
-            const SizedBox(height: 8),
-            Text(
-              'submitted ${_timeAgo(claim.submittedAt!)}',
-              style: const TextStyle(color: AppColors.textHint, fontSize: 11),
-            ),
-          ],
-
-          // ── Approve / Reject buttons ────────────────
-          if (isSubmitted) ...[
-            const SizedBox(height: 14),
-            Row(
-              children: [
-                Expanded(
-                  child: SizedBox(
-                    height: 40,
-                    child: OutlinedButton.icon(
-                      onPressed: isResolving
-                          ? null
-                          : () => _resolve(claim.id, 'REJECTED'),
-                      icon: isResolving
-                          ? const SizedBox(
-                              width: 14,
-                              height: 14,
-                              child: CircularProgressIndicator(
-                                color: AppColors.error,
-                                strokeWidth: 1.5,
-                              ),
-                            )
-                          : const Icon(Icons.close_rounded, size: 16),
-                      label: const Text('Reject'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.error,
-                        side: BorderSide(
-                          color: AppColors.error.withValues(alpha: 0.3),
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
+                // ── Note ────────────────────────────────────
+                if (hasProof &&
+                    claim.note != null &&
+                    claim.note!.isNotEmpty) ...[
+                  const SizedBox(height: 10),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: AppColors.card,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      claim.note!,
+                      style: const TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 13,
+                        fontStyle: FontStyle.italic,
                       ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: SizedBox(
-                    height: 40,
-                    child: ElevatedButton.icon(
-                      onPressed: isResolving
-                          ? null
-                          : () => _resolve(claim.id, 'APPROVED'),
-                      icon: isResolving
-                          ? const SizedBox(
-                              width: 14,
-                              height: 14,
-                              child: CircularProgressIndicator(
-                                color: Colors.black,
-                                strokeWidth: 1.5,
-                              ),
-                            )
-                          : const Icon(Icons.check_rounded, size: 18),
-                      label: const Text(
-                        'Approve',
-                        style: TextStyle(fontWeight: FontWeight.w700),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.neonGreen,
-                        foregroundColor: Colors.black,
-                        disabledBackgroundColor: AppColors.neonGreen.withValues(
-                          alpha: 0.3,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        elevation: 0,
-                      ),
+                ],
+
+                // ── Submitted at ────────────────────────────
+                if (hasProof && claim.submittedAt != null) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    'submitted ${_timeAgo(claim.submittedAt!)}',
+                    style: const TextStyle(
+                      color: AppColors.textHint,
+                      fontSize: 11,
                     ),
                   ),
-                ),
+                ],
+
+                // ── Approve / Reject buttons ────────────────
+                if (isSubmitted) ...[
+                  const SizedBox(height: 14),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: SizedBox(
+                          height: 40,
+                          child: OutlinedButton.icon(
+                            onPressed: isResolving
+                                ? null
+                                : () => _resolve(claim.id, 'REJECTED'),
+                            icon: isResolving
+                                ? const SizedBox(
+                                    width: 14,
+                                    height: 14,
+                                    child: CircularProgressIndicator(
+                                      color: AppColors.error,
+                                      strokeWidth: 1.5,
+                                    ),
+                                  )
+                                : const Icon(Icons.close_rounded, size: 16),
+                            label: const Text('Reject'),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: AppColors.error,
+                              side: BorderSide(
+                                color: AppColors.error.withValues(alpha: 0.3),
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: SizedBox(
+                          height: 40,
+                          child: ElevatedButton.icon(
+                            onPressed: isResolving
+                                ? null
+                                : () => _resolve(claim.id, 'APPROVED'),
+                            icon: isResolving
+                                ? const SizedBox(
+                                    width: 14,
+                                    height: 14,
+                                    child: CircularProgressIndicator(
+                                      color: Colors.black,
+                                      strokeWidth: 1.5,
+                                    ),
+                                  )
+                                : const Icon(Icons.check_rounded, size: 18),
+                            label: const Text(
+                              'Approve',
+                              style: TextStyle(fontWeight: FontWeight.w700),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.neonGreen,
+                              foregroundColor: Colors.black,
+                              disabledBackgroundColor: AppColors.neonGreen
+                                  .withValues(alpha: 0.3),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              elevation: 0,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ],
             ),
-          ],
+          ),
         ],
       ),
     );

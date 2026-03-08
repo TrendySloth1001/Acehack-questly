@@ -61,32 +61,39 @@ export function getRank(xp: number): RankTier {
   return "WOOD";
 }
 
+// ── Simple in-memory cache ──────────────────────────────────
+interface CacheEntry<T> { data: T; expiresAt: number; }
+const cache = new Map<string, CacheEntry<any>>();
+function cached<T>(key: string, ttlMs: number, fn: () => Promise<T>): Promise<T> {
+  const entry = cache.get(key);
+  if (entry && entry.expiresAt > Date.now()) return Promise.resolve(entry.data);
+  return fn().then((data) => {
+    cache.set(key, { data, expiresAt: Date.now() + ttlMs });
+    return data;
+  });
+}
+
 // ── Service ─────────────────────────────────────────────────
 
 export class GamificationService {
   /**
    * Award XP to a user, recalculate level, and touch lastActiveAt.
-   * Returns the updated user fields.
+   * Uses a single raw query for atomic increment (no read-then-write race).
    */
   async awardXP(userId: string, amount: number) {
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { xp: true },
-    });
-    if (!user) return null;
-
-    const newXp = Math.max(0, user.xp + amount); // never go below 0
-    const newLevel = xpToLevel(newXp);
-
-    return prisma.user.update({
-      where: { id: userId },
-      data: {
-        xp: newXp,
-        level: newLevel,
-        lastActiveAt: new Date(),
-      },
-      select: { id: true, xp: true, level: true },
-    });
+    // Single atomic query: clamp XP ≥ 0, recompute level, touch lastActiveAt
+    const rows: any[] = await prisma.$queryRawUnsafe(
+      `UPDATE users
+       SET xp            = GREATEST(0, xp + $1),
+           level         = FLOOR(SQRT(GREATEST(0, xp + $1)::float / 25)),
+           "lastActiveAt" = NOW(),
+           "updatedAt"   = NOW()
+       WHERE id = $2
+       RETURNING id, xp, level`,
+      amount,
+      userId
+    );
+    return rows[0] ?? null;
   }
 
   /**
@@ -129,52 +136,44 @@ export class GamificationService {
   }
 
   /**
-   * Process daily inactivity XP decay for all users
-   * who haven't been active in >= 3 days.
-   * Call from a cron or manual trigger.
+   * Process daily inactivity XP decay using a single bulk SQL query.
+   * Applies to all users inactive for >= 3 days who have xp > 0.
    */
   async processDecay() {
-    const threeDaysAgo = new Date();
-    threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
-
-    const inactive = await prisma.user.findMany({
-      where: {
-        xp: { gt: 0 },
-        lastActiveAt: { lt: threeDaysAgo },
-      },
-      select: { id: true, xp: true },
-    });
-
-    const updates = inactive.map((u) => {
-      const newXp = Math.max(0, u.xp + XP.INACTIVE_DECAY);
-      return prisma.user.update({
-        where: { id: u.id },
-        data: { xp: newXp, level: xpToLevel(newXp) },
-      });
-    });
-
-    await prisma.$transaction(updates);
-    return { processed: inactive.length };
+    const decayAmount = Math.abs(XP.INACTIVE_DECAY); // 10
+    const result: any[] = await prisma.$queryRawUnsafe(
+      `UPDATE users
+       SET xp          = GREATEST(0, xp - $1),
+           level       = FLOOR(SQRT(GREATEST(0, xp - $1)::float / 25)),
+           "updatedAt" = NOW()
+       WHERE xp > 0
+         AND "lastActiveAt" < NOW() - INTERVAL '3 days'
+       RETURNING id`,
+      decayAmount
+    );
+    return { processed: result.length };
   }
 
   /**
-   * Leaderboard — top users by XP.
+   * Leaderboard — top users by XP (cached for 60s).
    */
   async leaderboard(limit = 50) {
-    return prisma.user.findMany({
-      where: { xp: { gt: 0 } },
-      orderBy: { xp: "desc" },
-      take: limit,
-      select: {
-        id: true,
-        name: true,
-        avatarUrl: true,
-        xp: true,
-        level: true,
-        avgRating: true,
-        totalReviews: true,
-      },
-    });
+    return cached(`leaderboard:${limit}`, 60_000, () =>
+      prisma.user.findMany({
+        where: { xp: { gt: 0 } },
+        orderBy: { xp: "desc" },
+        take: limit,
+        select: {
+          id: true,
+          name: true,
+          avatarUrl: true,
+          xp: true,
+          level: true,
+          avgRating: true,
+          totalReviews: true,
+        },
+      })
+    );
   }
 
   /**
