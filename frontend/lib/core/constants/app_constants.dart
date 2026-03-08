@@ -7,8 +7,7 @@ class AppConstants {
   static const String packageName = 'com.questly.questly';
 
   // ── API ───────────────────────────────────────────────────
-  static const String baseUrl =
-      'https://qjhcp0ph-3000.inc1.devtunnels.ms/api/v1';
+  static const String baseUrl = 'https://apk.anskservices.com/api/v1';
   static const String prodBaseUrl = 'https://api.questly.app/api/v1';
 
   // ── OAuth ─────────────────────────────────────────────────
@@ -20,7 +19,7 @@ class AppConstants {
   static const String googleAndroidClientId =
       '867248310005-967lcq56ji1h8jmkr4mmjne0h2tusu1s.apps.googleusercontent.com';
   static const String googleCallbackUrl =
-      'https://qjhcp0ph-3000.inc1.devtunnels.ms/api/v1/auth/google/callback';
+      'https://apk.anskservices.com/api/v1/auth/google/callback';
 
   // ── Storage Keys ──────────────────────────────────────────
   static const String accessTokenKey = 'questly_access_token';

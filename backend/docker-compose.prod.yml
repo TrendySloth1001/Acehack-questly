@@ -1,0 +1,114 @@
+services:
+  # ── Questly API ──
+  questly-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: questly-api
+    restart: unless-stopped
+    depends_on:
+      questly-postgres:
+        condition: service_healthy
+      questly-minio:
+        condition: service_healthy
+    environment:
+      - NODE_ENV=production
+      - PORT=4000
+      - API_PREFIX=/api/v1
+      - DATABASE_URL=postgresql://questly:questly_prod_secret@questly-postgres:5432/questly_db?schema=public
+      - JWT_SECRET=${JWT_SECRET:-questly_jwt_prod_supersecret_2026}
+      - JWT_EXPIRES_IN=7d
+      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET:-questly_jwt_refresh_prod_supersecret_2026}
+      - JWT_REFRESH_EXPIRES_IN=30d
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-867248310005-de067c6hffq9h12anrj6qsunef2madjr.apps.googleusercontent.com}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-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}
+      - GOOGLE_CALLBACK_URL=https://apk.anskservices.com/api/v1/auth/google/callback
+      - GITHUB_CLIENT_ID=${GITHUB_CLIENT_ID:-}
+      - GITHUB_CLIENT_SECRET=${GITHUB_CLIENT_SECRET:-}
+      - GITHUB_CALLBACK_URL=https://apk.anskservices.com/api/v1/auth/github/callback
+      - MINIO_ENDPOINT=questly-minio
+      - MINIO_PORT=9000
+      - MINIO_ACCESS_KEY=minioadmin
+      - MINIO_SECRET_KEY=minioadmin_prod_secret
+      - MINIO_USE_SSL=false
+      - MINIO_BUCKET=questly-uploads
+      - CLIENT_URL=https://questly.anskservices.com
+      - PUBLIC_URL=https://apk.anskservices.com
+      - RATE_LIMIT_WINDOW_MS=900000
+      - RATE_LIMIT_MAX=200
+      - ALGORAND_NETWORK=testnet
+      - ALGORAND_API_URL=https://testnet-api.algonode.cloud
+      - ALGORAND_API_TOKEN=
+      - ALGORAND_INDEXER_URL=https://testnet-idx.algonode.cloud
+      - ALGORAND_ESCROW_MNEMONIC=${ALGORAND_ESCROW_MNEMONIC:-}
+    expose:
+      - "4000"
+    networks:
+      - coolify
+      - questly-internal
+    labels:
+      - "traefik.enable=true"
+      # HTTP → HTTPS redirect
+      - "traefik.http.routers.questly-api-http.rule=Host(`apk.anskservices.com`)"
+      - "traefik.http.routers.questly-api-http.entrypoints=http"
+      - "traefik.http.routers.questly-api-http.middlewares=questly-api-redirect"
+      # HTTPS
+      - "traefik.http.routers.questly-api.rule=Host(`apk.anskservices.com`)"
+      - "traefik.http.routers.questly-api.entrypoints=https"
+      - "traefik.http.routers.questly-api.tls=true"
+      - "traefik.http.routers.questly-api.tls.certresolver=letsencrypt"
+      # Service port
+      - "traefik.http.services.questly-api.loadbalancer.server.port=4000"
+      # Redirect middleware
+      - "traefik.http.middlewares.questly-api-redirect.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.questly-api-redirect.redirectscheme.permanent=true"
+
+  # ── PostgreSQL ──
+  questly-postgres:
+    image: postgres:16-alpine
+    container_name: questly-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: questly
+      POSTGRES_PASSWORD: questly_prod_secret
+      POSTGRES_DB: questly_db
+    volumes:
+      - questly_pg_data:/var/lib/postgresql/data
+    networks:
+      - questly-internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U questly -d questly_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── MinIO (S3-compatible storage) ──
+  questly-minio:
+    image: minio/minio:latest
+    container_name: questly-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin_prod_secret
+    volumes:
+      - questly_minio_data:/data
+    networks:
+      - questly-internal
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  questly_pg_data:
+    driver: local
+  questly_minio_data:
+    driver: local
+
+networks:
+  coolify:
+    external: true
+  questly-internal:
+    driver: bridge
