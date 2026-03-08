@@ -25,22 +25,10 @@ class QuestListScreen extends ConsumerWidget {
           ),
         ],
       ),
-      floatingActionButton: Container(
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.brand.withValues(alpha: 0.3),
-              blurRadius: 18,
-              spreadRadius: 1,
-            ),
-          ],
-        ),
-        child: FloatingActionButton(
-          backgroundColor: AppColors.brand,
-          onPressed: () => context.go('/home/quests/new'),
-          child: const Icon(Icons.add, color: Colors.black),
-        ),
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: AppColors.brand,
+        onPressed: () => context.go('/home/quests/new'),
+        child: const Icon(Icons.add, color: Colors.white),
       ),
       body: questState.isLoading && questState.quests.isEmpty
           ? const LoadingOverlay()

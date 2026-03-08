@@ -88,20 +88,9 @@ class NeonButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bg = color ?? AppColors.primary;
-    return Container(
+    return SizedBox(
       width: double.infinity,
       height: 48,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: bg.withValues(alpha: 0.25),
-            blurRadius: 16,
-            spreadRadius: 0,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
       child: ElevatedButton(
         onPressed: isLoading ? null : onPressed,
         style: ElevatedButton.styleFrom(

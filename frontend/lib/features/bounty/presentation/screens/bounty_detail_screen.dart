@@ -1019,11 +1019,11 @@ class _BountyDetailScreenState extends ConsumerState<BountyDetailScreen> {
                       ),
                   ],
                 ),
-                // ── Escrow Status Badge ────────────────────────
+                // ── Escrow Transaction Flow ────────────────────
                 if (b.algoAmount > 0)
                   Padding(
                     padding: const EdgeInsets.only(top: 10),
-                    child: _EscrowStatusBadge(bounty: b, isOwner: isOwner),
+                    child: _TransactionFlow(bounty: b),
                   ),
                 const SizedBox(height: 16),
 
@@ -3420,80 +3420,224 @@ class _FundEscrowButtonState extends ConsumerState<_FundEscrowButton> {
 //  ESCROW STATUS BADGE
 // ═════════════════════════════════════════════════════════════
 
-class _EscrowStatusBadge extends StatelessWidget {
+class _TransactionFlow extends StatelessWidget {
   final BountyModel bounty;
-  final bool isOwner;
 
-  const _EscrowStatusBadge({required this.bounty, required this.isOwner});
+  const _TransactionFlow({required this.bounty});
 
   @override
   Widget build(BuildContext context) {
-    final status = bounty.escrowStatus;
-    final Color color;
-    final IconData icon;
-    final String label;
+    // Determine the steps
+    final isFunded =
+        bounty.escrowStatus == 'FUNDED' || bounty.escrowStatus == 'RELEASED';
+    final isRefunded = bounty.escrowStatus == 'REFUNDED';
+    final hasClaims = bounty.claimCount > 0;
+    final isReleased = bounty.escrowStatus == 'RELEASED';
 
-    switch (status) {
-      case 'FUNDED':
-        color = AppColors.neonGreen;
-        icon = Icons.lock;
-        label = 'Escrow Funded';
-        break;
-      case 'RELEASED':
-        color = AppColors.neonCyan;
-        icon = Icons.check_circle;
-        label = 'Payment Released';
-        break;
-      case 'REFUNDED':
-        color = AppColors.neonOrange;
-        icon = Icons.replay;
-        label = 'Escrow Refunded';
-        break;
-      default: // UNFUNDED
-        color = AppColors.textHint;
-        icon = Icons.lock_open;
-        label = isOwner ? 'Not Funded — Fund This Bounty' : 'Not Funded Yet';
+    String? paymentTxId;
+    if (isReleased && bounty.claims.isNotEmpty) {
+      try {
+        final approvedClaim = bounty.claims.firstWhere(
+          (c) => c.status == 'APPROVED',
+        );
+        paymentTxId = approvedClaim.paymentTxId;
+      } catch (_) {}
     }
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: color.withValues(alpha: 0.25)),
+        color: AppColors.surfaceLight,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: color, size: 16),
-          const SizedBox(width: 8),
+          Row(
+            children: [
+              const Icon(
+                Icons.account_tree_rounded,
+                color: AppColors.neonCyan,
+                size: 18,
+              ),
+              const SizedBox(width: 8),
+              const Text(
+                'Algorand Testnet Flow',
+                style: TextStyle(
+                  color: AppColors.textPrimary,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: AppColors.neonCyan.withValues(alpha: 0.1),
+                  border: Border.all(
+                    color: AppColors.neonCyan.withValues(alpha: 0.3),
+                  ),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: const Text(
+                  'Hackathon Proof',
+                  style: TextStyle(
+                    color: AppColors.neonCyan,
+                    fontSize: 9,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          _buildStep(
+            title: 'Contract Initialized',
+            isDone: true,
+            isLast: !isFunded && !isRefunded && !hasClaims,
+            txId:
+                null, // Initial creation isn't explicitly tied to a vault tx in our flow yet
+          ),
+          if (isFunded || isRefunded || hasClaims) ...[
+            _buildStep(
+              title: 'Escrow Funded',
+              isDone: isFunded || isRefunded || hasClaims,
+              isLast: (!hasClaims && !isRefunded && !isReleased) || isRefunded,
+              txId: bounty.escrowTxId,
+              color: AppColors.neonOrange,
+            ),
+          ],
+          if ((hasClaims && !isRefunded) || isReleased) ...[
+            _buildStep(
+              title: 'Proof Submitted',
+              isDone: hasClaims || isReleased,
+              isLast: !isReleased,
+              txId: null, // Submitting proof is an off-chain DB action
+              color: AppColors.primary,
+            ),
+          ],
+          if (isReleased) ...[
+            _buildStep(
+              title: 'Payment Released',
+              isDone: true,
+              isLast: true,
+              txId: paymentTxId,
+              color: AppColors.neonGreen,
+            ),
+          ],
+          if (isRefunded) ...[
+            _buildStep(
+              title: 'Escrow Refunded',
+              isDone: true,
+              isLast: true,
+              txId: bounty.refundTxId,
+              color: AppColors.error,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStep({
+    required String title,
+    required bool isDone,
+    required bool isLast,
+    String? txId,
+    Color color = AppColors.neonCyan,
+  }) {
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Column(
+            children: [
+              Container(
+                width: 14,
+                height: 14,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: isDone ? color : AppColors.surfaceLight,
+                  border: Border.all(
+                    color: isDone ? color : AppColors.border,
+                    width: 2,
+                  ),
+                ),
+              ),
+              if (!isLast)
+                Expanded(
+                  child: Container(
+                    width: 2,
+                    color: isDone
+                        ? color.withValues(alpha: 0.4)
+                        : AppColors.border,
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(width: 12),
           Expanded(
-            child: Text(
-              label,
-              style: TextStyle(
-                color: color,
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
+            child: Padding(
+              padding: EdgeInsets.only(bottom: isLast ? 0 : 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      color: isDone
+                          ? AppColors.textPrimary
+                          : AppColors.textHint,
+                      fontSize: 13,
+                      fontWeight: isDone ? FontWeight.w600 : FontWeight.w400,
+                    ),
+                  ),
+                  if (txId != null && txId.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Builder(
+                      builder: (context) {
+                        return GestureDetector(
+                          onTap: () {
+                            Clipboard.setData(ClipboardData(text: txId));
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('TxID copied!'),
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                          },
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.code_rounded,
+                                size: 12,
+                                color: AppColors.textHint,
+                              ),
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: Text(
+                                  txId,
+                                  style: TextStyle(
+                                    color: color,
+                                    fontSize: 11,
+                                    fontFamily: 'monospace',
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ],
               ),
             ),
           ),
-          if (bounty.escrowTxId != null)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Text(
-                'TX: ${bounty.escrowTxId!.substring(0, 8)}...',
-                style: TextStyle(
-                  color: color.withValues(alpha: 0.8),
-                  fontSize: 10,
-                  fontFamily: 'monospace',
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
         ],
       ),
     );

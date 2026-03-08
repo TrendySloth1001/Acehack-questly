@@ -36,7 +36,6 @@ class SettingsScreen extends ConsumerWidget {
                 title: 'Upload APK',
                 subtitle: 'Upload app release to MinIO',
                 accentColor: AppColors.brand,
-                hasBloom: true,
                 onTap: () => context.push(AppRoutes.uploadApk),
               ),
 
@@ -77,7 +76,6 @@ class _SettingsTile extends StatelessWidget {
   final String title;
   final String subtitle;
   final Color accentColor;
-  final bool hasBloom;
   final VoidCallback onTap;
 
   const _SettingsTile({
@@ -85,7 +83,6 @@ class _SettingsTile extends StatelessWidget {
     required this.title,
     required this.subtitle,
     required this.accentColor,
-    this.hasBloom = false,
     required this.onTap,
   });
 
@@ -99,15 +96,7 @@ class _SettingsTile extends StatelessWidget {
           color: AppColors.card,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(color: AppColors.muted.withValues(alpha: 0.15)),
-          boxShadow: hasBloom
-              ? [
-                  BoxShadow(
-                    color: accentColor.withValues(alpha: 0.08),
-                    blurRadius: 20,
-                    spreadRadius: 1,
-                  ),
-                ]
-              : null,
+
         ),
         child: Row(
           children: [

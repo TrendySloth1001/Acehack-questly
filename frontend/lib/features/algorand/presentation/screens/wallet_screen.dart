@@ -532,6 +532,54 @@ class _TransactionList extends StatelessWidget {
               ),
           ],
         ),
+        const SizedBox(height: 12),
+        // Hackathon Proof Banner
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: AppColors.neonCyan.withValues(alpha: 0.1),
+            border: Border.all(
+              color: AppColors.neonCyan.withValues(alpha: 0.3),
+              width: 1,
+            ),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(
+                Icons.info_outline_rounded,
+                color: AppColors.neonCyan,
+                size: 16,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: const [
+                    Text(
+                      'Hackathon Proof',
+                      style: TextStyle(
+                        color: AppColors.neonCyan,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      'The logs below are real on-chain transfers on the Algorand Testnet. Raw TxIDs are exposed to verify blockchain integration.',
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 12,
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
         const SizedBox(height: 14),
         if (!isLoading && txns.isEmpty)
           Center(
@@ -579,6 +627,7 @@ class _TxnRow extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 12),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Direction icon
           Container(
@@ -598,7 +647,7 @@ class _TxnRow extends StatelessWidget {
           ),
           const SizedBox(width: 12),
 
-          // Description + time
+          // Description + time + raw tx id
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -613,7 +662,45 @@ class _TxnRow extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: 4),
+                // Raw transaction ID for hackathon proof
+                GestureDetector(
+                  onTap: () {
+                    if (txn.txId == null) return;
+                    Clipboard.setData(ClipboardData(text: txn.txId!));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Transaction ID copied!'),
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                  },
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.code_rounded,
+                        size: 12,
+                        color: AppColors.textHint,
+                      ),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          txn.txId ?? 'Pending...',
+                          style: TextStyle(
+                            color: txn.txId != null
+                                ? AppColors.neonCyan
+                                : AppColors.textHint,
+                            fontSize: 11,
+                            fontFamily: 'monospace',
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 4),
                 Text(
                   _timeAgo(txn.createdAt),
                   style: const TextStyle(

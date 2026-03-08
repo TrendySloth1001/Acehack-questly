@@ -200,13 +200,6 @@ class AlgoRewardChip extends ConsumerWidget {
       decoration: BoxDecoration(
         color: AppColors.neonGreen.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(8),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.neonGreen.withValues(alpha: 0.1),
-            blurRadius: 10,
-            spreadRadius: 0,
-          ),
-        ],
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

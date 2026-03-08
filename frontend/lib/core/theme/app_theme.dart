@@ -5,17 +5,17 @@ import 'app_colors.dart';
 class AppTheme {
   AppTheme._();
 
-  /// The one and only theme — true OLED black + cream text + olive/amber neon accents.
-  static ThemeData get dark => ThemeData(
+  /// Light theme — warm cream canvas, olive accents, no glow.
+  static ThemeData get light => ThemeData(
     useMaterial3: true,
-    brightness: Brightness.dark,
-    scaffoldBackgroundColor: AppColors.background,
+    brightness: Brightness.light,
+    scaffoldBackgroundColor: AppColors.surface,
     fontFamily: 'SF Pro',
-    colorScheme: ColorScheme.dark(
+    colorScheme: ColorScheme.light(
       primary: AppColors.brand,
       onPrimary: AppColors.surface,
       secondary: AppColors.muted,
-      onSecondary: AppColors.fore,
+      onSecondary: AppColors.surface,
       tertiary: AppColors.muted,
       onTertiary: AppColors.fore,
       surface: AppColors.surface,
@@ -23,17 +23,17 @@ class AppTheme {
       onSurfaceVariant: AppColors.muted,
       outline: AppColors.muted,
       outlineVariant: AppColors.muted.withValues(alpha: 0.3),
-      surfaceContainerHighest: const Color(0xFF111110),
-      error: AppColors.fore,
+      surfaceContainerHighest: AppColors.chipBackground,
+      error: AppColors.error,
       onError: AppColors.surface,
     ),
     appBarTheme: const AppBarTheme(
       centerTitle: true,
       elevation: 0,
       scrolledUnderElevation: 0,
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.surface,
       foregroundColor: AppColors.fore,
-      systemOverlayStyle: SystemUiOverlayStyle.light,
+      systemOverlayStyle: SystemUiOverlayStyle.dark,
       titleTextStyle: TextStyle(
         color: AppColors.fore,
         fontSize: 18,
@@ -46,7 +46,7 @@ class AppTheme {
       color: AppColors.card,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(14),
-        side: BorderSide(color: AppColors.muted.withValues(alpha: 0.15)),
+        side: BorderSide(color: AppColors.muted.withValues(alpha: 0.2)),
       ),
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
@@ -67,7 +67,7 @@ class AppTheme {
         foregroundColor: AppColors.fore,
         minimumSize: const Size(double.infinity, 48),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        side: BorderSide(color: AppColors.fore.withValues(alpha: 0.4)),
+        side: BorderSide(color: AppColors.fore.withValues(alpha: 0.3)),
       ),
     ),
     textButtonTheme: TextButtonThemeData(
@@ -83,7 +83,7 @@ class AppTheme {
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: AppColors.muted.withValues(alpha: 0.12),
+      fillColor: AppColors.muted.withValues(alpha: 0.06),
       hintStyle: const TextStyle(color: AppColors.textHint, fontSize: 13),
       labelStyle: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
       border: OutlineInputBorder(
@@ -107,8 +107,8 @@ class AppTheme {
     chipTheme: ChipThemeData(
       backgroundColor: AppColors.chipBackground,
       selectedColor: AppColors.chipSelected,
-      side: const BorderSide(color: AppColors.chipBorder, width: 0.5),
-      labelStyle: const TextStyle(color: AppColors.textPrimary, fontSize: 12),
+      side: BorderSide(color: AppColors.chipBorder, width: 0.5),
+      labelStyle: const TextStyle(color: AppColors.fore, fontSize: 12),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
     ),
@@ -138,10 +138,7 @@ class AppTheme {
     ),
     snackBarTheme: SnackBarThemeData(
       backgroundColor: AppColors.card,
-      contentTextStyle: const TextStyle(
-        color: AppColors.textPrimary,
-        fontSize: 13,
-      ),
+      contentTextStyle: const TextStyle(color: AppColors.fore, fontSize: 13),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       behavior: SnackBarBehavior.floating,
     ),
@@ -168,7 +165,7 @@ class AppTheme {
       ),
     ),
     drawerTheme: const DrawerThemeData(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.surface,
       surfaceTintColor: Colors.transparent,
     ),
     progressIndicatorTheme: const ProgressIndicatorThemeData(

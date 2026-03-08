@@ -9,7 +9,6 @@ import '../../../../core/constants/api_endpoints.dart';
 
 // ─────────────────────────────────────────────────────────────
 // Upload APK — pick .apk from device, upload to MinIO via backend
-// OLED black + olive/cream theme with neon bloom upload button
 // ─────────────────────────────────────────────────────────────
 
 class UploadApkScreen extends ConsumerStatefulWidget {
@@ -19,8 +18,7 @@ class UploadApkScreen extends ConsumerStatefulWidget {
   ConsumerState<UploadApkScreen> createState() => _UploadApkScreenState();
 }
 
-class _UploadApkScreenState extends ConsumerState<UploadApkScreen>
-    with SingleTickerProviderStateMixin {
+class _UploadApkScreenState extends ConsumerState<UploadApkScreen> {
   File? _pickedFile;
   String? _fileName;
   int? _fileSize;
@@ -28,22 +26,6 @@ class _UploadApkScreenState extends ConsumerState<UploadApkScreen>
   double _progress = 0.0;
   String? _error;
   String? _successUrl;
-  late AnimationController _pulseController;
-
-  @override
-  void initState() {
-    super.initState();
-    _pulseController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1800),
-    )..repeat(reverse: true);
-  }
-
-  @override
-  void dispose() {
-    _pulseController.dispose();
-    super.dispose();
-  }
 
   Future<void> _pickFile() async {
     final result = await FilePicker.platform.pickFiles(
@@ -362,31 +344,8 @@ class _UploadApkScreenState extends ConsumerState<UploadApkScreen>
 
               const Spacer(),
 
-              // ── Upload button with neon bloom ─────────────
-              AnimatedBuilder(
-                animation: _pulseController,
-                builder: (context, child) {
-                  final glow = _pickedFile != null && !_uploading
-                      ? 0.15 + (_pulseController.value * 0.15)
-                      : 0.0;
-                  return Container(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(14),
-                      boxShadow: _pickedFile != null && !_uploading
-                          ? [
-                              BoxShadow(
-                                color: AppColors.brand.withValues(alpha: glow),
-                                blurRadius: 24,
-                                spreadRadius: 2,
-                              ),
-                            ]
-                          : null,
-                    ),
-                    width: double.infinity,
-                    child: child,
-                  );
-                },
-                child: ElevatedButton(
+              // ── Upload button ─────────────────────────────
+              ElevatedButton(
                   onPressed: _pickedFile != null && !_uploading
                       ? _upload
                       : null,
@@ -428,7 +387,6 @@ class _UploadApkScreenState extends ConsumerState<UploadApkScreen>
                           ],
                         ),
                 ),
-              ),
 
               const SizedBox(height: 12),
 
