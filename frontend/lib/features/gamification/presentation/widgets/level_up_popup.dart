@@ -12,7 +12,7 @@ Future<void> showLevelUpPopup(
     context: context,
     barrierDismissible: true,
     barrierLabel: 'Level Up',
-    barrierColor: Colors.black87,
+    barrierColor: Colors.black54,
     transitionDuration: const Duration(milliseconds: 350),
     transitionBuilder: (ctx, anim, _, child) {
       final curve = CurvedAnimation(parent: anim, curve: Curves.easeOutBack);
@@ -42,16 +42,16 @@ class _LevelUpDialogState extends State<_LevelUpDialog>
   late Animation<double> _pulse;
 
   static const _messages = [
-    'keep going.',
-    'you\'re on fire.',
-    'unstoppable.',
-    'the grind pays off.',
-    'respect earned.',
-    'next level unlocked.',
-    'built different.',
-    'up only.',
-    'no looking back.',
-    'legend in the making.',
+    'Keep going.',
+    'You\'re on fire.',
+    'Unstoppable.',
+    'The grind pays off.',
+    'Respect earned.',
+    'Next level unlocked.',
+    'Built different.',
+    'Up only.',
+    'No looking back.',
+    'Legend in the making.',
   ];
 
   @override
@@ -94,7 +94,7 @@ class _LevelUpDialogState extends State<_LevelUpDialog>
             width: 260,
             padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 28),
             decoration: BoxDecoration(
-              color: Colors.black,
+              color: AppColors.card,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
                 color: AppColors.neonCyan.withValues(alpha: 0.2),
@@ -108,7 +108,7 @@ class _LevelUpDialogState extends State<_LevelUpDialog>
                 Text(
                   '${widget.newLevel}',
                   style: const TextStyle(
-                    color: Colors.white,
+                    color: AppColors.textPrimary,
                     fontSize: 56,
                     fontWeight: FontWeight.w900,
                     height: 1,
@@ -126,13 +126,13 @@ class _LevelUpDialogState extends State<_LevelUpDialog>
                   ),
                 ),
                 const SizedBox(height: 20),
-                Container(width: 40, height: 1, color: const Color(0xFF1A1A1A)),
+                Container(width: 40, height: 1, color: AppColors.border),
                 const SizedBox(height: 20),
                 // Cool message
                 Text(
                   msg,
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.5),
+                    color: AppColors.muted,
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
                     fontStyle: FontStyle.italic,

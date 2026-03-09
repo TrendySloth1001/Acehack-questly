@@ -142,7 +142,7 @@ class HomeDashboardScreen extends ConsumerWidget {
                   child: Padding(
                     padding: EdgeInsets.symmetric(horizontal: 20, vertical: 20),
                     child: Text(
-                      'no joined bounties yet — claim one below ↓',
+                      'No joined bounties yet — claim one below ↓',
                       style: TextStyle(color: AppColors.textHint, fontSize: 13),
                     ),
                   ),
@@ -247,10 +247,10 @@ class HomeDashboardScreen extends ConsumerWidget {
   String _genZGreeting(String name) {
     final hour = DateTime.now().hour;
     final greetings = hour < 12
-        ? ['Yo $name ☀️', 'rise & grind, $name', 'gm $name 👋']
+        ? ['Yo $name ☀️', 'Rise & grind, $name', 'Gm $name 👋']
         : hour < 17
-        ? ['Yo $name 🔥', 'what\'s good, $name', 'hey $name ⚡']
-        : ['Yo $name 🌙', 'evening vibes, $name', 'sup $name ✨'];
+        ? ['Yo $name 🔥', 'What\'s good, $name', 'Hey $name ⚡']
+        : ['Yo $name 🌙', 'Evening vibes, $name', 'Sup $name ✨'];
     // Rotate based on day-of-year so it feels varied but deterministic
     final dayIndex = DateTime.now()
         .difference(DateTime(DateTime.now().year))
@@ -1040,9 +1040,7 @@ class _BountyCard extends StatelessWidget {
                 Text(
                   isExpired ? 'expired' : timeLeft,
                   style: TextStyle(
-                    color: isExpired
-                        ? AppColors.error
-                        : AppColors.muted,
+                    color: isExpired ? AppColors.error : AppColors.muted,
                     fontSize: 12,
                   ),
                 ),
@@ -1056,10 +1054,7 @@ class _BountyCard extends StatelessWidget {
                 const SizedBox(width: 3),
                 Text(
                   '${bounty.claimCount}',
-                  style: const TextStyle(
-                    color: AppColors.muted,
-                    fontSize: 12,
-                  ),
+                  style: const TextStyle(color: AppColors.muted, fontSize: 12),
                 ),
                 const Spacer(),
                 // Reward

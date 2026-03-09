@@ -281,7 +281,7 @@ class _Row extends StatelessWidget {
                       ),
                       const SizedBox(width: 2),
                       Text(
-                        'xp',
+                        'XP',
                         style: TextStyle(
                           color: isTop3
                               ? AppColors.neonGreen.withValues(alpha: 0.5)
@@ -503,7 +503,7 @@ class _CurrentUserFooter extends StatelessWidget {
                   ),
                   const SizedBox(width: 3),
                   Text(
-                    'xp',
+                    'XP',
                     style: TextStyle(
                       color: AppColors.neonGreen.withValues(alpha: 0.5),
                       fontSize: 10,

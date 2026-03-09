@@ -147,7 +147,7 @@ class LoginScreen extends ConsumerWidget {
                               .signInWithGoogle(),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.textPrimary,
-                      foregroundColor: Colors.black,
+                      foregroundColor: AppColors.fore,
                       disabledBackgroundColor: AppColors.textPrimary.withValues(
                         alpha: 0.5,
                       ),
@@ -162,7 +162,7 @@ class LoginScreen extends ConsumerWidget {
                             width: 20,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              color: Colors.black,
+                              color: AppColors.fore,
                             ),
                           )
                         : Row(

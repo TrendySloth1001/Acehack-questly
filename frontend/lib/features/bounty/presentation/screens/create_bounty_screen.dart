@@ -523,7 +523,7 @@ class _CreateBountyScreenState extends ConsumerState<CreateBountyScreen> {
                         },
                         icon: const Icon(Icons.rocket_launch_rounded, size: 18),
                         label: const Text(
-                          'Post bounty',
+                          'Post Bounty',
                           style: TextStyle(
                             fontWeight: FontWeight.w700,
                             fontSize: 15,
@@ -655,11 +655,11 @@ class _CreateBountyScreenState extends ConsumerState<CreateBountyScreen> {
                         // Title
                         _buildField(
                           controller: _titleC,
-                          label: 'title',
+                          label: 'Title',
                           hint: 'e.g. pick up my parcel from Gate 3',
                           validator: (v) {
                             if (v == null || v.trim().length < 3) {
-                              return 'at least 3 characters';
+                              return 'At least 3 characters';
                             }
                             return null;
                           },
@@ -669,12 +669,12 @@ class _CreateBountyScreenState extends ConsumerState<CreateBountyScreen> {
                         // Description
                         _buildField(
                           controller: _descC,
-                          label: 'description',
-                          hint: 'explain the task in detail...',
+                          label: 'Description',
+                          hint: 'Explain the task in detail...',
                           maxLines: 4,
                           validator: (v) {
                             if (v == null || v.trim().length < 10) {
-                              return 'at least 10 characters';
+                              return 'At least 10 characters';
                             }
                             return null;
                           },
@@ -682,7 +682,7 @@ class _CreateBountyScreenState extends ConsumerState<CreateBountyScreen> {
                         const SizedBox(height: 16),
 
                         // Category chips
-                        _sectionLabel('category'),
+                        _sectionLabel('Category'),
                         const SizedBox(height: 8),
                         Wrap(
                           spacing: 8,
@@ -732,7 +732,7 @@ class _CreateBountyScreenState extends ConsumerState<CreateBountyScreen> {
                         // ALGO Amount
                         _buildField(
                           controller: _amountC,
-                          label: 'reward (ALGO)',
+                          label: 'Reward (ALGO)',
                           hint: '0.00',
                           keyboardType: const TextInputType.numberWithOptions(
                             decimal: true,
@@ -769,7 +769,7 @@ class _CreateBountyScreenState extends ConsumerState<CreateBountyScreen> {
                         const SizedBox(height: 16),
 
                         // Deadline
-                        _sectionLabel('deadline'),
+                        _sectionLabel('Deadline'),
                         const SizedBox(height: 8),
                         GestureDetector(
                           onTap: _pickDeadline,
@@ -816,7 +816,7 @@ class _CreateBountyScreenState extends ConsumerState<CreateBountyScreen> {
                         const SizedBox(height: 20),
 
                         // Location + Map
-                        _sectionLabel('location'),
+                        _sectionLabel('Location'),
                         const SizedBox(height: 8),
                         _buildField(
                           controller: _locationC,
@@ -968,7 +968,7 @@ class _CreateBountyScreenState extends ConsumerState<CreateBountyScreen> {
                         const SizedBox(height: 24),
 
                         // Photos (multi)
-                        _sectionLabel('photos (${_pickedImages.length}/5)'),
+                        _sectionLabel('Photos (${_pickedImages.length}/5)'),
                         const SizedBox(height: 8),
                         SizedBox(
                           height: 100,
@@ -1061,7 +1061,7 @@ class _CreateBountyScreenState extends ConsumerState<CreateBountyScreen> {
                         // Custom fields
                         Row(
                           children: [
-                            _sectionLabel('custom fields'),
+                            _sectionLabel('Custom Fields'),
                             const Spacer(),
                             GestureDetector(
                               onTap: _addExtraField,
@@ -1128,7 +1128,7 @@ class _CreateBountyScreenState extends ConsumerState<CreateBountyScreen> {
                                   flex: 2,
                                   child: _miniField(
                                     controller: f.labelC,
-                                    hint: 'label',
+                                    hint: 'Label',
                                   ),
                                 ),
                                 const SizedBox(width: 8),
@@ -1136,7 +1136,7 @@ class _CreateBountyScreenState extends ConsumerState<CreateBountyScreen> {
                                   flex: 3,
                                   child: _miniField(
                                     controller: f.valueC,
-                                    hint: 'value',
+                                    hint: 'Value',
                                   ),
                                 ),
                                 const SizedBox(width: 4),
@@ -1290,7 +1290,7 @@ class _CreateBountyScreenState extends ConsumerState<CreateBountyScreen> {
     if (diff.inDays > 0) return '${diff.inDays}d left';
     if (diff.inHours > 0) return '${diff.inHours}h left';
     if (diff.inMinutes > 0) return '${diff.inMinutes}m left';
-    return 'soon';
+    return 'Soon';
   }
 
   Widget _sectionLabel(String text) => Text(

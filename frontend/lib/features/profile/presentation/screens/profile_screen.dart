@@ -157,7 +157,7 @@ class ProfileScreen extends ConsumerWidget {
                     ),
                     const SizedBox(width: 6),
                     Text(
-                      'how xp works',
+                      'How XP Works',
                       style: TextStyle(
                         color: AppColors.neonCyan.withValues(alpha: 0.5),
                         fontSize: 12,

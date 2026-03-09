@@ -95,7 +95,7 @@ class NeonButton extends StatelessWidget {
         onPressed: isLoading ? null : onPressed,
         style: ElevatedButton.styleFrom(
           backgroundColor: bg,
-          foregroundColor: Colors.black,
+          foregroundColor: AppColors.fore,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
@@ -107,7 +107,7 @@ class NeonButton extends StatelessWidget {
                 width: 18,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  color: Colors.black,
+                  color: AppColors.fore,
                 ),
               )
             : Text(label),

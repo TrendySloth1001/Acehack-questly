@@ -153,7 +153,7 @@ class _BountyDetailScreenState extends ConsumerState<BountyDetailScreen> {
                     onPressed: () => Navigator.pop(context, true),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.warning,
-                      foregroundColor: Colors.black,
+                      foregroundColor: AppColors.fore,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -385,7 +385,7 @@ class _BountyDetailScreenState extends ConsumerState<BountyDetailScreen> {
                     onPressed: () => Navigator.pop(context, true),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.neonOrange,
-                      foregroundColor: Colors.black,
+                      foregroundColor: AppColors.fore,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -626,7 +626,7 @@ class _BountyDetailScreenState extends ConsumerState<BountyDetailScreen> {
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.warning,
-                    foregroundColor: Colors.black,
+                    foregroundColor: AppColors.fore,
                     disabledBackgroundColor: AppColors.warning.withValues(
                       alpha: 0.3,
                     ),
@@ -1170,7 +1170,7 @@ class _BountyDetailScreenState extends ConsumerState<BountyDetailScreen> {
                           ),
                           children: [
                             TileLayer(
-                              urlTemplate: MapConstants.darkTileUrl,
+                              urlTemplate: MapConstants.lightTileUrl,
                               subdomains: MapConstants.subdomains,
                               userAgentPackageName: 'com.questly.questly',
                             ),
@@ -1195,7 +1195,7 @@ class _BountyDetailScreenState extends ConsumerState<BountyDetailScreen> {
                                     ),
                                     child: const Icon(
                                       Icons.location_on,
-                                      color: Colors.black,
+                                      color: AppColors.fore,
                                       size: 16,
                                     ),
                                   ),
@@ -1451,7 +1451,7 @@ class _BountyDetailScreenState extends ConsumerState<BountyDetailScreen> {
                                 width: 22,
                                 height: 22,
                                 child: CircularProgressIndicator(
-                                  color: Colors.black,
+                                  color: AppColors.fore,
                                   strokeWidth: 2,
                                 ),
                               )
@@ -1466,7 +1466,7 @@ class _BountyDetailScreenState extends ConsumerState<BountyDetailScreen> {
                         ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.neonGreen,
-                          foregroundColor: Colors.black,
+                          foregroundColor: AppColors.fore,
                           disabledBackgroundColor: AppColors.neonGreen
                               .withValues(alpha: 0.3),
                           shape: RoundedRectangleBorder(
@@ -1497,7 +1497,7 @@ class _BountyDetailScreenState extends ConsumerState<BountyDetailScreen> {
                               ),
                             )
                           : const Icon(Icons.delete_outline, size: 18),
-                      label: const Text('Delete bounty'),
+                      label: const Text('Delete Bounty'),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: AppColors.error,
                         side: BorderSide(
@@ -1567,7 +1567,7 @@ class _BountyDetailScreenState extends ConsumerState<BountyDetailScreen> {
                             ),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: AppColors.warning,
-                              foregroundColor: Colors.black,
+                              foregroundColor: AppColors.fore,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(14),
                               ),
@@ -1945,7 +1945,7 @@ class _FullScreenGalleryState extends State<_FullScreenGallery> {
   Widget build(BuildContext context) {
     final count = widget.imageUrls.length;
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: AppColors.background,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         foregroundColor: Colors.white,
@@ -2240,7 +2240,7 @@ class _MyClaimSection extends ConsumerWidget {
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.neonGreen,
-                    foregroundColor: Colors.black,
+                    foregroundColor: AppColors.fore,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
                     ),
@@ -2266,7 +2266,7 @@ class _MyClaimSection extends ConsumerWidget {
                         ),
                       )
                     : const Icon(Icons.exit_to_app_rounded, size: 16),
-                label: const Text('Leave bounty'),
+                label: const Text('Leave Bounty'),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppColors.warning,
                   side: BorderSide(
@@ -2310,7 +2310,7 @@ class _MyClaimSection extends ConsumerWidget {
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.neonOrange,
-                    foregroundColor: Colors.black,
+                    foregroundColor: AppColors.fore,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
                     ),
@@ -2612,7 +2612,7 @@ class _OwnerClaimsSectionState extends ConsumerState<_OwnerClaimsSection> {
                             width: 14,
                             height: 14,
                             child: CircularProgressIndicator(
-                              color: Colors.black,
+                              color: AppColors.fore,
                               strokeWidth: 1.5,
                             ),
                           )
@@ -2623,7 +2623,7 @@ class _OwnerClaimsSectionState extends ConsumerState<_OwnerClaimsSection> {
                     ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.neonGreen,
-                      foregroundColor: Colors.black,
+                      foregroundColor: AppColors.fore,
                       disabledBackgroundColor: AppColors.neonGreen.withValues(
                         alpha: 0.3,
                       ),
@@ -2704,14 +2704,14 @@ class _OwnerClaimsSectionState extends ConsumerState<_OwnerClaimsSection> {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: const Color(0xFF0A0A0A),
+        color: AppColors.surfaceLight,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: isSubmitted
               ? AppColors.warning.withValues(alpha: 0.25)
               : isApproved
               ? AppColors.neonGreen.withValues(alpha: 0.2)
-              : const Color(0xFF1A1A1A),
+              : AppColors.border,
           width: 1,
         ),
         boxShadow: isSubmitted
@@ -3030,7 +3030,7 @@ class _OwnerClaimsSectionState extends ConsumerState<_OwnerClaimsSection> {
                                     width: 14,
                                     height: 14,
                                     child: CircularProgressIndicator(
-                                      color: Colors.black,
+                                      color: AppColors.fore,
                                       strokeWidth: 1.5,
                                     ),
                                   )
@@ -3041,7 +3041,7 @@ class _OwnerClaimsSectionState extends ConsumerState<_OwnerClaimsSection> {
                             ),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: AppColors.neonGreen,
-                              foregroundColor: Colors.black,
+                              foregroundColor: AppColors.fore,
                               disabledBackgroundColor: AppColors.neonGreen
                                   .withValues(alpha: 0.3),
                               shape: RoundedRectangleBorder(
@@ -3285,7 +3285,7 @@ class _FundEscrowButtonState extends ConsumerState<_FundEscrowButton> {
               onPressed: () => Navigator.pop(ctx, true),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.neonGreen,
-                foregroundColor: Colors.black,
+                foregroundColor: AppColors.fore,
               ),
               child: const Text(
                 'Confirm & Fund',
@@ -3375,7 +3375,7 @@ class _FundEscrowButtonState extends ConsumerState<_FundEscrowButton> {
                     width: 18,
                     height: 18,
                     child: CircularProgressIndicator(
-                      color: Colors.black,
+                      color: AppColors.fore,
                       strokeWidth: 2,
                     ),
                   )
@@ -3400,7 +3400,7 @@ class _FundEscrowButtonState extends ConsumerState<_FundEscrowButton> {
             ),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.neonOrange,
-              foregroundColor: Colors.black,
+              foregroundColor: AppColors.fore,
               disabledBackgroundColor: AppColors.neonOrange.withValues(
                 alpha: 0.4,
               ),

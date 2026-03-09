@@ -192,7 +192,7 @@ class RankBadge extends StatelessWidget {
       height: size,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: Colors.black,
+        color: AppColors.card,
         border: Border.all(color: rankColor.withValues(alpha: 0.6), width: 1.5),
         boxShadow: [
           BoxShadow(color: rankColor.withValues(alpha: 0.25), blurRadius: 8),

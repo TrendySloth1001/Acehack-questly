@@ -226,7 +226,7 @@ class _OnboardingLocationScreenState
                                       ),
                                       child: const Icon(
                                         Icons.my_location,
-                                        color: Colors.black,
+                                        color: AppColors.fore,
                                         size: 18,
                                       ),
                                     ),
@@ -246,7 +246,7 @@ class _OnboardingLocationScreenState
                                 vertical: 6,
                               ),
                               decoration: BoxDecoration(
-                                color: Colors.black.withValues(alpha: 0.75),
+                                color: AppColors.fore.withValues(alpha: 0.75),
                                 borderRadius: BorderRadius.circular(8),
                                 border: Border.all(
                                   color: AppColors.border,

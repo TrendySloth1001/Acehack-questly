@@ -8,15 +8,15 @@ class XpRulesScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: Colors.black,
+        backgroundColor: AppColors.background,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(
             Icons.arrow_back_ios_rounded,
-            color: Colors.white,
+            color: AppColors.fore,
             size: 18,
           ),
           onPressed: () => Navigator.pop(context),
@@ -24,7 +24,7 @@ class XpRulesScreen extends StatelessWidget {
         title: const Text(
           'HOW IT WORKS',
           style: TextStyle(
-            color: Colors.white,
+            color: AppColors.fore,
             fontSize: 13,
             fontWeight: FontWeight.w700,
             letterSpacing: 4,
@@ -37,9 +37,9 @@ class XpRulesScreen extends StatelessWidget {
         children: [
           // ── Intro ─────────────────────────────────────
           const Text(
-            'earn xp. level up.\nclimb the ranks.',
+            'Earn XP. Level up.\nClimb the ranks.',
             style: TextStyle(
-              color: Colors.white,
+              color: AppColors.textPrimary,
               fontSize: 22,
               fontWeight: FontWeight.w800,
               height: 1.3,
@@ -48,10 +48,10 @@ class XpRulesScreen extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            'every action earns or costs xp. your level and rank '
+            'Every action earns or costs XP. Your level and rank '
             'update automatically as you grow.',
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.35),
+              color: AppColors.textHint,
               fontSize: 13,
               height: 1.5,
             ),
@@ -130,16 +130,16 @@ class XpRulesScreen extends StatelessWidget {
           ),
 
           const SizedBox(height: 36),
-          Container(height: 1, color: const Color(0xFF1A1A1A)),
+          Container(height: 1, color: AppColors.border),
           const SizedBox(height: 36),
 
           // ── Level Formula ─────────────────────────────
           _SectionHeader(title: 'LEVELING', color: AppColors.neonCyan),
           const SizedBox(height: 14),
           Text(
-            'your level is calculated from total xp:',
+            'Your level is calculated from total XP:',
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.4),
+              color: AppColors.muted,
               fontSize: 13,
             ),
           ),
@@ -172,16 +172,16 @@ class XpRulesScreen extends StatelessWidget {
           _LevelExample(level: 50, xp: 62500),
 
           const SizedBox(height: 36),
-          Container(height: 1, color: const Color(0xFF1A1A1A)),
+          Container(height: 1, color: AppColors.border),
           const SizedBox(height: 36),
 
           // ── Rank Tiers ────────────────────────────────
           _SectionHeader(title: 'RANK TIERS', color: AppColors.neonCyan),
           const SizedBox(height: 8),
           Text(
-            'your rank upgrades automatically as you hit xp thresholds.',
+            'Your rank upgrades automatically as you hit XP thresholds.',
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.4),
+              color: AppColors.muted,
               fontSize: 13,
             ),
           ),
@@ -214,7 +214,7 @@ class XpRulesScreen extends StatelessWidget {
           // ── Footer tip ────────────────────────────────
           Center(
             child: Text(
-              'stay active · complete bounties · collect 5-star reviews',
+              'Stay active · Complete bounties · Collect 5-star reviews',
               style: TextStyle(
                 color: AppColors.neonCyan.withValues(alpha: 0.4),
                 fontSize: 11,
@@ -282,7 +282,7 @@ class _XpRuleRow extends StatelessWidget {
             child: Text(
               label,
               style: const TextStyle(
-                color: Colors.white,
+                color: AppColors.textPrimary,
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
               ),
@@ -319,7 +319,7 @@ class _LevelExample extends StatelessWidget {
             child: Text(
               'Lvl $level',
               style: const TextStyle(
-                color: Colors.white,
+                color: AppColors.textPrimary,
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
               ),
@@ -327,11 +327,11 @@ class _LevelExample extends StatelessWidget {
           ),
           const Text(
             '→',
-            style: TextStyle(color: Color(0xFF444444), fontSize: 12),
+            style: TextStyle(color: AppColors.muted, fontSize: 12),
           ),
           const SizedBox(width: 8),
           Text(
-            '${_fmtNum(xp)} xp',
+            '${_fmtNum(xp)} XP',
             style: TextStyle(
               color: AppColors.neonCyan.withValues(alpha: 0.7),
               fontSize: 13,
@@ -375,9 +375,6 @@ class _TierRow extends StatelessWidget {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: color,
-              boxShadow: [
-                BoxShadow(color: color.withValues(alpha: 0.4), blurRadius: 6),
-              ],
             ),
           ),
           const SizedBox(width: 12),
@@ -394,9 +391,9 @@ class _TierRow extends StatelessWidget {
             ),
           ),
           Text(
-            '$minXp+ xp',
+            '$minXp+ XP',
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.4),
+              color: AppColors.muted,
               fontSize: 12,
             ),
           ),

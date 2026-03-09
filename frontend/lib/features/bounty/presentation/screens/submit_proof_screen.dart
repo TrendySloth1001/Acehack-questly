@@ -329,7 +329,7 @@ class _SubmitProofScreenState extends ConsumerState<SubmitProofScreen> {
                 onPressed: isProcessing ? null : _submit,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.neonGreen,
-                  foregroundColor: Colors.black,
+                  foregroundColor: AppColors.fore,
                   disabledBackgroundColor: AppColors.neonGreen.withValues(
                     alpha: 0.3,
                   ),
@@ -346,7 +346,7 @@ class _SubmitProofScreenState extends ConsumerState<SubmitProofScreen> {
                             width: 20,
                             height: 20,
                             child: CircularProgressIndicator(
-                              color: Colors.black,
+                              color: AppColors.fore,
                               strokeWidth: 2,
                             ),
                           ),
@@ -356,7 +356,7 @@ class _SubmitProofScreenState extends ConsumerState<SubmitProofScreen> {
                             style: const TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
-                              color: Colors.black54,
+                              color: AppColors.muted,
                             ),
                           ),
                         ],

@@ -376,7 +376,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
                         ),
                         const SizedBox(height: 10),
                         const Text(
-                          'failed to load bounties',
+                          'Failed to load bounties',
                           style: TextStyle(
                             color: AppColors.textHint,
                             fontSize: 14,
@@ -387,7 +387,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
                           onTap: () =>
                               ref.read(bountyListProvider.notifier).refresh(),
                           child: const Text(
-                            'tap to retry',
+                            'Tap to retry',
                             style: TextStyle(
                               color: AppColors.primary,
                               fontSize: 13,
@@ -415,8 +415,8 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
                         const SizedBox(height: 10),
                         Text(
                           _selectedCategory == 'All'
-                              ? 'no bounties yet'
-                              : 'no $_selectedCategory bounties',
+                              ? 'No bounties yet'
+                              : 'No $_selectedCategory bounties',
                           style: const TextStyle(
                             color: AppColors.textHint,
                             fontSize: 14,
