@@ -51,7 +51,7 @@ export default function Home() {
         </p>
 
         <div className="hero-actions">
-          <button className="btn-primary">Start Questing</button>
+          <Link href="/download" className="btn-primary" style={{textDecoration: 'none'}}>Download App</Link>
           <a href="#how" className="btn-ghost">See How It Works</a>
         </div>
 
