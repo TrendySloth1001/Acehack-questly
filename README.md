@@ -60,52 +60,41 @@ Questly bridges the gap between digital bounties and real-world task completion.
 <table>
   <tr>
     <td align="center">
-      <img src="appimages/screenshot_01.jpeg" width="200" alt="Onboarding / Login" />
-      <br /><sub><b>Login</b></sub>
+      <img src="appimages/screenshot_01.jpeg" width="200" alt="Login" />
     </td>
     <td align="center">
-      <img src="appimages/screenshot_02.jpeg" width="200" alt="Registration" />
-      <br /><sub><b>Register</b></sub>
+      <img src="appimages/screenshot_02.jpeg" width="200" alt="Register" />
     </td>
     <td align="center">
       <img src="appimages/screenshot_03.jpeg" width="200" alt="Home Dashboard" />
-      <br /><sub><b>Home Dashboard</b></sub>
     </td>
     <td align="center">
       <img src="appimages/screenshot_04.jpeg" width="200" alt="Explore Map" />
-      <br /><sub><b>Explore Map</b></sub>
     </td>
   </tr>
   <tr>
     <td align="center">
       <img src="appimages/screenshot_05.jpeg" width="200" alt="Bounty Detail" />
-      <br /><sub><b>Bounty Detail</b></sub>
     </td>
     <td align="center">
       <img src="appimages/screenshot_06.jpeg" width="200" alt="Create Bounty" />
-      <br /><sub><b>Create Bounty</b></sub>
     </td>
     <td align="center">
       <img src="appimages/screenshot_07.jpeg" width="200" alt="Wallet" />
-      <br /><sub><b>Wallet</b></sub>
     </td>
     <td align="center">
       <img src="appimages/screenshot_08.jpeg" width="200" alt="Pera Wallet Connect" />
-      <br /><sub><b>Pera Wallet Connect</b></sub>
     </td>
   </tr>
   <tr>
     <td align="center">
       <img src="appimages/screenshot_09.jpeg" width="200" alt="Profile" />
-      <br /><sub><b>Profile</b></sub>
     </td>
     <td align="center">
       <img src="appimages/screenshot_10.jpeg" width="200" alt="Leaderboard" />
-      <br /><sub><b>Leaderboard</b></sub>
     </td>
     <td align="center">
       <img src="appimages/screenshot_11.jpeg" width="200" alt="Settings" />
-      <br /><sub><b>Settings</b></sub>
     </td>
     <td align="center"></td>
   </tr>
@@ -161,28 +150,9 @@ Questly bridges the gap between digital bounties and real-world task completion.
 
 ## Architecture
 
-```
-                                    HTTPS (Traefik + Let's Encrypt)
-                                              |
-                     +------------------------+------------------------+
-                     |                                                 |
-            apk.anskservices.com                          questly.anskservices.com
-                     |                                                 |
-              +------+------+                                   +------+------+
-              |  Express 5  |                                   |  Next.js 16 |
-              |   API :4000 |                                   | Landing:3020|
-              +------+------+                                   +-------------+
-                     |
-       +-------------+-------------+-------------+
-       |             |             |             |
-  +----+----+  +-----+-----+ +----+----+  +-----+-----+
-  |PostgreSQL|  |   MinIO   | | Algorand|  |  Flutter  |
-  |  :5432   |  | S3 :9000  | |  Devmode|  | Mobile App|
-  +---------+  +-----------+ | :4001   |  +-----------+
-                              | :4002   |
-                              | :8980   |
-                              +---------+
-```
+<p align="center">
+  <img src="diagram.svg" alt="Questly System Architecture" width="100%" />
+</p>
 
 | Component | Technology | Purpose |
 |:----------|:-----------|:--------|
