@@ -26,13 +26,14 @@ class WalletModeNotifier extends StateNotifier<WalletMode> {
   }
 
   Future<void> toggle() async {
-    final next =
-        state == WalletMode.custodial ? WalletMode.pera : WalletMode.custodial;
+    final next = state == WalletMode.custodial
+        ? WalletMode.pera
+        : WalletMode.custodial;
     await setMode(next);
   }
 }
 
 final walletModeProvider =
     StateNotifierProvider<WalletModeNotifier, WalletMode>((ref) {
-  return WalletModeNotifier();
-});
+      return WalletModeNotifier();
+    });

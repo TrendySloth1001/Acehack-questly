@@ -80,7 +80,10 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
             right: 0,
             child: Center(
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.black.withValues(alpha: 0.6),
                   borderRadius: BorderRadius.circular(20),
@@ -134,7 +137,11 @@ class _PeraOnboardingSheetState extends State<PeraOnboardingSheet> {
     final steps = [
       _StepInstall(onNext: _next),
       _StepCreateWallet(onNext: _next),
-      _StepCopyAddress(controller: _addrCtrl, onScan: _scanQr, onNext: _connect),
+      _StepCopyAddress(
+        controller: _addrCtrl,
+        onScan: _scanQr,
+        onNext: _connect,
+      ),
       _StepDone(address: _addrCtrl.text, onDone: () => Navigator.pop(context)),
     ];
 
@@ -190,16 +197,19 @@ class _PeraOnboardingSheetState extends State<PeraOnboardingSheet> {
                 child: AnimatedSwitcher(
                   duration: const Duration(milliseconds: 250),
                   transitionBuilder: (child, anim) => SlideTransition(
-                    position: Tween<Offset>(
-                      begin: const Offset(0.3, 0),
-                      end: Offset.zero,
-                    ).animate(CurvedAnimation(
-                      parent: anim,
-                      curve: Curves.easeOut,
-                    )),
+                    position:
+                        Tween<Offset>(
+                          begin: const Offset(0.3, 0),
+                          end: Offset.zero,
+                        ).animate(
+                          CurvedAnimation(parent: anim, curve: Curves.easeOut),
+                        ),
                     child: FadeTransition(opacity: anim, child: child),
                   ),
-                  child: KeyedSubtree(key: ValueKey(_step), child: steps[_step]),
+                  child: KeyedSubtree(
+                    key: ValueKey(_step),
+                    child: steps[_step],
+                  ),
                 ),
               ),
             ),
@@ -251,11 +261,18 @@ class _StepInstall extends StatelessWidget {
       iconColor: AppColors.neonGreen,
       stepLabel: 'Step 1 of 4',
       title: 'Install Pera Wallet',
-      body: 'Pera Wallet is the official Algorand wallet app. It lets you '
+      body:
+          'Pera Wallet is the official Algorand wallet app. It lets you '
           'create a secure non-custodial wallet — meaning only you hold the private keys.',
       children: [
-        _InfoTile(icon: Icons.security_rounded, text: 'Your keys, stored only on your device'),
-        _InfoTile(icon: Icons.public_rounded, text: 'Works on Algorand mainnet & testnet'),
+        _InfoTile(
+          icon: Icons.security_rounded,
+          text: 'Your keys, stored only on your device',
+        ),
+        _InfoTile(
+          icon: Icons.public_rounded,
+          text: 'Works on Algorand mainnet & testnet',
+        ),
         _InfoTile(icon: Icons.qr_code_rounded, text: 'Easy QR address sharing'),
         const SizedBox(height: 24),
         _PrimaryButton(
@@ -281,12 +298,19 @@ class _StepCreateWallet extends StatelessWidget {
       iconColor: AppColors.neonCyan,
       stepLabel: 'Step 2 of 4',
       title: 'Create Your Wallet',
-      body: 'Inside Pera Wallet, create a new account or import an existing one '
+      body:
+          'Inside Pera Wallet, create a new account or import an existing one '
           'using your recovery phrase.',
       children: [
         _NumberedStep(number: '1', text: 'Open Pera Wallet on your device'),
-        _NumberedStep(number: '2', text: 'Tap "Create Account" or "Import Account"'),
-        _NumberedStep(number: '3', text: 'Write down and securely store your recovery phrase'),
+        _NumberedStep(
+          number: '2',
+          text: 'Tap "Create Account" or "Import Account"',
+        ),
+        _NumberedStep(
+          number: '3',
+          text: 'Write down and securely store your recovery phrase',
+        ),
         _NumberedStep(number: '4', text: 'Complete the setup inside Pera'),
         const SizedBox(height: 24),
         _PrimaryButton(
@@ -319,7 +343,8 @@ class _StepCopyAddress extends StatelessWidget {
       iconColor: AppColors.neonCyan,
       stepLabel: 'Step 3 of 4',
       title: 'Connect Your Address',
-      body: 'Open Pera Wallet, tap your account, then copy your Algorand address '
+      body:
+          'Open Pera Wallet, tap your account, then copy your Algorand address '
           'and paste it below — or scan the QR code directly.',
       children: [
         _NumberedStep(number: '1', text: 'Open Pera → tap your account name'),
@@ -340,7 +365,10 @@ class _StepCopyAddress extends StatelessWidget {
                 ),
                 decoration: InputDecoration(
                   hintText: 'Paste Algorand address...',
-                  hintStyle: const TextStyle(color: AppColors.textHint, fontSize: 12),
+                  hintStyle: const TextStyle(
+                    color: AppColors.textHint,
+                    fontSize: 12,
+                  ),
                   filled: true,
                   fillColor: AppColors.card,
                   border: OutlineInputBorder(
@@ -353,15 +381,22 @@ class _StepCopyAddress extends StatelessWidget {
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: AppColors.neonCyan, width: 1.5),
+                    borderSide: const BorderSide(
+                      color: AppColors.neonCyan,
+                      width: 1.5,
+                    ),
                   ),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 14,
+                  ),
                   suffixIcon: IconButton(
                     icon: const Icon(Icons.paste_rounded, size: 18),
                     color: AppColors.textHint,
                     onPressed: () async {
                       final data = await Clipboard.getData('text/plain');
-                      if (data?.text != null) controller.text = data!.text!.trim();
+                      if (data?.text != null)
+                        controller.text = data!.text!.trim();
                     },
                   ),
                 ),
@@ -378,7 +413,11 @@ class _StepCopyAddress extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: AppColors.border),
                 ),
-                child: const Icon(Icons.qr_code_scanner_rounded, color: AppColors.neonCyan, size: 24),
+                child: const Icon(
+                  Icons.qr_code_scanner_rounded,
+                  color: AppColors.neonCyan,
+                  size: 24,
+                ),
               ),
             ),
           ],
@@ -411,7 +450,8 @@ class _StepDone extends StatelessWidget {
       iconColor: AppColors.neonGreen,
       stepLabel: 'Done!',
       title: 'Wallet Connected',
-      body: 'Your Pera Wallet is now linked to Questly. '
+      body:
+          'Your Pera Wallet is now linked to Questly. '
           'Your balance will load on the Wallet tab.',
       children: [
         Container(
@@ -419,11 +459,17 @@ class _StepDone extends StatelessWidget {
           decoration: BoxDecoration(
             color: AppColors.neonGreen.withValues(alpha: 0.06),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.neonGreen.withValues(alpha: 0.2)),
+            border: Border.all(
+              color: AppColors.neonGreen.withValues(alpha: 0.2),
+            ),
           ),
           child: Row(
             children: [
-              const Icon(Icons.account_circle_rounded, color: AppColors.neonGreen, size: 20),
+              const Icon(
+                Icons.account_circle_rounded,
+                color: AppColors.neonGreen,
+                size: 20,
+              ),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
@@ -446,13 +492,21 @@ class _StepDone extends StatelessWidget {
                     ),
                   );
                 },
-                child: const Icon(Icons.copy_rounded, size: 16, color: AppColors.textHint),
+                child: const Icon(
+                  Icons.copy_rounded,
+                  size: 16,
+                  color: AppColors.textHint,
+                ),
               ),
             ],
           ),
         ),
         const SizedBox(height: 24),
-        _PrimaryButton(label: 'Go to Wallet', icon: Icons.wallet_rounded, onTap: onDone),
+        _PrimaryButton(
+          label: 'Go to Wallet',
+          icon: Icons.wallet_rounded,
+          onTap: onDone,
+        ),
       ],
     );
   }
@@ -505,12 +559,20 @@ class _StepWrapper extends StatelessWidget {
         const SizedBox(height: 4),
         Text(
           title,
-          style: const TextStyle(color: AppColors.fore, fontSize: 22, fontWeight: FontWeight.w800),
+          style: const TextStyle(
+            color: AppColors.fore,
+            fontSize: 22,
+            fontWeight: FontWeight.w800,
+          ),
         ),
         const SizedBox(height: 10),
         Text(
           body,
-          style: const TextStyle(color: AppColors.textSecondary, fontSize: 14, height: 1.6),
+          style: const TextStyle(
+            color: AppColors.textSecondary,
+            fontSize: 14,
+            height: 1.6,
+          ),
         ),
         const SizedBox(height: 20),
         ...children,
@@ -533,7 +595,13 @@ class _InfoTile extends StatelessWidget {
           Icon(icon, size: 16, color: AppColors.neonCyan),
           const SizedBox(width: 10),
           Expanded(
-            child: Text(text, style: const TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+            child: Text(
+              text,
+              style: const TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 13,
+              ),
+            ),
           ),
         ],
       ),
@@ -575,7 +643,11 @@ class _NumberedStep extends StatelessWidget {
           Expanded(
             child: Text(
               text,
-              style: const TextStyle(color: AppColors.textSecondary, fontSize: 13, height: 1.4),
+              style: const TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 13,
+                height: 1.4,
+              ),
             ),
           ),
         ],
@@ -588,7 +660,11 @@ class _PrimaryButton extends StatelessWidget {
   final String label;
   final IconData icon;
   final VoidCallback onTap;
-  const _PrimaryButton({required this.label, required this.icon, required this.onTap});
+  const _PrimaryButton({
+    required this.label,
+    required this.icon,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -602,7 +678,9 @@ class _PrimaryButton extends StatelessWidget {
           backgroundColor: AppColors.neonCyan,
           foregroundColor: AppColors.fore,
           padding: const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
           elevation: 0,
           textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
         ),
