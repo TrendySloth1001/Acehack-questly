@@ -11,6 +11,8 @@ services:
         condition: service_healthy
       questly-minio:
         condition: service_healthy
+      questly-algod:
+        condition: service_started
     environment:
       - NODE_ENV=production
       - PORT=4000
@@ -36,10 +38,12 @@ services:
       - PUBLIC_URL=https://apk.anskservices.com
       - RATE_LIMIT_WINDOW_MS=900000
       - RATE_LIMIT_MAX=200
-      - ALGORAND_NETWORK=testnet
-      - ALGORAND_API_URL=https://testnet-api.algonode.cloud
-      - ALGORAND_API_TOKEN=
-      - ALGORAND_INDEXER_URL=https://testnet-idx.algonode.cloud
+      - ALGORAND_NETWORK=devmode
+      - ALGORAND_API_URL=http://questly-algod:4001
+      - ALGORAND_API_TOKEN=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+      - ALGORAND_KMD_URL=http://questly-algod:4002
+      - ALGORAND_KMD_TOKEN=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+      - ALGORAND_INDEXER_URL=http://questly-algod:8980
       - ALGORAND_ESCROW_MNEMONIC=${ALGORAND_ESCROW_MNEMONIC:-}
     expose:
       - "4000"
@@ -101,10 +105,22 @@ services:
       timeout: 5s
       retries: 5
 
+  # ── Algorand Devmode Sandbox (algod + KMD + Indexer) ──
+  questly-algod:
+    image: makerxau/algorand-sandbox-dev:latest
+    container_name: questly-algod
+    restart: unless-stopped
+    volumes:
+      - questly_algod_data:/opt/data
+    networks:
+      - questly-internal
+
 volumes:
   questly_pg_data:
     driver: local
   questly_minio_data:
+    driver: local
+  questly_algod_data:
     driver: local
 
 networks:
