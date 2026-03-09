@@ -3,6 +3,7 @@ import '../../../../core/network/dio_client.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../data/algorand_repository.dart';
 import '../../data/datasources/algorand_remote_datasource.dart';
+import '../../data/pera_wallet_service.dart';
 
 // ── Repository provider ─────────────────────────────────────
 
@@ -93,6 +94,28 @@ class WalletNotifier extends StateNotifier<WalletState> {
       );
 
       // Load transaction history in background
+      await loadTransactions();
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+    }
+  }
+
+  /// Load wallet in Pera mode. Reads the saved Pera address from secure
+  /// storage — if found, fetches balance; if not, stays at empty state
+  /// (never auto-generates a custodial wallet for Pera users).
+  Future<void> loadPera() async {
+    state = state.copyWith(isLoading: true, error: null);
+    try {
+      final saved = await PeraWalletService.instance.getSavedAddress();
+      if (saved == null || saved.isEmpty) {
+        state = const WalletState(); // pristine — show connect screen
+        return;
+      }
+      WalletBalance? balance;
+      try {
+        balance = await _repo.getBalance(saved);
+      } catch (_) {}
+      state = WalletState(address: saved, balance: balance);
       await loadTransactions();
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());

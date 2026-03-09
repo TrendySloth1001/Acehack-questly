@@ -7,13 +7,17 @@ import Link from "next/link";
 export default function DownloadPage() {
   const [downloading, setDownloading] = useState(false);
 
-  const GITHUB_APK_URL = "https://github.com/TrendySloth1001/Acehack-questly/releases/download/v1.0.0/questly-v1.0.0.apk";
-  const GITHUB_RELEASE_URL = "https://github.com/TrendySloth1001/Acehack-questly/releases/tag/v1.0.0";
+  const APK_URL = "/questly.apk";
 
   function handleDownload() {
     setDownloading(true);
     setTimeout(() => setDownloading(false), 3000);
-    window.open(GITHUB_APK_URL, "_blank");
+    const link = document.createElement("a");
+    link.href = APK_URL;
+    link.download = "questly-v1.0.0.apk";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   }
 
   return (

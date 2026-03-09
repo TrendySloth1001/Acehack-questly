@@ -6,7 +6,10 @@ import 'package:questly/features/algorand/data/algorand_repository.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/algo_inr.dart';
 import '../../../bounty/presentation/providers/bounty_provider.dart';
+import '../../data/wallet_mode_provider.dart';
+import '../../data/pera_wallet_service.dart';
 import '../providers/wallet_provider.dart';
+import '../widgets/pera_onboarding_sheet.dart';
 
 class WalletScreen extends ConsumerStatefulWidget {
   const WalletScreen({super.key});
@@ -18,6 +21,32 @@ class WalletScreen extends ConsumerStatefulWidget {
 class _WalletScreenState extends ConsumerState<WalletScreen> {
   bool _dispensing = false;
   bool _generating = false;
+  bool _connectingPera = false;
+  // Prevents repeated auto-loads in build(); only triggers once per lifecycle.
+  bool _didInit = false;
+  final _peraAddressCtrl = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    // Initial load is deferred to the first frame so providers are ready.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _initialLoad());
+  }
+
+  void _initialLoad() {
+    if (!mounted || _didInit) return;
+    _didInit = true;
+    final isPera = ref.read(walletModeProvider) == WalletMode.pera;
+    isPera
+        ? ref.read(walletProvider.notifier).loadPera()
+        : ref.read(walletProvider.notifier).load();
+  }
+
+  @override
+  void dispose() {
+    _peraAddressCtrl.dispose();
+    super.dispose();
+  }
 
   Future<void> _generate() async {
     setState(() => _generating = true);
@@ -42,64 +71,388 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
     }
   }
 
+  Future<void> _connectPera() async {
+    final address = _peraAddressCtrl.text.trim();
+    if (!PeraWalletService.instance.isValidAlgorandAddress(address)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Invalid Algorand address — must be 58 characters'),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+    setState(() => _connectingPera = true);
+    await PeraWalletService.instance.saveAddress(address);
+    await ref.read(walletProvider.notifier).setWallet(address);
+    if (mounted) {
+      setState(() => _connectingPera = false);
+      _peraAddressCtrl.clear();
+    }
+  }
+
+  Future<void> _disconnectPera() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.card,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text(
+          'Disconnect Wallet?',
+          style: TextStyle(
+            color: AppColors.fore,
+            fontSize: 17,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        content: const Text(
+          'This removes the saved address from this device. Your funds stay safe — you can always reconnect with the same address.',
+          style: TextStyle(color: AppColors.textSecondary, fontSize: 14, height: 1.5),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel', style: TextStyle(color: AppColors.muted)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text(
+              'Disconnect',
+              style: TextStyle(color: AppColors.error, fontWeight: FontWeight.w700),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    await PeraWalletService.instance.disconnect();
+    // Reset wallet state. Do NOT trigger a reload — we are intentionally
+    // disconnected. The connect screen will show via the hasWallet == false path.
+    ref.read(walletProvider.notifier).reset();
+    // Clear the text field so they start fresh.
+    if (mounted) {
+      _peraAddressCtrl.clear();
+      setState(() {});
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final wallet = ref.watch(walletProvider);
+    final walletMode = ref.watch(walletModeProvider);
     final myBounties = ref.watch(myBountiesProvider);
     final rateAsync = ref.watch(algoInrRateProvider);
     final inrRate = rateAsync.valueOrNull ?? 15.0;
+    final isPera = walletMode == WalletMode.pera;
 
-    if (!wallet.isLoading && wallet.address == null && wallet.error == null) {
-      Future.microtask(() => ref.read(walletProvider.notifier).load());
-    }
+    // When mode changes, reset init flag and reload for the new mode.
+    ref.listen<WalletMode>(walletModeProvider, (prev, next) {
+      if (prev == next) return;
+      ref.read(walletProvider.notifier).reset();
+      setState(() => _didInit = false);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _didInit = true;
+        final isPera = next == WalletMode.pera;
+        isPera
+            ? ref.read(walletProvider.notifier).loadPera()
+            : ref.read(walletProvider.notifier).load();
+      });
+    });
 
     final hasWallet = wallet.address != null && wallet.address!.isNotEmpty;
     final balance = wallet.balance?.balanceAlgo ?? 0.0;
 
-    // User's own escrowed & earnings from their bounties
     double totalEscrowed = 0;
     double totalEarnings = 0;
     for (final b in myBounties.bounties) {
-      if (b.escrowStatus == 'FUNDED') {
-        totalEscrowed += b.algoAmount;
-      }
-      if (b.status == 'COMPLETED') {
-        totalEarnings += b.algoAmount;
-      }
+      if (b.escrowStatus == 'FUNDED') totalEscrowed += b.algoAmount;
+      if (b.status == 'COMPLETED') totalEarnings += b.algoAmount;
     }
 
+    Widget body;
+    if (wallet.isLoading || _generating || _connectingPera) {
+      body = const Center(
+        child: CircularProgressIndicator(color: AppColors.neonCyan, strokeWidth: 1.5),
+      );
+    } else if (!hasWallet) {
+      body = isPera ? _buildPeraConnect() : _buildNoWallet();
+    } else {
+      body = _buildDashboard(
+        wallet: wallet,
+        balance: balance,
+        totalEscrowed: totalEscrowed,
+        totalEarnings: totalEarnings,
+        inrRate: inrRate,
+        isPera: isPera,
+      );
+    }
+
+    // Wrap scrollable bodies in RefreshIndicator; non-scrollable ones (loading,
+    // empty custodial) are plain.
+    final canRefresh = hasWallet && !wallet.isLoading;
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
-        child: RefreshIndicator(
-          color: AppColors.neonCyan,
-          backgroundColor: AppColors.surface,
-          onRefresh: () async {
-            await ref.read(walletProvider.notifier).refreshBalance();
-            await ref.read(walletProvider.notifier).loadTransactions();
-          },
-          child: wallet.isLoading || _generating
-              ? const Center(
-                  child: CircularProgressIndicator(
-                    color: AppColors.neonCyan,
-                    strokeWidth: 1.5,
-                  ),
-                )
-              : !hasWallet
-              ? _buildNoWallet()
-              : _buildDashboard(
-                  wallet: wallet,
-                  balance: balance,
-                  totalEscrowed: totalEscrowed,
-                  totalEarnings: totalEarnings,
-                  inrRate: inrRate,
-                ),
-        ),
+        child: canRefresh
+            ? RefreshIndicator(
+                color: AppColors.neonCyan,
+                backgroundColor: AppColors.surface,
+                onRefresh: () async {
+                  await ref.read(walletProvider.notifier).refreshBalance();
+                  await ref.read(walletProvider.notifier).loadTransactions();
+                },
+                child: body,
+              )
+            : body,
       ),
     );
   }
 
-  // ── No wallet placeholder ──────────────────────────────────
+  // ── Pera Wallet connect screen ─────────────────────────────
+
+  Widget _buildPeraConnect() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(24, 32, 24, 40),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: AppColors.neonCyan.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: AppColors.neonCyan.withValues(alpha: 0.2),
+                  ),
+                ),
+                child: const Icon(
+                  Icons.account_balance_wallet_rounded,
+                  color: AppColors.neonCyan,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 14),
+              const Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Connect Pera Wallet',
+                    style: TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  Text(
+                    'Your keys, your crypto',
+                    style: TextStyle(
+                      color: AppColors.textHint,
+                      fontSize: 13,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 24),
+
+          // Setup guide banner
+          GestureDetector(
+            onTap: () => PeraOnboardingSheet.show(context),
+            child: Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: AppColors.brand.withValues(alpha: 0.06),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: AppColors.brand.withValues(alpha: 0.2),
+                ),
+              ),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.rocket_launch_rounded,
+                    color: AppColors.brand,
+                    size: 18,
+                  ),
+                  const SizedBox(width: 10),
+                  const Expanded(
+                    child: Text(
+                      'New to Pera? Follow the setup guide →',
+                      style: TextStyle(
+                        color: AppColors.brand,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 24),
+
+          // Address input label
+          const Text(
+            'Paste or scan your Algorand address',
+            style: TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 8),
+
+          // Address field row
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _peraAddressCtrl,
+                  style: const TextStyle(
+                    color: AppColors.fore,
+                    fontFamily: 'monospace',
+                    fontSize: 12,
+                  ),
+                  maxLines: 1,
+                  decoration: InputDecoration(
+                    hintText: 'XXXXX...XXXXX (58 characters)',
+                    hintStyle: TextStyle(
+                      color: AppColors.textHint.withValues(alpha: 0.5),
+                      fontSize: 12,
+                    ),
+                    filled: true,
+                    fillColor: AppColors.card,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: AppColors.border),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: AppColors.border),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(
+                        color: AppColors.neonCyan,
+                        width: 1.5,
+                      ),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 14,
+                    ),
+                    suffixIcon: IconButton(
+                      icon: const Icon(Icons.paste_rounded, size: 18),
+                      color: AppColors.textHint,
+                      tooltip: 'Paste',
+                      onPressed: () async {
+                        final data = await Clipboard.getData('text/plain');
+                        if (data?.text != null) {
+                          setState(() {
+                            _peraAddressCtrl.text = data!.text!.trim();
+                          });
+                        }
+                      },
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              // QR Scan button
+              GestureDetector(
+                onTap: _scanQrAddress,
+                child: Container(
+                  width: 52,
+                  height: 52,
+                  decoration: BoxDecoration(
+                    color: AppColors.card,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.border),
+                  ),
+                  child: const Icon(
+                    Icons.qr_code_scanner_rounded,
+                    color: AppColors.neonCyan,
+                    size: 24,
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 20),
+
+          // Connect button
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: _connectPera,
+              icon: const Icon(Icons.link_rounded, size: 18),
+              label: const Text('Connect Wallet'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.neonCyan,
+                foregroundColor: AppColors.fore,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                elevation: 0,
+                textStyle: const TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 15,
+                ),
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 12),
+
+          // Open Pera button
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: PeraWalletService.instance.openPeraWallet,
+              icon: const Icon(Icons.open_in_new_rounded, size: 18),
+              label: const Text('Open Pera Wallet App'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.textSecondary,
+                side: const BorderSide(color: AppColors.border),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                textStyle: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _scanQrAddress() async {
+    final result = await Navigator.push<String>(
+      context,
+      MaterialPageRoute(builder: (_) => const QrScannerScreen()),
+    );
+    if (result != null && mounted) {
+      setState(() => _peraAddressCtrl.text = result);
+    }
+  }
+
+  // ── No wallet placeholder (custodial) ──────────────────────
 
   Widget _buildNoWallet() {
     return Center(
@@ -178,6 +531,7 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
     required double totalEscrowed,
     required double totalEarnings,
     required double inrRate,
+    required bool isPera,
   }) {
     final minReserve = wallet.balance?.minBalance ?? 0.1;
     final spendable = (balance - minReserve).clamp(0.0, double.infinity);
@@ -188,14 +542,53 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       children: [
         // ── Header ──────────────────────────────────
-        const Text(
-          'Wallet',
-          style: TextStyle(
-            color: AppColors.textPrimary,
-            fontSize: 26,
-            fontWeight: FontWeight.w800,
-            letterSpacing: -0.5,
-          ),
+        Row(
+          children: [
+            const Expanded(
+              child: Text(
+                'Wallet',
+                style: TextStyle(
+                  color: AppColors.textPrimary,
+                  fontSize: 26,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.5,
+                ),
+              ),
+            ),
+            if (isPera)
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.neonCyan.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: AppColors.neonCyan.withValues(alpha: 0.3),
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: const [
+                    Icon(
+                      Icons.launch_rounded,
+                      size: 12,
+                      color: AppColors.neonCyan,
+                    ),
+                    SizedBox(width: 4),
+                    Text(
+                      'Pera',
+                      style: TextStyle(
+                        color: AppColors.neonCyan,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+          ],
         ),
         const SizedBox(height: 24),
 
@@ -233,8 +626,14 @@ class _WalletScreenState extends ConsumerState<WalletScreen> {
         _divider(),
         const SizedBox(height: 16),
 
-        // ── Faucet ──────────────────────────────────
-        _FaucetRow(dispensing: _dispensing, onTap: _dispense),
+        // ── Faucet (custodial only) / Pera actions ──
+        if (isPera)
+          _PeraActionsRow(
+            address: address,
+            onDisconnect: _disconnectPera,
+          )
+        else
+          _FaucetRow(dispensing: _dispensing, onTap: _dispense),
 
         const SizedBox(height: 16),
         _divider(),
@@ -437,6 +836,98 @@ class _StatRow extends StatelessWidget {
         Text(
           '~${algoToInrString(amount, inrRate)}',
           style: const TextStyle(color: AppColors.textHint, fontSize: 11),
+        ),
+      ],
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Pera Actions Row (replaces faucet when in Pera mode)
+// ═══════════════════════════════════════════════════════════════
+
+class _PeraActionsRow extends StatelessWidget {
+  final String address;
+  final VoidCallback onDisconnect;
+
+  const _PeraActionsRow({
+    required this.address,
+    required this.onDisconnect,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        // Open in Pera
+        GestureDetector(
+          onTap: () => PeraWalletService.instance.openPeraWallet(),
+          child: Row(
+            children: [
+              Icon(
+                Icons.open_in_new_rounded,
+                color: AppColors.neonCyan.withValues(alpha: 0.7),
+                size: 18,
+              ),
+              const SizedBox(width: 10),
+              const Text(
+                'Open Pera Wallet',
+                style: TextStyle(
+                  color: AppColors.neonCyan,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 14),
+
+        // View on Explorer
+        GestureDetector(
+          onTap: () => PeraWalletService.instance.openAddress(address),
+          child: Row(
+            children: [
+              Icon(
+                Icons.explore_outlined,
+                color: AppColors.neonGreen.withValues(alpha: 0.7),
+                size: 18,
+              ),
+              const SizedBox(width: 10),
+              const Text(
+                'View On Explorer',
+                style: TextStyle(
+                  color: AppColors.neonGreen,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 14),
+
+        // Disconnect
+        GestureDetector(
+          onTap: onDisconnect,
+          child: Row(
+            children: [
+              Icon(
+                Icons.link_off_rounded,
+                color: AppColors.error.withValues(alpha: 0.7),
+                size: 18,
+              ),
+              const SizedBox(width: 10),
+              const Text(
+                'Disconnect Wallet',
+                style: TextStyle(
+                  color: AppColors.error,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
         ),
       ],
     );

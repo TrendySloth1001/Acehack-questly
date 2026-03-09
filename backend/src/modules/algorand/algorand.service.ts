@@ -8,6 +8,9 @@ import { BadRequestError } from "../../shared/errors";
 
 const MICROALGOS_PER_ALGO = 1_000_000;
 const MIN_TXN_FEE = 1000; // 0.001 ALGO minimum fee
+// Extra ALGO sent to escrow on top of the bounty amount so the account
+// never drops below Algorand's minimum balance (0.1 ALGO) after payout.
+const ALGO_ESCROW_RESERVE = 0.1;
 
 export class AlgorandService {
   // ── Create unsigned funding txn (creator → escrow) ────────
@@ -25,7 +28,10 @@ export class AlgorandService {
     }
 
     const params = await algodClient.getTransactionParams().do();
-    const amountMicroAlgo = Math.floor(amountAlgo * MICROALGOS_PER_ALGO);
+    // Fund with bounty amount + reserve so the escrow stays above the
+    // Algorand minimum balance (0.1 ALGO) even after releasing payment.
+    const totalFundAlgo = amountAlgo + ALGO_ESCROW_RESERVE;
+    const amountMicroAlgo = Math.floor(totalFundAlgo * MICROALGOS_PER_ALGO);
     const note = new TextEncoder().encode(
       JSON.stringify({ app: "questly", action: "fund", bountyId })
     );
@@ -47,7 +53,7 @@ export class AlgorandService {
       txnId: txn.txID(),
       escrowAddress: getEscrowAddress(),
       amountMicroAlgo,
-      amountAlgo,
+      amountAlgo: totalFundAlgo,
     };
   }
 

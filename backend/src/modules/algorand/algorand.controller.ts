@@ -78,10 +78,13 @@ export class AlgorandController {
     // Spendable = total − min_balance − fee headroom
     // Algorand enforces a minimum balance (0.1 ALGO for a basic account);
     // sending the full balance would drop below that and algod rejects.
+    // Creator must cover: bounty amount + 0.1 ALGO escrow reserve + 0.001 fee
+    const ESCROW_RESERVE = 0.1;
+    const totalRequired = bounty.algoAmount + ESCROW_RESERVE + 0.001;
     const spendableAlgo = currentBalance.balanceAlgo - currentBalance.minBalance - 0.001;
-    if (spendableAlgo < bounty.algoAmount) {
+    if (spendableAlgo < totalRequired) {
       throw new BadRequestError(
-        `Insufficient spendable balance: you have ${spendableAlgo.toFixed(4)} ALGO available (total ${currentBalance.balanceAlgo.toFixed(4)} minus ${currentBalance.minBalance.toFixed(4)} min-balance reserve) but this bounty requires ${bounty.algoAmount} ALGO. Dispense more ALGO first.`
+        `Insufficient spendable balance: you have ${spendableAlgo.toFixed(4)} ALGO available but this bounty requires ${totalRequired.toFixed(4)} ALGO (${bounty.algoAmount} reward + 0.1 escrow reserve + 0.001 fee). Dispense more ALGO first.`
       );
     }
 
@@ -100,17 +103,17 @@ export class AlgorandController {
       },
     });
 
-    // Record DEBIT transaction for the creator
+    // Record DEBIT for the full on-chain deduction (bounty + 0.1 reserve)
     await prisma.walletTransaction.create({
       data: {
         userId,
         type: "DEBIT",
-        amountAlgo: bounty.algoAmount,
+        amountAlgo: bounty.algoAmount + ESCROW_RESERVE,
         txId: result.txId,
         bountyId,
         bountyTitle: bounty.title,
         counterpartyAddress: user.walletAddress,
-        description: `Funded escrow for "${bounty.title}"`,
+        description: `Funded escrow for "${bounty.title}" (+0.1 reserve)`,
       },
     });
 
