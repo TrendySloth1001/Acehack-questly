@@ -173,7 +173,12 @@ export class AuthService {
    * Rotates the refresh token (one-time use).
    */
   async refreshToken(oldRefreshToken: string): Promise<AuthTokens> {
-    const payload = verifyRefreshToken(oldRefreshToken);
+    let payload;
+    try {
+      payload = verifyRefreshToken(oldRefreshToken);
+    } catch {
+      throw new UnauthorizedError(ERROR_MESSAGES.TOKEN_INVALID);
+    }
 
     // Atomic delete – if it doesn't exist, the token was already used (replay)
     const deleted = await prisma.refreshToken.deleteMany({

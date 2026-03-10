@@ -1,5 +1,22 @@
 import app from "./app";
-import { env, prisma, ensureBucket } from "./config";
+import { env, prisma, ensureBucket, getEscrowAddress } from "./config";
+import { algorandService } from "./modules/algorand/algorand.service";
+
+async function ensureEscrowFunded() {
+  try {
+    const escrowAddr = getEscrowAddress();
+    const balance = await algorandService.getBalance(escrowAddr);
+    if (balance.balanceAlgo < 1) {
+      console.log(`⏳ Escrow balance low (${balance.balanceAlgo} ALGO), dispensing 100 ALGO from genesis...`);
+      const result = await algorandService.dispense(escrowAddr, 100);
+      console.log(`✅ Escrow funded: 100 ALGO → txId ${result.txId}`);
+    } else {
+      console.log(`✅ Escrow ready: ${balance.balanceAlgo} ALGO (${escrowAddr.slice(0, 8)}…)`);
+    }
+  } catch (err: any) {
+    console.warn("⚠️  Could not fund escrow:", err.message ?? err);
+  }
+}
 
 async function bootstrap() {
   try {
@@ -13,6 +30,11 @@ async function bootstrap() {
       console.log("✅ MinIO bucket ready");
     } catch {
       console.warn("⚠️  MinIO not available – file uploads disabled until connected");
+    }
+
+    // Ensure escrow wallet is funded (devmode only)
+    if (env.ALGORAND_NETWORK === "devmode") {
+      await ensureEscrowFunded();
     }
 
     app.listen(env.PORT, () => {
